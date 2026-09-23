@@ -285,3 +285,61 @@ contains the matching synchronized script. The Studio cleanup assertion passed a
 no owned packaged app/Studio processes remained. Together with the 214/214 local
 native run above, this is current local macOS evidence. It does not claim a completed
 cross-platform CI matrix, signed distribution or final installer acceptance.
+
+## CI follow-up — `83e7e4e`
+
+[Desktop run 35921832182](https://github.com/igormidev/Vandashi/actions/runs/35921832182)
+finished on 2026-09-23. Linux and macOS passed the full 854-test gate (13 opt-in skips),
+all 214 Electron cases and both actual packaged integrations. Windows passed its full
+gate (851 tests, 16 platform/opt-in skips) and 213/214 Electron cases; packaging did not
+run because one test failed. The corrected initial native Reload passed on Windows.
+
+The remaining Windows failure is a strict locator ambiguity in `creation-text.spec.ts`:
+“Creation workspace” matches both navigation and the intentionally open chat tab after
+session hydration. The trace shows the normal Packaging page, not an application failure.
+The same fixture is used by the loading handoff check. Scope navigation selectors to
+Video studio and deliberately await the matching chat tab before the Unicode cases;
+retain all content, Undo, focus and single-start assertions. The correction requires a
+new native run and fresh CI rather than treating this partial matrix as acceptance.
+
+Retained artifacts:
+
+- [Linux X64](https://github.com/igormidev/Vandashi/actions/runs/35921832182/artifacts/10777747769),
+  SHA256 `e0101a95892fdfff13d11943698877b09ab53a549c2530f3bbe9c1965f51ab6d`.
+- [macOS ARM64](https://github.com/igormidev/Vandashi/actions/runs/35921832182/artifacts/10778657079),
+  SHA256 `30d2e2a0024781eb24e98ce31179e90c457d7813ecd06252ae68eb909cc6cb51`.
+- [Windows diagnostics](https://github.com/igormidev/Vandashi/actions/runs/35921832182/artifacts/10779221028),
+  SHA256 `4fa8ce500235932bac3fc1bf343161b2eec56e389d3a181469bcbaf1f62d3aef`.
+
+Exact logs and metadata are under `/tmp/vandashi-ci-83e7e4e.C8hqpT/`.
+[Pages run 35921832193](https://github.com/igormidev/Vandashi/actions/runs/35921832193)
+passed 58 catalog tests and 312 browser cases and deployed successfully. Its result does
+not establish desktop acceptance.
+
+## Attachment-loading package — `74c15c7`
+
+The final shared-composer loading correction passed the immutable staged gate (854 tests,
+13 explicit skips, both builds, zero static-analysis warnings/errors), followed by a fresh
+228/228 Electron run in 5.0 minutes. The unsigned macOS ARM64 package is retained at
+`/tmp/vandashi-final-attachments-package/mac-arm64/Vandashi.app`.
+
+Its `frozen-input.json` records `74c15c7efcff979c22042860ed023a72ecc351aa` directly:
+219 source/build inputs match the commit; all 288 output files (12,835,801 bytes) match
+SHA256 and source modification times. Six runtime/Studio/native resources, five license
+notices, the bundle identifier and icon were verified in `package-verification.json`.
+
+Both actual packaged tests passed with zero skips in 100.23 seconds. Bundled Studio,
+pending-edit flush, real Codex script synchronization and real render passed in 96.63s;
+English/Portuguese CPU speech, native ONNX, cancellation and timeout passed in 3.19s.
+The render test verifies 1920×1080 dimensions, short duration, actual red frame pixels,
+saved output metadata and Studio shutdown. The temporary render fixture was cleaned up.
+Logs/results are `live-smoke.log`, `live-smoke.json` and `live-smoke-verification.json`.
+All frozen output hashes/mtimes still matched after testing, and no owned package or
+Studio processes remained. This is local macOS evidence, not a Windows result.
+
+The Windows selector correction was reproduced locally by awaiting the matching open
+chat tab before the old navigation click. The corrected three-file suite passed 21/21
+in 27.8 seconds with that hydration precondition, preserving all prior assertions.
+Evidence: `/tmp/vandashi-creation-selector-red.log` and
+`/tmp/vandashi-creation-selector-green.log`. The independent reviewer accepted the
+correction; no production source or package input changes are involved.

@@ -20,7 +20,13 @@ for (const [name, original] of [
       route.fulfill({ contentType: 'text/html', body: '<!doctype html><title>Preview fixture</title>' }),
     );
     await page.reload();
-    await page.getByRole('button', { name: 'Creation workspace', exact: true }).click();
+    await expect(
+      page.locator('.chat-tabs').getByRole('button', { name: 'Creation workspace', exact: true }),
+    ).toBeVisible();
+    await page
+      .getByRole('navigation', { name: 'Video studio', exact: true })
+      .getByRole('button', { name: 'Creation workspace', exact: true })
+      .click();
     await expect.poll(async () => (await creationObservation(desktopApp)).starts.length).toBe(1);
     await creationControl(desktopApp, { studio: true });
     const script = page.getByRole('textbox', { name: 'Script', exact: true });

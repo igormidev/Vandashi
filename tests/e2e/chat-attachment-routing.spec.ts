@@ -82,7 +82,10 @@ const cases: { name: string; video: boolean; sessionId: string; open: (page: Pag
     video: true,
     sessionId: 'attachment:creation',
     open: async (page) => {
-      await page.getByRole('button', { name: 'Creation workspace', exact: true }).click();
+      await page
+        .getByRole('navigation', { name: 'Video studio', exact: true })
+        .getByRole('button', { name: 'Creation workspace', exact: true })
+        .click();
       await page.getByRole('button', { name: 'AI chat', exact: true }).click();
     },
   },

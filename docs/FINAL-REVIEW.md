@@ -443,3 +443,21 @@ prepared publishing. The original reviewer accepted the source fix and all 21 ca
 The explicit shared SVG import and following read-only turn succeeded in the real package.
 Two Undo actions preserved the no-edit turn's HEADs, then restored all six baseline trees
 and retained the five changed commits as backups. Native Finder drops remain unverified.
+
+Checkpoint `74c15c7` passed its immutable staged full gate (854 tests, 13 explicit skips,
+zero static-analysis warnings/errors and both builds). Its fresh production output then
+passed all 228 Electron cases in 5.0 minutes. The new macOS package's 288 output files
+and 219 source/build inputs match that commit; runtime resources and notices were checked.
+
+The preceding `83e7e4e` matrix completed with full Linux/macOS success and Windows at
+213/214 native cases after a successful unit gate. Windows's only remaining failure was
+an unscoped test navigation selector matching an already hydrated chat tab. The actual
+initial native Reload, all locale cases and the thirteen-guide save passed there.
+The bounded test correction scopes navigation and deliberately waits for the duplicate
+chat label; it changes no production application code.
+
+The selector correction reproduced the exact Windows failure locally before passing
+all 21 affected native cases with deterministic hydration. The independent reviewer
+accepted the unchanged coverage. The current `74c15c7` package also passed both real
+integrations with zero skips in 100.23 seconds, and its frozen hashes/mtimes remained
+unchanged. Current cross-platform CI remains separate from these local results.

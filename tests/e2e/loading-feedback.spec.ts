@@ -121,7 +121,13 @@ test('script handoff shows progress through acknowledgement while guidance stays
     route.fulfill({ contentType: 'text/html', body: '<!doctype html><title>Preview</title>' }),
   );
   await page.reload();
-  await page.getByRole('button', { name: 'Creation workspace', exact: true }).click();
+  await expect(
+    page.locator('.chat-tabs').getByRole('button', { name: 'Creation workspace', exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole('navigation', { name: 'Video studio', exact: true })
+    .getByRole('button', { name: 'Creation workspace', exact: true })
+    .click();
   await expect(page.locator('.preview-stage svg.spin')).toBeVisible();
   await creationControl(desktopApp, { studio: true });
   const script = page.getByRole('textbox', { name: 'Script', exact: true });
