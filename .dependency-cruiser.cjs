@@ -1,3 +1,28 @@
+// Explicit browser packages keep a new host dependency from silently crossing the ports.
+const browserPackages = [
+  'react',
+  'react-dom',
+  'react-i18next',
+  'react-markdown',
+  'i18next',
+  'lucide-react',
+  'simple-icons',
+  'diff',
+  '@radix-ui/react-dialog',
+  '@radix-ui/react-tooltip',
+  '@tiptap/core',
+  '@tiptap/pm',
+  '@tiptap/react',
+  '@tiptap/starter-kit',
+  '@tiptap/suggestion',
+  '@hyperframes/player',
+  '@fontsource/geist',
+  '@fontsource/geist-mono',
+  '@fontsource-variable/noto-sans-jp',
+  '@fontsource-variable/noto-sans-kr',
+];
+const browserDependencies = `^node_modules/(?:${browserPackages.join('|')})(?:/|$)`;
+
 module.exports = {
   forbidden: [
     { name: 'no-cycles', severity: 'error', from: {}, to: { circular: true } },
@@ -5,19 +30,20 @@ module.exports = {
       name: 'domain-is-independent',
       severity: 'error',
       from: { path: '^src/domain' },
-      to: { path: '^src/(application|infrastructure|desktop|renderer)' },
+      to: { pathNot: '^src/domain/' },
     },
     {
       name: 'application-uses-ports',
       severity: 'error',
       from: { path: '^src/application' },
-      to: { path: '^src/(infrastructure|desktop|renderer)' },
+      // Path joining is deterministic; all I/O still belongs to a port.
+      to: { pathNot: ['^src/(application|domain)/', '^(node:)?path$'] },
     },
     {
       name: 'renderer-cannot-access-host',
       severity: 'error',
       from: { path: '^src/renderer' },
-      to: { path: '^src/(application|infrastructure|desktop)' },
+      to: { pathNot: ['^src/(renderer|domain)/', browserDependencies] },
     },
     {
       name: 'renderer-no-node',
@@ -42,8 +68,7 @@ module.exports = {
       severity: 'error',
       from: { path: '^landing/src/' },
       to: {
-        path: '^(?!landing/|node_modules/|src/domain/locales\\.ts$)',
-        dependencyTypesNot: ['core'],
+        pathNot: ['^landing/', '^src/domain/locales\\.ts$', browserDependencies],
       },
     },
     {
@@ -63,6 +88,8 @@ module.exports = {
     { name: 'no-unresolved', severity: 'error', from: {}, to: { couldNotResolve: true } },
   ],
   options: {
+    // Keep linked package identities stable in the isolated staged checkout.
+    preserveSymlinks: true,
     tsConfig: { fileName: 'tsconfig.json' },
     tsPreCompilationDeps: true,
     doNotFollow: { path: 'node_modules' },

@@ -1,8 +1,19 @@
-import type { AppState, Asset, ChatSession, Commit, ModelInfo, Workspace } from '../../src/domain/models';
+import type {
+  AppState,
+  Asset,
+  ChatMessage,
+  ChatCheckpoint,
+  ChatSession,
+  Commit,
+  ModelInfo,
+  Workspace,
+} from '../../src/domain/models';
 import { defaultSettings, platforms } from '../../src/domain/defaults';
 import type { Diagnostic } from '../../src/domain/diagnostics';
 
 export interface ChatFixtureOptions {
+  initialMessages?: ChatMessage[];
+  publishCheckpoints?: ChatCheckpoint[];
   clips?: boolean;
   mediaPath?: string;
   portrait?: boolean;
@@ -113,7 +124,7 @@ export function chatFixtureData(video: boolean, options: ChatFixtureOptions) {
       topic: 'brand',
       title: 'Brand attributes',
       threadId: 'thread-one',
-      messages: [
+      messages: options.initialMessages ?? [
         {
           id: 'history-one',
           role: 'assistant',
@@ -151,7 +162,19 @@ export function chatFixtureData(video: boolean, options: ChatFixtureOptions) {
       topic: 'publish:youtube',
       title: 'Upload YouTube',
       threadId: null,
-      messages: [],
+      messages: options.publishCheckpoints?.length
+        ? [
+            {
+              id: 'publish-user',
+              role: 'user',
+              text: 'Review publication',
+              turnId: options.publishCheckpoints.at(-1)?.turnId ?? null,
+              files: [],
+              createdAt: '',
+            },
+          ]
+        : [],
+      ...(options.publishCheckpoints ? { checkpoints: options.publishCheckpoints } : {}),
       open: false,
       updatedAt: '',
     },

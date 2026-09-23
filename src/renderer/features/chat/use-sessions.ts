@@ -11,6 +11,7 @@ export function useSessions(scope: Scope) {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [selected, setSelected] = useState<string | null>(() => cachedSelection(scopeKey(scope)));
   const [loading, setLoading] = useState(true);
+  const [opening, setOpening] = useState(false);
   const [failed, setFailed] = useState(false);
   const [mediaGeneration, setMediaGeneration] = useState<Record<string, number>>({});
   const mediaHydrated = useCallback((id: string) => {
@@ -76,8 +77,12 @@ export function useSessions(scope: Scope) {
     };
   }, [refresh, run]);
   useEffect(() => {
-    if (!chatTarget) return;
+    if (!chatTarget) {
+      setOpening(false);
+      return;
+    }
     let disposed = false;
+    setOpening(true);
     void run(async () => {
       try {
         const result = await openConversation(api, {
@@ -106,11 +111,12 @@ export function useSessions(scope: Scope) {
         setFailed(false);
         setLoading(false);
       } catch (error) {
-        if (!disposed) {
-          setFailed(true);
-          setLoading(false);
-        }
+        if (disposed) return;
+        setFailed(true);
+        setLoading(false);
         throw error;
+      } finally {
+        if (!disposed) setOpening(false);
       }
     });
     return () => {
@@ -198,5 +204,16 @@ export function useSessions(scope: Scope) {
       current === id ? (sessions.find((session) => session.id !== id && session.open)?.id ?? null) : current,
     );
   };
-  return { sessions, selected, setSelected, loading, failed, refresh, replace, close, mediaGeneration };
+  return {
+    sessions,
+    selected,
+    setSelected,
+    loading,
+    opening,
+    failed,
+    refresh,
+    replace,
+    close,
+    mediaGeneration,
+  };
 }

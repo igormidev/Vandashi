@@ -14,7 +14,7 @@ export function BrandPage() {
   const { workspace, api, run, busy, setDirty, setWorkspace, setChatTarget } = useApp();
   const [config, setConfig] = useState(workspace?.brand.config);
   const [documents, setDocuments] = useState(workspace?.documents ?? []);
-  const [logoUrl, setLogoUrl] = useState('');
+  const [logo, setLogo] = useState<{ path: string; revision: string; url: string } | null>(null);
   const [active, setActive] = useState(0);
   const [fontSize, setFontSize] = useState(12);
   const [confirm, setConfirm] = useState(false);
@@ -29,24 +29,32 @@ export function BrandPage() {
   }, [dirty, setDirty]);
   const imagePath = config?.image;
   const brandPath = workspace?.brand.path;
+  const revision = workspace?.revision;
+  const logoUrl = logo?.path === imagePath && logo?.revision === revision ? logo?.url : '';
   useEffect(() => {
     let active = true;
-    if (imagePath && brandPath)
+    if (imagePath && brandPath && revision)
       void api
         .mediaUrl(
           /^(?:[A-Za-z]:[\\/]|\/)/.test(imagePath) ? imagePath : `${brandPath}/brand_identity/${imagePath}`,
         )
         .then((url) => {
-          if (active) setLogoUrl(url);
+          const source = new URL(url);
+          source.searchParams.set('revision', revision);
+          if (active) setLogo({ path: imagePath, revision, url: source.href });
         })
         .catch(() => {
-          if (active) setLogoUrl('');
+          if (active) setLogo(null);
         });
     return () => {
       active = false;
     };
-  }, [api, imagePath, brandPath]);
+  }, [api, imagePath, brandPath, revision]);
   if (!workspace || !config) return null;
+  const changedDocuments = documents.filter(
+    (document) =>
+      workspace.documents.find((original) => original.path === document.path)?.content !== document.content,
+  );
   const tastes = documents.filter((document) => document.kind === 'taste');
   const selected = tastes[active];
   const tasteLabel = (name: string) => {
@@ -259,8 +267,13 @@ export function BrandPage() {
       {confirm && (
         <CommitDialog
           summary={JSON.stringify({
-            before: { config: workspace.brand.config, documents: workspace.documents },
-            after: { config, documents },
+            before: {
+              config: workspace.brand.config,
+              documents: workspace.documents.filter((original) =>
+                changedDocuments.some((document) => document.path === original.path),
+              ),
+            },
+            after: { config, documents: changedDocuments },
           })}
           onClose={() => {
             setConfirm(false);
@@ -270,14 +283,12 @@ export function BrandPage() {
               scope: workspace.scope,
               revision: workspace.revision,
               brandConfig: config,
-              documents: documents.filter(
-                (document) =>
-                  workspace.documents.find((original) => original.path === document.path)?.content !==
-                  document.content,
-              ),
+              documents: changedDocuments,
               packaging: null,
               commit,
             });
+            setConfig(result.brand.config);
+            setDocuments(result.documents);
             setDirty(false);
             setWorkspace(result);
             setConfirm(false);

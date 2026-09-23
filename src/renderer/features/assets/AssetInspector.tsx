@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Asset } from '../../../domain/models';
 import { useApp } from '../../app/store';
-import { AiButton, IconButton, InfoTip } from '../../shared/ui';
+import { AiButton, IconButton, InfoTip, PendingLabel } from '../../shared/ui';
 import { CommitDialog } from '../history/CommitDialog';
 import { AssetPreview } from './AssetPreview';
 import { parseAssetTags } from './asset-index';
@@ -173,11 +173,12 @@ export function AssetInspector({
           className="button primary small"
           type="button"
           disabled={!changed || !title.trim() || writeLocked || saving}
+          aria-busy={saving}
           onClick={() => {
             setConfirming(true);
           }}
         >
-          {t(saving ? 'loading' : 'save')}
+          {saving ? <PendingLabel label={t('loading')} /> : t('save')}
         </button>
       </div>
       {confirming && (

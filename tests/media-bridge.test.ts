@@ -121,4 +121,104 @@ describe('Studio flush boundary', () => {
     network.resolve(new Response(null));
     await read;
   });
+
+  it.each([
+    ['POST', 'render'],
+    ['PUT', 'selection'],
+    ['POST', 'file-mutations/probe-element/index.html'],
+  ])('does not retain an unrelated %s %s failure as an editor save error', async (method, route) => {
+    const bridge = fixture();
+    const network = deferred<Response>();
+    bridge.nativeFetch.mockReturnValueOnce(network.promise);
+    const request = bridge.window.fetch(`http://127.0.0.1:1234/api/projects/test/${route}`, { method });
+    await expect(bridge.flush()).resolves.toEqual({ ok: true });
+    network.resolve(new Response(null, { status: 500 }));
+    await request;
+    await expect(bridge.flush()).resolves.toEqual({ ok: true });
+  });
+
+  it.each([
+    ['POST', 'files/scene.html'],
+    ['PATCH', 'files/scene.html'],
+    ['DELETE', 'files/scene.html'],
+    ['POST', 'file-mutations/patch-element/scene.html'],
+    ['POST', 'file-mutations/split-batch'],
+    ['POST', 'gsap-mutations/scene.html'],
+    ['POST', 'gsap-mutations-batch/scene.html'],
+    ['POST', 'gsap-mutation-rollback/scene.html'],
+    ['POST', 'upload'],
+    ['POST', 'duplicate-file'],
+    ['POST', 'registry/install'],
+  ])('retains an actual source mutation failure from %s %s', async (method, route) => {
+    const bridge = fixture();
+    const url = `http://127.0.0.1:1234/api/projects/test/${route}`;
+    bridge.nativeFetch.mockResolvedValueOnce(new Response(null, { status: 500 }));
+    await bridge.window.fetch(url, { method });
+    await expect(bridge.flush()).resolves.toMatchObject({ ok: false });
+    bridge.nativeFetch.mockResolvedValueOnce(new Response(null));
+    await bridge.window.fetch(url, { method });
+    await expect(bridge.flush()).resolves.toEqual({ ok: true });
+  });
+
+  it.each(['init', 'request'] as const)(
+    'accepts the vendor already-written 409 for a %s body without consuming either original stream',
+    async (kind) => {
+      const bridge = fixture();
+      const url = 'http://127.0.0.1:1234/api/projects/test/files/index.html';
+      const content = '<h1>Exact already-written content Ω</h1>';
+      const conflict = { currentVersion: 'sha256:current', currentContent: content };
+      const network = deferred<Response>();
+      bridge.nativeFetch.mockImplementationOnce(async (input, init) => {
+        const body = input instanceof Request ? await input.text() : init?.body;
+        expect(body).toBe(content);
+        return network.promise;
+      });
+      const input = { method: 'PUT', body: content };
+      const request =
+        kind === 'request' ? bridge.window.fetch(new Request(url, input)) : bridge.window.fetch(url, input);
+      let completed = false;
+      const flush = bridge.flush().then((result) => {
+        completed = true;
+        return result;
+      });
+      await new Promise((resolve) => {
+        setTimeout(resolve, 5);
+      });
+      expect(completed).toBe(false);
+      network.resolve(Response.json(conflict, { status: 409 }));
+      expect(await (await request).json()).toEqual(conflict);
+      await expect(flush).resolves.toEqual({ ok: true });
+    },
+  );
+
+  it.each([
+    { currentVersion: 'new', currentContent: 'Different external content' },
+    { currentContent: 'Attempted content' },
+    { currentVersion: '', currentContent: 'Attempted content' },
+    { currentVersion: 'new', currentContent: null },
+  ])('keeps a genuine or unverifiable 409 blocked: %j', async (conflict) => {
+    const bridge = fixture();
+    bridge.nativeFetch.mockResolvedValueOnce(Response.json(conflict, { status: 409 }));
+    await bridge.window.fetch('http://127.0.0.1:1234/api/projects/test/files/index.html', {
+      method: 'PUT',
+      body: 'Attempted content',
+    });
+    await expect(bridge.flush()).resolves.toEqual({
+      ok: false,
+      diagnostic: { kind: 'app', message: { id: 'mediaBridgeSaveHttp', params: { status: 409 } } },
+    });
+  });
+
+  it('clears a previous file conflict only when the retried content is confirmed already written', async () => {
+    const bridge = fixture();
+    const url = 'http://127.0.0.1:1234/api/projects/test/files/index.html';
+    bridge.nativeFetch.mockResolvedValueOnce(Response.json({ currentContent: 'External' }, { status: 409 }));
+    await bridge.window.fetch(url, { method: 'PUT', body: 'Retry content' });
+    await expect(bridge.flush()).resolves.toMatchObject({ ok: false });
+    bridge.nativeFetch.mockResolvedValueOnce(
+      Response.json({ currentVersion: 'new', currentContent: 'Retry content' }, { status: 409 }),
+    );
+    await bridge.window.fetch(url, { method: 'PUT', body: 'Retry content' });
+    await expect(bridge.flush()).resolves.toEqual({ ok: true });
+  });
 });

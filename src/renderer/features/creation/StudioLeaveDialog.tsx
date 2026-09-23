@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { FileChange } from '../../../domain/models';
 import { useApp } from '../../app/store';
-import { Modal } from '../../shared/ui';
+import { Modal, PendingLabel } from '../../shared/ui';
 import { DiffFiles } from '../history/DiffFiles';
 
 export function StudioLeaveDialog({
@@ -40,6 +40,7 @@ export function StudioLeaveDialog({
           className="button danger"
           type="button"
           disabled={discarding}
+          aria-busy={discarding}
           onClick={() => {
             setDiscarding(true);
             void run(async () => {
@@ -51,7 +52,7 @@ export function StudioLeaveDialog({
             });
           }}
         >
-          {t(discarding ? 'loading' : 'discard')}
+          {discarding ? <PendingLabel label={t('loading')} /> : t('discard')}
         </button>
         <button className="button primary" type="button" disabled={discarding} onClick={onSave}>
           <Folder size={14} />

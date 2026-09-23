@@ -48,6 +48,10 @@ export function Checks({ video, onReady }: { video: boolean; onReady: () => void
       ? feedback
       : { checks: [], progress: 0, current: 'Codex', currentLabel: undefined };
   const loading = settled !== requestKey;
+  const canRepair =
+    !loading &&
+    validated === requestKey &&
+    checks.some((check) => check.id === 'Codex' && check.status === 'ready');
 
   useEffect(
     () =>
@@ -139,6 +143,7 @@ export function Checks({ video, onReady }: { video: boolean; onReady: () => void
             <div>
               <h3>{check.label ? messageText(check.label) : check.id}</h3>
               <p>{check.diagnostic ? diagnosticText(check.diagnostic) : check.detail}</p>
+              {check.status !== 'ready' && check.recovery && <p>{messageText(check.recovery)}</p>}
               {check.status !== 'ready' && (
                 <div className="toolbar">
                   {check.helpUrl && (
@@ -152,7 +157,7 @@ export function Checks({ video, onReady }: { video: boolean; onReady: () => void
                       {t('installHelp')}
                     </button>
                   )}
-                  {check.repairPrompt && workspace && (
+                  {check.repairPrompt && workspace && canRepair && (
                     <button
                       className="button small"
                       type="button"
@@ -197,5 +202,5 @@ export function Checks({ video, onReady }: { video: boolean; onReady: () => void
       </div>
     </div>
   );
-  return repair ? <Split id="dependencies" left={<ChatPane />} right={content} /> : content;
+  return repair && canRepair ? <Split id="dependencies" left={<ChatPane />} right={content} /> : content;
 }

@@ -8,7 +8,7 @@ interface Requests {
   saves: SaveInput[];
   scripts: ScriptInput[];
 }
-export async function installPackagingRegressionFixture(desktop: ElectronApplication) {
+export async function installPackagingRegressionFixture(desktop: ElectronApplication, thumbnailCount = 1) {
   const fixture = chatFixtureData(true, { references: true });
   fixture.workspace.assets = [
     {
@@ -27,7 +27,10 @@ export async function installPackagingRegressionFixture(desktop: ElectronApplica
     },
   ];
   if (!fixture.workspace.video) throw new Error('Missing video');
-  fixture.workspace.video.packaging.thumbnails = ['thumbnails/portrait.svg'];
+  fixture.workspace.video.packaging.thumbnails = Array.from(
+    { length: thumbnailCount },
+    (_, index) => `thumbnails/portrait-${String(index)}.svg`,
+  );
   await desktop.evaluate(({ ipcMain, BrowserWindow }, data) => {
     let workspace = data.workspace;
     const requests: Requests = { saves: [], scripts: [] };
@@ -62,6 +65,12 @@ export async function installPackagingRegressionFixture(desktop: ElectronApplica
       if (method === 'checks')
         return [{ id: 'Ready', status: 'ready', detail: '', repairPrompt: null, helpUrl: null }];
       if (method === 'sessions') return data.sessions;
+      if (method === 'openChat') {
+        const { topic } = args[0] as { topic: string };
+        const session = data.sessions.find((entry) => entry.topic === topic);
+        if (!session) throw new Error('Missing packaging fixture conversation');
+        return structuredClone(session);
+      }
       if (method === 'mediaUrl')
         return (
           'data:image/svg+xml,' +

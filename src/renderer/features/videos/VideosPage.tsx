@@ -1,9 +1,12 @@
 import { Clapperboard, Plus, Upload } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { VideoSummary, Workspace } from '../../../domain/models';
+import { diagnosticFromBridge, type Diagnostic } from '../../../domain/diagnostics';
 import { useApp } from '../../app/store';
-import { Empty, InfoTip, Modal } from '../../shared/ui';
+import { diagnosticText } from '../../app/diagnostics';
+import { Empty, InfoTip, Loading, Modal, PendingLabel } from '../../shared/ui';
+import { OwnedRequest } from '../../shared/owned-request';
 import { Checks } from '../workspace/Checks';
 import { PlatformIcon } from '../../shared/PlatformIcon';
 import { ExpandableText } from '../../shared/ExpandableText';
@@ -17,19 +20,65 @@ export function VideosPage({
   const { t } = useTranslation();
   const { api, workspace, run, busy, dirty } = useApp();
   const [importing, setImporting] = useState(false);
-  const [videos, setVideos] = useState<VideoSummary[]>([]);
+  const pending = useRef(new OwnedRequest<VideoSummary[]>());
+  const [attempt, setAttempt] = useState(0);
+  const [list, setList] = useState<{
+    request: object | null;
+    videos: VideoSummary[];
+    error: Diagnostic | null;
+  }>({ request: null, videos: [], error: null });
+  const request = useMemo(() => ({ api, workspace, attempt }), [api, workspace, attempt]);
+  const listLoading = list.request !== request;
+  const opening = useRef<object | null>(null);
+  const [selection, setSelection] = useState<{
+    owner: object;
+    video: string;
+    error: Diagnostic | null;
+  } | null>(null);
+  const selected = selection?.owner === request ? selection : null;
+  const selecting = selected !== null && selected.error === null;
   const [preflight, setPreflight] = useState(false);
   const [create, setCreate] = useState(false);
   const [name, setName] = useState('');
   const [ratio, setRatio] = useState<'16:9' | '9:16'>('16:9');
   const [loading, setLoading] = useState(false);
   useEffect(() => {
-    if (workspace)
-      void run(async () => {
-        setVideos(await api.listVideos(workspace.scope.brandId));
+    const { api, workspace } = request;
+    if (!workspace) return;
+    let disposed = false;
+    void pending.current
+      .get(request, 'videos', () => api.listVideos(workspace.scope.brandId))
+      .then((videos) => {
+        if (!disposed) setList({ request, videos, error: null });
+      })
+      .catch((error: unknown) => {
+        if (!disposed) setList({ request, videos: [], error: diagnosticFromBridge(error) });
       });
-  }, [api, workspace, run]);
+    return () => {
+      disposed = true;
+      opening.current = null;
+    };
+  }, [request]);
   if (!workspace) return null;
+  const select = async (video: string) => {
+    if (opening.current) return;
+    const token = {};
+    opening.current = token;
+    setSelection({ owner: request, video, error: null });
+    try {
+      const result = await api.openWorkspace({
+        brandId: workspace.scope.brandId,
+        videoId: video,
+        clipId: null,
+      });
+      if (opening.current === token) onOpen(result);
+    } catch (error) {
+      if (opening.current === token)
+        setSelection({ owner: request, video, error: diagnosticFromBridge(error) });
+    } finally {
+      if (opening.current === token) opening.current = null;
+    }
+  };
   if (preflight)
     return (
       <Checks
@@ -48,7 +97,7 @@ export function VideosPage({
           <button
             type="button"
             className="button"
-            disabled={busy || dirty}
+            disabled={busy || dirty || listLoading || selecting}
             onClick={() => {
               setImporting(true);
             }}
@@ -59,7 +108,7 @@ export function VideosPage({
           <button
             className="button primary"
             type="button"
-            disabled={busy || dirty}
+            disabled={busy || dirty || listLoading || selecting}
             onClick={() => {
               setName('');
               setPreflight(true);
@@ -70,22 +119,47 @@ export function VideosPage({
           </button>
         </div>
       </div>
-      {videos.length ? (
+      {selecting && <Loading />}
+      {selected?.error && (
+        <div className="field-error" role="alert">
+          <p>{diagnosticText(selected.error)}</p>
+          <button
+            className="button small"
+            type="button"
+            disabled={busy || dirty}
+            onClick={() => {
+              void select(selected.video);
+            }}
+          >
+            {t('retry')}
+          </button>
+        </div>
+      )}
+      {listLoading ? (
+        <Loading />
+      ) : list.error ? (
+        <div className="field-error" role="alert">
+          <p>{diagnosticText(list.error)}</p>
+          <button
+            className="button small"
+            type="button"
+            disabled={busy || dirty}
+            onClick={() => {
+              setAttempt((value) => value + 1);
+            }}
+          >
+            {t('retry')}
+          </button>
+        </div>
+      ) : list.videos.length ? (
         <div className="video-grid">
-          {videos.map((video) => (
+          {list.videos.map((video) => (
             <VideoTile
               key={video.id}
               video={video}
+              locked={selecting}
               onOpen={() => {
-                void run(async () => {
-                  onOpen(
-                    await api.openWorkspace({
-                      brandId: workspace.scope.brandId,
-                      videoId: video.id,
-                      clipId: null,
-                    }),
-                  );
-                });
+                void select(video.id);
               }}
             />
           ))}
@@ -119,8 +193,17 @@ export function VideosPage({
             event.preventDefault();
             setLoading(true);
             void run(async () => {
-              onOpen(await api.createVideo({ brandId: workspace.scope.brandId, name, ratio }));
-              setCreate(false);
+              try {
+                onOpen(await api.createVideo({ brandId: workspace.scope.brandId, name, ratio }));
+                setCreate(false);
+              } catch (error) {
+                const diagnostic = diagnosticFromBridge(error);
+                if (diagnostic.kind === 'app' && diagnostic.message.id === 'storageCreatedVideoUnavailable') {
+                  setCreate(false);
+                  setAttempt((value) => value + 1);
+                }
+                throw error;
+              }
             }).finally(() => {
               setLoading(false);
             });
@@ -149,12 +232,13 @@ export function VideosPage({
             </label>
             <div className="field">
               <span>{t('aspectRatio')}</span>
-              <div className="ratio-options">
+              <div className="ratio-options" role="group" aria-label={t('aspectRatio')}>
                 {(['16:9', '9:16'] as const).map((option) => (
                   <button
                     type="button"
                     key={option}
                     disabled={loading}
+                    aria-pressed={ratio === option}
                     className={`ratio-option ${ratio === option ? 'selected' : ''}`}
                     onClick={() => {
                       setRatio(option);
@@ -189,8 +273,13 @@ export function VideosPage({
             >
               {t('cancel')}
             </button>
-            <button type="submit" className="button primary" disabled={loading || name.trim().length < 3}>
-              {t(loading ? 'loading' : 'create')}
+            <button
+              type="submit"
+              className="button primary"
+              disabled={loading || name.trim().length < 3}
+              aria-busy={loading}
+            >
+              {loading ? <PendingLabel label={t('loading')} /> : t('create')}
             </button>
           </div>
         </form>
@@ -198,22 +287,45 @@ export function VideosPage({
     </main>
   );
 }
-function VideoTile({ video, onOpen }: { video: VideoSummary; onOpen: () => void }) {
+function VideoTile({ video, onOpen, locked }: { video: VideoSummary; onOpen: () => void; locked: boolean }) {
   const { t, i18n } = useTranslation();
-  const { api, run } = useApp();
-  const [url, setUrl] = useState('');
+  const { api, busy, dirty } = useApp();
+  const pending = useRef(new OwnedRequest<string>());
+  const request = useMemo(() => ({ api, video }), [api, video]);
+  const [image, setImage] = useState<{ request: object | null; url: string }>({ request: null, url: '' });
+  const url = image.request === request ? image.url : '';
   useEffect(() => {
+    const { api, video } = request;
     const image = video.packaging.thumbnails[0];
-    if (image)
-      void run(async () => {
-        setUrl(await api.mediaUrl(`${video.path}/${image}`));
+    if (!image) return;
+    let disposed = false;
+    void pending.current
+      .get(request, 'thumbnail', () => api.mediaUrl(`${video.path}/${image}`))
+      .then((url) => {
+        if (!disposed) setImage({ request, url });
+      })
+      .catch(() => {
+        if (!disposed) setImage({ request, url: '' });
       });
-  }, [api, run, video]);
+    return () => {
+      disposed = true;
+    };
+  }, [request]);
   return (
     <div className="video-tile">
-      <button type="button" className="video-tile" onClick={onOpen}>
+      <button type="button" className="video-tile" disabled={busy || dirty || locked} onClick={onOpen}>
         <div className="video-cover">
-          {url ? <img src={url} alt={video.name} /> : <Clapperboard size={35} strokeWidth={1} />}
+          {url ? (
+            <img
+              src={url}
+              alt=""
+              onError={() => {
+                setImage((current) => (current.request === request ? { request, url: '' } : current));
+              }}
+            />
+          ) : (
+            <Clapperboard size={35} strokeWidth={1} />
+          )}
         </div>
         <h2>{video.name}</h2>
       </button>

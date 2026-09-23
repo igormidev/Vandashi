@@ -1,4 +1,5 @@
 import { AppFault } from '../domain/diagnostics';
+import { publishingUndoIssue } from '../domain/chat-undo-policy';
 import type { AgentPort } from '../domain/agent';
 import type { AppEvent, ChatSession } from '../domain/models';
 import type { GitPort, StoragePort } from '../domain/storage';
@@ -11,27 +12,29 @@ export async function undoChat(
   id: string,
   notify: (event: AppEvent) => void,
 ): Promise<ChatSession> {
-  const heads = (repositories: string[]): Promise<Record<string, string>> =>
-    Promise.all(
-      repositories.map(async (repository): Promise<[string, string]> => [
-        repository,
-        await git.head(repository),
-      ]),
-    ).then(Object.fromEntries);
   const session = await store.getSession(id);
+  const issue = publishingUndoIssue(session);
+  if (issue) throw new AppFault(issue);
   const original = structuredClone(session);
   const checkpoint = session.checkpoints?.at(-1);
   if (!checkpoint?.threadId) throw new AppFault({ id: 'appUndoUnavailable' });
   if (!checkpoint.postHeads) throw new AppFault({ id: 'appUndoUnverified' });
-  for (const repository of Object.keys(checkpoint.heads)) {
-    if ((await git.status(repository)).dirty) throw new AppFault({ id: 'appSaveBeforeUndo' });
-    if ((await git.head(repository)) !== checkpoint.postHeads[repository])
-      throw new AppFault({ id: 'appUndoLaterChanges' });
-  }
+  const current = { ...checkpoint.postHeads };
+  const verify = async (expected: Record<string, string>) => {
+    for (const repository of Object.keys(checkpoint.heads)) {
+      if ((await git.status(repository)).dirty) throw new AppFault({ id: 'appSaveBeforeUndo' });
+      if ((await git.head(repository)) !== expected[repository])
+        throw new AppFault({ id: 'appUndoLaterChanges' });
+    }
+  };
+  await verify(current);
   const branch = await agent.forkBefore(checkpoint.threadId, checkpoint.turnId);
-  const current = await heads(Object.keys(checkpoint.heads));
+  await verify(current);
+  const restored = new Map<string, string>();
   try {
-    for (const [repo, sha] of Object.entries(checkpoint.heads)) await git.restore(repo, sha);
+    for (const [repo, sha] of Object.entries(checkpoint.heads))
+      restored.set(repo, await git.restore(repo, sha, current[repo]));
+    await verify({ ...current, ...Object.fromEntries(restored) });
     session.threadId = branch.id;
     session.messages = session.messages.slice(0, checkpoint.messageCount);
     session.checkpoints?.pop();
@@ -40,27 +43,29 @@ export async function undoChat(
       previous?.postHeads &&
       Object.entries(previous.postHeads).every(([repo, sha]) => checkpoint.heads[repo] === sha)
     )
-      previous.postHeads = await heads(Object.keys(previous.postHeads));
+      previous.postHeads = Object.fromEntries(
+        Object.entries(previous.postHeads).map(([repo, sha]) => [repo, restored.get(repo) ?? sha]),
+      );
     session.updatedAt = new Date().toISOString();
     await store.saveSession(session);
   } catch (error) {
     // Git restoration makes new commits. Keep the old conversation's guard in sync with compensated heads.
     const errors: unknown[] = [error];
-    for (const [repo, sha] of Object.entries(current)) {
+    for (const [repo, ownedHead] of [...restored].reverse()) {
+      const sha = current[repo];
+      if (!sha || sha === ownedHead) continue;
       try {
-        await git.restore(repo, sha);
+        const recoveredHead = await git.restore(repo, sha, ownedHead);
+        const latest = original.checkpoints?.at(-1);
+        if (latest?.postHeads) latest.postHeads[repo] = recoveredHead;
       } catch (recoveryError) {
         errors.push(recoveryError);
       }
     }
-    if (errors.length === 1) {
-      const latest = original.checkpoints?.at(-1);
-      if (latest) latest.postHeads = await heads(Object.keys(current));
-      try {
-        await store.saveSession(original);
-      } catch (recoveryError) {
-        errors.push(recoveryError);
-      }
+    try {
+      await store.saveSession(original);
+    } catch (recoveryError) {
+      errors.push(recoveryError);
     }
     const failure = new AppFault(
       { id: 'appUndoFailed' },

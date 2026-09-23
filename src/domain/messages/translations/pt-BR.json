@@ -251,7 +251,7 @@
   "mediaRendererPreparing": "Preparando o renderizador de vídeo",
   "mediaCheckUnavailable": "Não foi possível verificar {{name}}.",
   "mediaStudioIncluded": "Hyperframes {{version}} · Studio incluído",
-  "mediaSkillMissing": "A skill do agente Hyperframes não foi encontrada nas pastas de skills configuradas para o Codex.",
+  "mediaSkillMissing": "É necessário verificar a skill principal hyperframes no Codex. Siga o guia de instalação para configurá-la fora do Vandashi e verifique novamente.",
   "mediaSkillLabel": "Skill Hyperframes",
   "mediaEnvironmentLabel": "Ambiente de vídeo",
   "mediaHyperframesLabel": "Hyperframes",
@@ -262,5 +262,16 @@
   "mediaBridgeSaveHttp": "O Studio não conseguiu salvar uma edição (HTTP {{status}}). Resolva o erro ao salvar no editor antes de sair.",
   "mediaBridgeSaveConnection": "O Studio não conseguiu salvar uma edição. Verifique a conexão local com o Studio antes de sair.",
   "mediaBridgePending": "O Studio ainda está salvando. Aguarde as edições pendentes serem salvas antes de sair.",
-  "mediaBridgeUnavailable": "A conexão para salvar no Studio está indisponível. Mantenha o editor aberto e tente novamente."
+  "mediaBridgeUnavailable": "A conexão para salvar no Studio está indisponível. Mantenha o editor aberto e tente novamente.",
+  "scriptHandoff": "Atualize o vídeo de acordo com o roteiro.",
+  "storageAssetDeleteConflict": "Este recurso foi alterado fora do editor. Feche esta confirmação e confira a versão mais recente antes de excluí-lo.",
+  "appPublishUndoUnavailable": "A publicação pode ter alterado uma plataforma externa. Não é possível reverter; confira a publicação no navegador e atualize o status aqui.",
+  "appHyperframesSkillMissing": "O Codex não encontrou a skill principal hyperframes habilitada. Abra o guia de instalação para instalá-la ou habilitá-la fora do Vandashi e verifique novamente.",
+  "appHyperframesSkillUnverified": "Não foi possível verificar no Codex se a skill principal hyperframes está habilitada. Confira a configuração do Codex e tente novamente.",
+  "appUsageUnverified": "Não foi possível verificar seu limite de uso disponível no Codex. Verifique sua conexão e tente novamente.",
+  "appWorkspaceRecoveryRequired": "Não foi possível recuperar a área de trabalho. Resolva o erro de Git ou de arquivo indicado fora do Vandashi sem descartar suas alterações e verifique novamente.",
+  "mediaBundledRuntimeRecovery": "Não foi possível verificar o ambiente de vídeo incluído no Vandashi. Repare ou reinstale o Vandashi seguindo o guia de configuração, reinicie o aplicativo e verifique novamente.",
+  "mediaEnvironmentRecovery": "A verificação das dependências de vídeo falhou. Siga o guia de configuração para reparar as ferramentas fora do Vandashi, reinicie o aplicativo e verifique novamente.",
+  "mediaToolSetupRequired": "{{name}} não está disponível. Instale ou repare a ferramenta fora do Vandashi seguindo o guia, reinicie o Vandashi e verifique novamente.",
+  "mediaBrowserSetupRequired": "O navegador de renderização não está disponível. Siga o guia para instalar ou reparar o navegador do Hyperframes fora do Vandashi, reinicie o Vandashi e verifique novamente."
 }

@@ -66,9 +66,13 @@ describe('finished video import', () => {
     await expect(app.api.renderVideo(imported.scope)).rejects.toThrow('already ready');
     const sourceAsset = imported.assets.find((asset) => asset.path === video.renderedPath);
     if (!sourceAsset) throw new Error('Imported asset metadata missing');
-    await expect(app.store.deleteAsset({ scope: imported.scope, assetId: sourceAsset.id })).rejects.toThrow(
-      '.vandashi.yml',
-    );
+    await expect(
+      app.store.deleteAsset({
+        scope: imported.scope,
+        assetId: sourceAsset.id,
+        expectedRevision: sourceAsset.revision,
+      }),
+    ).rejects.toThrow('.vandashi.yml');
     await app.store.updateAsset({
       scope: imported.scope,
       assetId: sourceAsset.id,

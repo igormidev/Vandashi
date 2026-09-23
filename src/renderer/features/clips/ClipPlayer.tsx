@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useApp } from '../../app/store';
 import { Empty, Loading } from '../../shared/ui';
+import { diagnosticFromBridge } from '../../../domain/diagnostics';
 
 export function ClipPlayer({
   path,
@@ -19,26 +20,37 @@ export function ClipPlayer({
   playRequest?: number;
   imported?: boolean;
 }) {
-  const { api, run } = useApp();
+  const { api, run, setToast } = useApp();
   const { t } = useTranslation();
   const [media, setMedia] = useState<{ path: string; url: string } | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
+  const [requestedPath, setRequestedPath] = useState(path);
+  if (requestedPath !== path) {
+    setRequestedPath(path);
+    setFailed(null);
+  }
   const url = media?.path === path ? media.url : null;
   const player = useRef<HTMLVideoElement>(null);
   useEffect(() => {
     let active = true;
     if (!path) return;
-    void run(async () => {
-      const result = await api.mediaUrl(path);
-      if (active) {
-        setMedia({ path, url: result });
-        setFailed(null);
-      }
-    });
+    void api
+      .mediaUrl(path)
+      .then((result) => {
+        if (active) {
+          setMedia({ path, url: result });
+          setFailed(null);
+        }
+      })
+      .catch((error: unknown) => {
+        if (!active) return;
+        setFailed(path);
+        setToast(diagnosticFromBridge(error));
+      });
     return () => {
       active = false;
     };
-  }, [api, path, run]);
+  }, [api, path, setToast]);
   useEffect(() => {
     const element = player.current;
     if (autoPlay && url && element) void run(() => element.play());

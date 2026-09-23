@@ -251,7 +251,7 @@
   "mediaRendererPreparing": "動画レンダラーを準備中",
   "mediaCheckUnavailable": "{{name}}を確認できませんでした。",
   "mediaStudioIncluded": "Hyperframes {{version}} · Studio同梱",
-  "mediaSkillMissing": "設定されたCodexのスキルフォルダに、Hyperframesのエージェントスキルが見つかりません。",
+  "mediaSkillMissing": "hyperframesの基本スキルをCodexで確認する必要があります。インストールガイドに従ってVandashiの外で設定し、もう一度確認してください。",
   "mediaSkillLabel": "Hyperframesスキル",
   "mediaEnvironmentLabel": "動画制作環境",
   "mediaHyperframesLabel": "Hyperframes",
@@ -262,5 +262,16 @@
   "mediaBridgeSaveHttp": "Studioで編集内容を保存できませんでした（HTTP {{status}}）。画面を離れる前に、エディタの保存エラーを解決してください。",
   "mediaBridgeSaveConnection": "Studioで編集内容を保存できませんでした。画面を離れる前に、ローカルのStudioとの接続を確認してください。",
   "mediaBridgePending": "Studioで保存中です。未保存の編集内容が保存されるまで、画面を離れずにお待ちください。",
-  "mediaBridgeUnavailable": "Studioの保存用接続を利用できません。エディタを開いたまま、もう一度お試しください。"
+  "mediaBridgeUnavailable": "Studioの保存用接続を利用できません。エディタを開いたまま、もう一度お試しください。",
+  "scriptHandoff": "台本に合わせて動画を更新してください。",
+  "storageAssetDeleteConflict": "この素材はエディターの外で変更されました。確認画面を閉じ、最新の素材を確認してから削除してください。",
+  "appPublishUndoUnavailable": "公開操作によって外部プラットフォームが変更された可能性があるため、元に戻せません。ブラウザーで公開状況を確認し、ここでステータスを更新してください。",
+  "appHyperframesSkillMissing": "Codexで有効なhyperframesの基本スキルが見つかりません。インストールガイドを開き、Vandashiの外でインストールまたは有効化してから、もう一度確認してください。",
+  "appHyperframesSkillUnverified": "Codexでhyperframesの基本スキルが有効か確認できませんでした。Codexの設定を確認し、再試行してください。",
+  "appUsageUnverified": "Codexの残りの利用枠を確認できませんでした。接続を確認して、もう一度お試しください。",
+  "appWorkspaceRecoveryRequired": "ワークスペースを復旧できませんでした。変更を破棄せずに、表示されたGitまたはファイルのエラーをVandashiの外で解決してから、もう一度確認してください。",
+  "mediaBundledRuntimeRecovery": "Vandashiに同梱されている動画実行環境を確認できませんでした。セットアップガイドに従ってVandashiを修復または再インストールし、アプリを再起動してから、もう一度確認してください。",
+  "mediaEnvironmentRecovery": "動画に必要なツールの確認に失敗しました。セットアップガイドに従ってVandashiの外でツールを修復し、アプリを再起動してから、もう一度確認してください。",
+  "mediaToolSetupRequired": "{{name}}を利用できません。ガイドに従ってVandashiの外でインストールまたは修復し、Vandashiを再起動してから、もう一度確認してください。",
+  "mediaBrowserSetupRequired": "レンダリング用ブラウザーを利用できません。ガイドに従ってVandashiの外でHyperframesのブラウザーをインストールまたは修復し、Vandashiを再起動してから、もう一度確認してください。"
 }

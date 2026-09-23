@@ -1,10 +1,24 @@
 import { test, expect } from './development-fixtures';
+import type { Locator } from '@playwright/test';
 import {
   installStartupFixture,
   proveDevelopment,
   startupCalls,
   startupControl,
 } from './startup-development-fixture';
+
+async function expectCommitLoading(dialog: Locator) {
+  const status = dialog.getByRole('status');
+  await expect(status).toHaveText('Writing a commit message…');
+  await expect(status.locator('.spin')).toBeVisible();
+  await expect(status.locator('.indeterminate-track')).toBeVisible();
+  await expect(status.locator('.spin')).toHaveCSS('animation-name', 'spin');
+  await expect(dialog.getByRole('textbox', { name: 'Commit title', exact: true })).toBeDisabled();
+  await expect(dialog.getByRole('button', { name: 'Loading…', exact: true })).toHaveAttribute(
+    'aria-busy',
+    'true',
+  );
+}
 
 test('development checks retain the original gated result and reload exactly once per attempt', async ({
   desktopApp,
@@ -125,11 +139,12 @@ test('development commit confirmation retains one generated result and preserves
       async () => (await startupCalls(desktopApp)).filter(({ method }) => method === 'suggestCommit').length,
     )
     .toBe(1);
-  await expect(dialog.getByRole('textbox', { name: 'Commit title', exact: true })).toBeDisabled();
+  await expectCommitLoading(dialog);
   await startupControl(desktopApp, { release: 'suggestCommit' });
   const title = dialog.getByRole('textbox', { name: 'Commit title', exact: true });
   const body = dialog.getByRole('textbox', { name: 'What changed', exact: true });
   await expect(title).toHaveValue('Generated review title');
+  await expect(dialog.getByRole('status')).toHaveCount(0);
   await title.fill('My reviewed title');
   await body.fill('My independent explanation.');
   const before = (await startupCalls(desktopApp)).filter(({ method }) => method === 'openWorkspace').length;
@@ -181,11 +196,16 @@ for (const consumer of ['brand', 'packaging', 'shared-asset', 'video-asset'] as 
           (await startupCalls(desktopApp)).filter(({ method }) => method === 'suggestCommit').length,
       )
       .toBe(1);
-    await expect(dialog.getByRole('textbox', { name: 'Commit title', exact: true })).toBeDisabled();
+    await expectCommitLoading(dialog);
+    if (consumer === 'brand') {
+      await expect(dialog).toHaveCSS('opacity', '1');
+      await page.screenshot({ path: '/tmp/vandashi-commit-loading-brand.png' });
+    }
     await startupControl(desktopApp, { release: 'suggestCommit' });
     await expect(dialog.getByRole('textbox', { name: 'Commit title', exact: true })).toHaveValue(
       'Generated review title',
     );
+    await expect(dialog.getByRole('status')).toHaveCount(0);
     await dialog.getByRole('textbox', { name: 'Commit title', exact: true }).fill('My reviewed version');
     await dialog.getByRole('button', { name: 'Save changes', exact: true }).click();
     await expect(dialog).toBeHidden();
@@ -198,3 +218,50 @@ for (const consumer of ['brand', 'packaging', 'shared-asset', 'video-asset'] as 
     );
   });
 }
+
+test('commit generation retains visible feedback with reduced motion and permits manual recovery after failure', async ({
+  desktopApp,
+  page,
+  rendererUrl,
+}) => {
+  await installStartupFixture(desktopApp, rendererUrl, false, false);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.reload();
+  await page.getByRole('textbox', { name: 'Name', exact: true }).fill('Updated brand');
+  await page.getByRole('button', { name: 'Save changes', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Save a version', exact: true });
+  const status = dialog.getByRole('status');
+  await expect(status).toHaveText('Writing a commit message…');
+  await expect(status.locator('.spin')).toBeVisible();
+  await expect(status.locator('.spin')).toHaveCSS('animation-name', 'none');
+  await expect(status.locator('.indeterminate-track > span')).toHaveCSS('animation-name', 'none');
+  await startupControl(desktopApp, {
+    release: 'suggestCommit',
+    diagnostic: { kind: 'app', message: { id: 'appCommitGenerationFailed' } },
+  });
+  await expect(status).toHaveCount(0);
+  await expect(dialog.getByRole('alert')).toContainText('Could not generate a commit message.');
+  await dialog.getByRole('textbox', { name: 'Commit title', exact: true }).fill('Manual title');
+  await dialog
+    .getByRole('textbox', { name: 'What changed', exact: true })
+    .fill('Preserve the reviewed brand edit.');
+  await expect(dialog.getByRole('button', { name: 'Save changes', exact: true })).toBeEnabled();
+});
+
+test('cancelled commit generation cannot resurrect its dialog or discard the manual draft', async ({
+  desktopApp,
+  page,
+  rendererUrl,
+}) => {
+  await installStartupFixture(desktopApp, rendererUrl, false, false);
+  await page.reload();
+  await page.getByRole('textbox', { name: 'Name', exact: true }).fill('Keep this draft');
+  await page.getByRole('button', { name: 'Save changes', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Save a version', exact: true });
+  await expectCommitLoading(dialog);
+  await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await startupControl(desktopApp, { release: 'suggestCommit' });
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue('Keep this draft');
+  await expect(page.getByRole('button', { name: 'Save changes', exact: true })).toBeEnabled();
+});

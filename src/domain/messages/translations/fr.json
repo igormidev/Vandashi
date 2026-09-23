@@ -251,7 +251,7 @@
   "mediaRendererPreparing": "Préparation du moteur de rendu vidéo",
   "mediaCheckUnavailable": "Impossible de vérifier {{name}}.",
   "mediaStudioIncluded": "Hyperframes {{version}} · Studio inclus",
-  "mediaSkillMissing": "La compétence Hyperframes pour l’agent est introuvable dans les dossiers de compétences configurés pour Codex.",
+  "mediaSkillMissing": "La compétence principale hyperframes doit être vérifiée auprès de Codex. Suivez le guide d’installation pour la configurer en dehors de Vandashi, puis relancez la vérification.",
   "mediaSkillLabel": "Compétence Hyperframes",
   "mediaEnvironmentLabel": "Environnement vidéo",
   "mediaHyperframesLabel": "Hyperframes",
@@ -262,5 +262,16 @@
   "mediaBridgeSaveHttp": "Studio n’a pas pu enregistrer une modification (HTTP {{status}}). Résolvez l’erreur d’enregistrement dans l’éditeur avant de le quitter.",
   "mediaBridgeSaveConnection": "Studio n’a pas pu enregistrer une modification. Vérifiez la connexion locale à Studio avant de le quitter.",
   "mediaBridgePending": "Studio est encore en train d’enregistrer. Attendez la fin de l’enregistrement des modifications avant de le quitter.",
-  "mediaBridgeUnavailable": "La connexion d’enregistrement de Studio est indisponible. Gardez l’éditeur ouvert et réessayez."
+  "mediaBridgeUnavailable": "La connexion d’enregistrement de Studio est indisponible. Gardez l’éditeur ouvert et réessayez.",
+  "scriptHandoff": "Adapte la vidéo au scénario.",
+  "storageAssetDeleteConflict": "Cette ressource a été modifiée en dehors de l’éditeur. Fermez cette confirmation et vérifiez sa dernière version avant de la supprimer.",
+  "appPublishUndoUnavailable": "La publication a pu modifier une plateforme externe. L’annulation est indisponible ; vérifiez la publication dans le navigateur et mettez son statut à jour ici.",
+  "appHyperframesSkillMissing": "Codex n’a pas détecté de compétence principale hyperframes activée. Ouvrez le guide d’installation pour l’installer ou l’activer en dehors de Vandashi, puis relancez la vérification.",
+  "appHyperframesSkillUnverified": "Impossible de vérifier auprès de Codex que la compétence principale hyperframes est activée. Vérifiez la configuration de Codex et réessayez.",
+  "appUsageUnverified": "Impossible de vérifier votre quota Codex disponible. Vérifiez votre connexion et réessayez.",
+  "appWorkspaceRecoveryRequired": "La récupération de l’espace de travail a échoué. Corrigez l’erreur Git ou de fichier signalée en dehors de Vandashi sans supprimer vos modifications, puis relancez la vérification.",
+  "mediaBundledRuntimeRecovery": "L’environnement vidéo fourni avec Vandashi n’a pas pu être vérifié. Réparez ou réinstallez Vandashi à l’aide du guide de configuration, puis redémarrez l’application et relancez la vérification.",
+  "mediaEnvironmentRecovery": "La vérification des dépendances vidéo a échoué. Suivez le guide de configuration pour réparer les outils en dehors de Vandashi, puis redémarrez l’application et relancez la vérification.",
+  "mediaToolSetupRequired": "{{name}} est indisponible. Installez-le ou réparez-le en dehors de Vandashi à l’aide du guide, puis redémarrez Vandashi et relancez la vérification.",
+  "mediaBrowserSetupRequired": "Le navigateur de rendu est indisponible. Suivez le guide pour installer ou réparer le navigateur de Hyperframes en dehors de Vandashi, puis redémarrez Vandashi et relancez la vérification."
 }

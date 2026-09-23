@@ -12,18 +12,51 @@ function installStudioBridge(): void {
   const failures = new Map<string, Diagnostic>();
   const originalFetch = window.fetch.bind(window);
   window.fetch = (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-    const request = originalFetch(input, init);
     const method = (init?.method ?? (input instanceof Request ? input.method : 'GET')).toUpperCase();
     const url = new URL(input instanceof Request ? input.url : String(input), window.location.href);
-    if (
-      url.origin === window.location.origin &&
-      url.pathname.startsWith('/api/projects/') &&
-      ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)
-    ) {
+    const route = /^\/api\/projects\/[^/]+\/(.+)$/u.exec(url.pathname)?.[1] ?? '';
+    // Pinned Hyperframes source mutation routes. Render, selection and probe requests are not saves.
+    const fileWrite = method === 'PUT' && route.startsWith('files/');
+    const mutation =
+      (route.startsWith('files/') && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) ||
+      (method === 'POST' &&
+        (/^(?:file-mutations\/(?!probe-element\/)|gsap-mutations\/|gsap-mutations-batch\/|gsap-mutation-rollback\/)/u.test(
+          route,
+        ) ||
+          ['upload', 'duplicate-file', 'registry/install'].includes(route)));
+    // Clone before fetch can consume a Request body. Never consume the vendor's original body/response.
+    const attempted =
+      fileWrite && typeof init?.body === 'string'
+        ? Promise.resolve(init.body)
+        : fileWrite && init?.body === undefined && input instanceof Request
+          ? input
+              .clone()
+              .text()
+              .catch(() => undefined)
+          : Promise.resolve(undefined);
+    const request = originalFetch(input, init);
+    if (url.origin === window.location.origin && mutation) {
       const key = `${method} ${url.pathname}`;
       const tracked = request.then(
-        (response) => {
-          if (response.ok) failures.delete(key);
+        async (response) => {
+          let saved = response.ok;
+          if (fileWrite && response.status === 409) {
+            try {
+              const conflict: unknown = await response.clone().json();
+              // useStudioProjectFiles in Hyperframes 0.8.64 accepts exactly this already-written result.
+              saved =
+                typeof conflict === 'object' &&
+                conflict !== null &&
+                'currentVersion' in conflict &&
+                Boolean(conflict.currentVersion) &&
+                'currentContent' in conflict &&
+                typeof conflict.currentContent === 'string' &&
+                conflict.currentContent === (await attempted);
+            } catch {
+              saved = false;
+            }
+          }
+          if (saved) failures.delete(key);
           else
             failures.set(key, {
               kind: 'app',

@@ -74,7 +74,9 @@ describe('finished clip import', () => {
     const workspace = await app.store.openWorkspace(scope);
     const asset = workspace.assets.find((entry) => entry.path === clip.renderedPath);
     if (!asset) throw new Error('Missing source asset');
-    await expect(app.store.deleteAsset({ scope, assetId: asset.id })).rejects.toThrow('.vandashi.yml');
+    await expect(
+      app.store.deleteAsset({ scope, assetId: asset.id, expectedRevision: asset.revision }),
+    ).rejects.toThrow('.vandashi.yml');
     await app.store.updateAsset({
       scope,
       assetId: asset.id,

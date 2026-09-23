@@ -114,13 +114,16 @@ const checkpointSchema = z
   .object({
     turnId: z.string(),
     threadId: z.string(),
+    mode: z.enum(['read', 'edit']).optional(),
     heads: z.record(z.string(), z.string()),
     messageCount: z.number().int().nonnegative(),
     postHeads: z.record(z.string(), z.string()).optional(),
   })
-  .transform(({ postHeads, ...checkpoint }) =>
-    postHeads === undefined ? checkpoint : { ...checkpoint, postHeads },
-  );
+  .transform(({ postHeads, mode, ...checkpoint }) => ({
+    ...checkpoint,
+    ...(mode === undefined ? {} : { mode }),
+    ...(postHeads === undefined ? {} : { postHeads }),
+  }));
 export const sessionSchema = z.object({
   id: z.string(),
   scope: scopeSchema,

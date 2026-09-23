@@ -66,7 +66,7 @@ export interface DesktopApi {
     tags: string[];
     commit?: { title: string; body: string };
   }): Promise<Asset>;
-  deleteAsset(input: { scope: Scope; assetId: string }): Promise<void>;
+  deleteAsset(input: { scope: Scope; assetId: string; expectedRevision: string }): Promise<void>;
   importThumbnail(input: { scope: Scope; sourcePath: string }): Promise<Workspace>;
   startStudio(scope: Scope): Promise<StudioInfo>;
   studioChanges(scope: Scope): Promise<FileChangeResult>;

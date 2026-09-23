@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Workspace } from '../../../domain/models';
 import { useApp } from '../../app/store';
-import { Modal } from '../../shared/ui';
+import { Modal, PendingLabel } from '../../shared/ui';
 
 export function ImportVideoDialog({
   brandId,
@@ -83,8 +83,9 @@ export function ImportVideoDialog({
             type="submit"
             className="button primary"
             disabled={loading || !sourcePath || name.trim().length < 3}
+            aria-busy={loading}
           >
-            {t(loading ? 'loading' : 'importAndLaunch')}
+            {loading ? <PendingLabel label={t('loading')} /> : t('importAndLaunch')}
           </button>
         </div>
       </form>

@@ -55,7 +55,14 @@ export async function containedPath(root: string, path: string): Promise<string>
   return target;
 }
 
-export async function atomicWrite(path: string, content: string | Uint8Array): Promise<void> {
+/** Records exact intended bytes before installation, never a later read of the destination. */
+export type WriteReceipt = (path: string, hash: string | null) => void;
+
+export async function atomicWrite(
+  path: string,
+  content: string | Uint8Array,
+  receipt?: WriteReceipt,
+): Promise<void> {
   await mkdir(dirname(path), { recursive: true });
   const temporary = join(dirname(path), `.vandashi-write-${randomUUID()}`);
   const handle = await open(temporary, 'wx', 0o600);
@@ -66,6 +73,7 @@ export async function atomicWrite(path: string, content: string | Uint8Array): P
     } finally {
       await handle.close();
     }
+    receipt?.(path, createHash('sha256').update(content).digest('hex'));
     await rename(temporary, path);
   } finally {
     await rm(temporary, { force: true });

@@ -1,23 +1,29 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Commit, Workspace } from '../../../domain/models';
 import { useApp } from '../../app/store';
+import { diagnosticFromBridge } from '../../../domain/diagnostics';
 
 interface Page {
   commits: Commit[];
   hasMore: boolean;
 }
 export function useHistory() {
-  const { workspace, api, run } = useApp();
+  const { workspace, api, setToast } = useApp();
   const [page, setPage] = useState(0);
   const [result, setResult] = useState<Page>({ commits: [], hasMore: false });
+  const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const latest = useRef<{ workspace: Workspace; first: Page } | null>(null);
   useEffect(() => {
     if (!workspace) return;
     let active = true;
+    setLoading(true);
+    setFailed(false);
     const show = (value: Page) => {
       if (active) setResult(value);
     };
-    void run(async () => {
+    const load = async () => {
       const previous = latest.current;
       const first =
         previous?.workspace === workspace
@@ -34,10 +40,28 @@ export function useHistory() {
       }
       const current = page === 0 ? first : await api.history({ scope: workspace.scope, page });
       show(current);
-    });
+    };
+    void load()
+      .catch((error: unknown) => {
+        if (!active) return;
+        setFailed(true);
+        setToast(diagnosticFromBridge(error));
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
     return () => {
       active = false;
     };
-  }, [api, workspace, page, run]);
-  return { ...result, page, setPage };
+  }, [api, workspace, page, attempt, setToast]);
+  return {
+    ...result,
+    page,
+    setPage,
+    loading,
+    failed,
+    retry: () => {
+      setAttempt((value) => value + 1);
+    },
+  };
 }

@@ -1,16 +1,4 @@
-import {
-  ArrowLeft,
-  ChevronRight,
-  Clapperboard,
-  Film,
-  Images,
-  Layers,
-  Rocket,
-  Scissors,
-  Settings2,
-  SlidersHorizontal,
-  X,
-} from 'lucide-react';
+import { ArrowLeft, ChevronRight, Settings2, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Workspace } from '../../domain/models';
@@ -34,43 +22,33 @@ import { Checks } from '../features/workspace/Checks';
 import { CommitDialog } from '../features/history/CommitDialog';
 import { StudioLeaveDialog } from '../features/creation/StudioLeaveDialog';
 import type { FileChange } from '../../domain/models';
-
-type Page =
-  | 'home'
-  | 'brand'
-  | 'videos'
-  | 'sharedAssets'
-  | 'packaging'
-  | 'creation'
-  | 'manual'
-  | 'assets'
-  | 'clips'
-  | 'launch';
-type Destination = Page | 'checks';
-const brandTabs = [
-  { id: 'brand', icon: SlidersHorizontal },
-  { id: 'videos', icon: Film },
-  { id: 'sharedAssets', icon: Images },
-] as const;
-const videoTabs = [
-  { id: 'packaging', icon: Layers },
-  { id: 'creation', icon: Clapperboard },
-  { id: 'manual', icon: SlidersHorizontal },
-  { id: 'assets', icon: Images },
-  { id: 'clips', icon: Scissors },
-  { id: 'launch', icon: Rocket },
-] as const;
+import { brandTabs, videoTabs, type Page, type Destination } from './navigation-tabs';
 
 export function App() {
   const { t } = useTranslation();
-  const { api, state, workspace, setWorkspace, setDirty, busy, dirty, toast, setToast, run, setChatTarget } =
-    useApp();
+  const {
+    api,
+    state,
+    workspace,
+    parentVideo,
+    setWorkspace,
+    setDirty,
+    busy,
+    dirty,
+    toast,
+    setToast,
+    run,
+    setChatTarget,
+    beginNavigation,
+  } = useApp();
   const [page, setPage] = useState<Page>('home');
   const [settings, setSettings] = useState(false);
   const [checking, setChecking] = useState(false);
   const [pending, setPending] = useState<Destination | null>(null);
   const [studioFiles, setStudioFiles] = useState<FileChange[]>([]);
   const [saveStudio, setSaveStudio] = useState(false);
+  const navigationVideo = workspace?.scope.clipId ? parentVideo : workspace?.video;
+  const canEditVideo = navigationVideo?.origin === 'composition';
   const restored = useRef(false);
   const open = useCallback(
     (value: Workspace, destination?: 'packaging' | 'launch') => {
@@ -112,32 +90,43 @@ export function App() {
       return;
     }
     if (checking && next !== 'home' && !(next === 'videos' && workspace?.video)) return;
-    if (page === 'manual' && workspace && !checking && !skipStudio) {
-      const changes = await api.studioChanges(workspace.scope);
-      if (changes.dirty) {
-        setStudioFiles(changes.files);
-        setPending(next);
+    const navigation = beginNavigation();
+    if (!navigation) return;
+    try {
+      if (page === 'manual' && workspace && !checking && !skipStudio) {
+        const changes = await api.studioChanges(workspace.scope);
+        if (!navigation.current()) return;
+        if (changes.dirty) {
+          setStudioFiles(changes.files);
+          setPending(next);
+          return;
+        }
+      }
+      if (next === 'checks') {
+        setChecking(true);
         return;
       }
+      const leavingVideo = ['brand', 'videos', 'sharedAssets'].includes(next) && !!workspace?.video;
+      let target = workspace;
+      if (next === 'home') target = null;
+      else if (leavingVideo) target = await api.openBrand(workspace.scope.brandId);
+      else if (workspace?.scope.clipId && next !== 'clips') {
+        target = await api.openWorkspace({ ...workspace.scope, clipId: null });
+        if (target.video?.origin === 'imported' && (next === 'creation' || next === 'manual'))
+          next = 'packaging';
+      }
+      if (!navigation.current()) return;
+      if (target !== workspace) {
+        if (!navigation.adopt(target)) return;
+        setChatTarget(null);
+      }
+      setPage(next);
+      setChecking(leavingVideo);
+    } catch (error) {
+      if (navigation.current()) throw error;
+    } finally {
+      navigation.release();
     }
-    if (next === 'checks') {
-      setChecking(true);
-      return;
-    }
-    if (workspace?.scope.clipId && next !== 'clips') {
-      const parent = await api.openWorkspace({ ...workspace.scope, clipId: null });
-      setWorkspace(parent);
-      if (parent.video?.origin === 'imported' && (next === 'creation' || next === 'manual'))
-        next = 'packaging';
-    }
-    const leavingVideo = ['brand', 'videos', 'sharedAssets'].includes(next) && !!workspace?.video;
-    if (leavingVideo) setWorkspace(await api.openBrand(workspace.scope.brandId));
-    if (next === 'home') {
-      setWorkspace(null);
-      setChatTarget(null);
-    }
-    setPage(next);
-    setChecking(leavingVideo);
   };
   if (!state) return <Loading />;
   const revisionKey = `${workspace?.scope.videoId ?? 'brand'}:${workspace?.revision ?? ''}`;
@@ -254,8 +243,9 @@ export function App() {
                   type="button"
                   key={id}
                   className={page === id ? 'active' : ''}
+                  aria-current={page === id ? 'page' : undefined}
                   title={
-                    workspace?.video?.origin === 'imported' && (id === 'creation' || id === 'manual')
+                    navigationVideo?.origin === 'imported' && (id === 'creation' || id === 'manual')
                       ? t('importedVideoEditingHelp')
                       : undefined
                   }
@@ -263,7 +253,7 @@ export function App() {
                     busy ||
                     dirty ||
                     checking ||
-                    (workspace?.video?.origin === 'imported' && (id === 'creation' || id === 'manual')) ||
+                    (!canEditVideo && (id === 'creation' || id === 'manual')) ||
                     (!workspace?.video?.renderedPath &&
                       !workspace?.scope.clipId &&
                       ((id === 'clips' && !workspace?.clips.length) ||

@@ -4,10 +4,16 @@ import { parse, stringify } from 'yaml';
 import type { z } from 'zod';
 import type { GitPort, RecoveryListener } from '../../domain/storage';
 import { atomicWrite, containedPath, errorCode } from './files';
+import type { WriteReceipt } from './files';
 import { storageFault } from './validation';
 
-export async function writeYaml(root: string, name: string, value: unknown): Promise<void> {
-  await atomicWrite(await containedPath(root, name), stringify(value));
+export async function writeYaml(
+  root: string,
+  name: string,
+  value: unknown,
+  receipt?: WriteReceipt,
+): Promise<void> {
+  await atomicWrite(await containedPath(root, name), stringify(value), receipt);
 }
 
 export async function readYaml<T>(

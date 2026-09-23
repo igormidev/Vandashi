@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useApp } from '../../app/store';
-import { Modal } from '../../shared/ui';
-import { errorText } from '../../app/diagnostics';
+import { Modal, PendingLabel } from '../../shared/ui';
+import { diagnosticText } from '../../app/diagnostics';
+import { diagnosticFromBridge, type Diagnostic } from '../../../domain/diagnostics';
 import { OwnedRequest } from '../../shared/owned-request';
 import { scopeKey } from '../../../domain/defaults';
 import type { Scope } from '../../../domain/models';
@@ -42,7 +43,7 @@ function CommitFields({
   const [body, setBody] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [generationError, setGenerationError] = useState<string | null>(null);
+  const [generationError, setGenerationError] = useState<Diagnostic | null>(null);
   useEffect(() => {
     let disposed = false;
     void pending.current
@@ -57,7 +58,7 @@ function CommitFields({
         }
       })
       .catch((error: unknown) => {
-        if (!disposed) setGenerationError(errorText(error));
+        if (!disposed) setGenerationError(diagnosticFromBridge(error));
       })
       .finally(() => {
         if (!disposed) setLoading(false);
@@ -75,11 +76,18 @@ function CommitFields({
         if (!saving) onClose();
       }}
     >
-      <div className="form">
-        {loading && <p className="muted">{t('generatingCommit')}</p>}
+      {loading && (
+        <div className="commit-generation" role="status" aria-live="polite">
+          <PendingLabel label={t('generatingCommit')} />
+          <span className="indeterminate-track" aria-hidden="true">
+            <span />
+          </span>
+        </div>
+      )}
+      <div className="form" aria-busy={loading || saving}>
         {generationError && (
           <p className="field-error" role="alert">
-            {generationError}
+            {diagnosticText(generationError)}
           </p>
         )}
         <label className="field">
@@ -111,6 +119,7 @@ function CommitFields({
           className="button primary"
           type="button"
           disabled={!title.trim() || !body.trim() || loading || saving}
+          aria-busy={loading || saving}
           onClick={() => {
             setSaving(true);
             void run(() => onSave({ title: title.trim(), body: body.trim() })).finally(() => {
@@ -118,7 +127,7 @@ function CommitFields({
             });
           }}
         >
-          {t(saving ? 'loading' : 'save')}
+          {loading || saving ? <PendingLabel label={t('loading')} /> : t('save')}
         </button>
       </div>
     </Modal>

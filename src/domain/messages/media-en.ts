@@ -52,8 +52,17 @@ export const mediaMessagesEn = {
   mediaRenderFailed: 'The video render failed.',
   mediaRendererPreparing: 'Preparing video renderer',
   mediaCheckUnavailable: '{{name}} could not be verified.',
+  mediaBundledRuntimeRecovery:
+    "Vandashi's bundled video runtime could not be verified. Repair or reinstall Vandashi using the setup guide, then restart and check again.",
+  mediaEnvironmentRecovery:
+    'Video dependency checks failed. Follow the setup guide to repair the tools outside Vandashi, then restart and check again.',
+  mediaToolSetupRequired:
+    '{{name}} is unavailable. Install or repair it outside Vandashi using the guide, then restart Vandashi and check again.',
+  mediaBrowserSetupRequired:
+    "The rendering browser is unavailable. Follow the guide to install or repair Hyperframes' browser outside Vandashi, then restart Vandashi and check again.",
   mediaStudioIncluded: 'Hyperframes {{version}} \u00b7 Studio included',
-  mediaSkillMissing: 'The Hyperframes agent skill has not been found in the configured Codex skill folders.',
+  mediaSkillMissing:
+    'The hyperframes core skill must be verified with Codex. Use the installation guide for setup outside Vandashi, then check again.',
   mediaSkillLabel: 'Hyperframes skill',
   mediaEnvironmentLabel: 'Video environment',
   mediaHyperframesLabel: 'Hyperframes',

@@ -66,15 +66,20 @@ The adapter starts a render with `POST /api/projects/:id/render`, subscribes to 
 
 `hyperframes doctor --json` reports Node.js, FFmpeg, FFprobe and Chrome. Its aggregate `ok` also includes optional Docker, Whisper, voice and music tools; **never block normal editing on aggregate `ok: false`**. The adapter gates only required checks. FFprobe also validates output duration and dimensions in the real smoke test.
 
-The official agent bundle has a `.codex-plugin/plugin.json` and core skills. Skill discovery must ultimately be confirmed by Codex's own skills listing, because plugin caches can be outside the conventional folders. The adapter accepts extra skill roots and checks `~/.agents/skills` and `~/.codex/skills` as a filesystem fallback. An absent conventional file does not prove an installed Codex plugin is absent. The application should prefer the live Codex discovery result.
+The official agent bundle has a `.codex-plugin/plugin.json` and core skills. Readiness
+requires fresh successful Codex discovery of a valid, explicitly enabled skill named
+exactly `hyperframes`. Auxiliary skills and conventional filesystem copies cannot establish
+readiness. Failed discovery stays unverified; a successful retry refreshes capabilities.
+Video-editing prompts use the exact core skill path discovered by Codex.
 
-Repair instructions can recommend:
-
-```sh
-npx hyperframes@0.8.64 skills update
-```
-
-The adapter does not run it automatically. This avoids unexpectedly changing the user's installed skills. The repair chat can run it after the user sends the prefilled request. Restart or reload skill discovery afterward. The core entry point is the `hyperframes` skill; pass the exact skill path discovered by Codex in each video-editing prompt.
+Missing core skills open the [official installation guide](https://hyperframes.heygen.com/guides/skills)
+for setup outside Vandashi. Global installation cannot run in the repository-only repair
+sandbox. Bundled Hyperframes, Node, FFmpeg/FFprobe and browser checks also resolve outside
+project repositories, so their failures provide external setup or app reinstallation guidance.
+No current host prerequisite advertises an AI repair that cannot reach its target. The generic
+repair composer requires both a verified writable target and usable Codex before a future
+check can offer it. Dependency regressions distinguish external-guide dispatch and successful
+retry from actually installing software.
 
 Hyperframes' media metadata endpoint reports codec/color information; it does **not** manage Vandashi's asset title, description or tags. The application asset metadata adapter owns these fields and their persistence. Automatic descriptions now use [local sampled frames and speech evidence](ASSET-INSPECTION.md), independently of Hyperframes' optional Whisper CLI. The latter remains optional in doctor checks.
 

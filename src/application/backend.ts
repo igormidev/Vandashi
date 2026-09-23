@@ -2,7 +2,7 @@ import { AppFault, diagnosticFromError } from '../domain/diagnostics';
 import type { DesktopApi } from '../domain/api';
 import type { AgentPort } from '../domain/agent';
 import type { MediaPort } from '../domain/media';
-import type { AppEvent, Scope, Settings, Workspace } from '../domain/models';
+import type { AppEvent, Scope, Settings, VideoSummary, Workspace } from '../domain/models';
 import type { GitPort, StoragePort } from '../domain/storage';
 import { scopeKey } from '../domain/defaults';
 import { OperationGate } from './operation-gate';
@@ -33,6 +33,7 @@ export function createBackend(
 ): BackendApi {
   const snapshots = new Map<string, Workspace>();
   const reads = new Map<string, Promise<Workspace>>();
+  const videoReads = new Map<string, Promise<VideoSummary[]>>();
   const changedScopes = new Map<string, Scope>();
   let activityOwner = '';
   const notify = (event: AppEvent) => {
@@ -80,6 +81,20 @@ export function createBackend(
     reads.set(key, promise);
     return promise;
   };
+  const listVideos = (brandId: string): Promise<VideoSummary[]> => {
+    const pending = videoReads.get(brandId);
+    if (pending) return pending;
+    const read = async () => {
+      while (gate.busy) await gate.waitUntilIdle();
+      // Summaries can repair packaging YAML, so list reads own the same passive lease as snapshots.
+      return gate.run('workspace-read', () => store.listVideos(brandId), false);
+    };
+    const promise = read().finally(() => {
+      videoReads.delete(brandId);
+    });
+    videoReads.set(brandId, promise);
+    return promise;
+  };
   const commits = new Commits(store, git, agent, media);
   const chats = new Chats(store, git, agent, commits, gate, dispatch, media);
   const studio = new Studio(
@@ -117,7 +132,7 @@ export function createBackend(
         await commits.reconcile(workspace.scope);
         return remember(await store.openWorkspace(workspace.scope));
       }),
-    listVideos: (id) => store.listVideos(id),
+    listVideos,
     createVideo: (input) =>
       mutation(async () => {
         const workspace = await store.createVideo(input, ({ path, ratio, name }) =>
@@ -160,19 +175,11 @@ export function createBackend(
     updateAsset: (input) => mutation(() => store.updateAsset(input)),
     deleteAsset: (input) => mutation(() => store.deleteAsset(input)),
     importThumbnail: (input) => mutation(async () => remember(await store.importThumbnail(input))),
-    startStudio: async (scope) => {
-      if ((await store.openWorkspace(scope)).video?.origin === 'imported')
-        throw new AppFault({ id: 'appImportedNoComposition' });
-      return studio.start(scope);
-    },
+    startStudio: (scope) => studio.start(scope),
     studioChanges: (scope) => studio.changes(scope),
     discardStudio: (scope) => studio.discard(scope),
     saveStudio: async (input) => remember(await studio.save(input)),
-    renderVideo: async (scope) => {
-      if ((await store.openWorkspace(scope)).video?.origin === 'imported')
-        throw new AppFault({ id: 'appFinishedNoRender' });
-      return studio.render(scope);
-    },
+    renderVideo: (scope) => studio.render(scope),
     saveScript: (input) => chats.saveScript(input),
     generateChapters: (scope) => publishing.chapters(scope),
     importFinishedClip: (input) => publishing.importClip(input),

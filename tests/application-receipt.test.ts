@@ -89,7 +89,11 @@ describe('verified application turn receipts', () => {
     const receipt = session.messages.at(-1);
     expect(receipt?.appMessage).toEqual({ id: 'turnSaved' });
     expect(receipt?.files.map((file) => file.path).sort()).toEqual(
-      repositories.map((repository) => join(repository, 'same-name.md')).sort(),
+      [
+        ...repositories.map((repository) => join(repository, 'same-name.md')),
+        join(app.path, 'video_assets', '_shared', 'same-name.md'),
+        join(app.path, 'video_assets', '.vandashi-shared.json'),
+      ].sort(),
     );
     for (const repository of repositories) {
       expect((await app.git.status(repository)).dirty).toBe(false);

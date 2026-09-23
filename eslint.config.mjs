@@ -2,7 +2,8 @@ import js from '@eslint/js';
 import ts from 'typescript-eslint';
 import hooks from 'eslint-plugin-react-hooks';
 import a11y from 'eslint-plugin-jsx-a11y';
-import i18next from 'eslint-plugin-i18next';
+import i18next from './scripts/strict-i18next.mjs';
+import { localizationMachineRules, localizationRule } from './scripts/localization-policy.mjs';
 
 export default ts.config(
   {
@@ -34,13 +35,19 @@ export default ts.config(
   },
   {
     files: ['src/renderer/**/*.tsx', 'landing/src/**/*.tsx'],
-    plugins: { 'react-hooks': hooks, 'jsx-a11y': a11y, i18next },
+    plugins: { 'react-hooks': hooks, 'jsx-a11y': a11y },
     rules: {
       ...hooks.configs.recommended.rules,
       ...a11y.configs.recommended.rules,
-      'i18next/no-literal-string': ['error', { markupOnly: true }],
     },
   },
+  {
+    files: ['src/renderer/**/*.{ts,tsx}', 'landing/src/**/*.{ts,tsx}'],
+    ignores: ['src/renderer/locales/**', 'landing/src/locales/**'],
+    plugins: { i18next },
+    rules: { 'i18next/no-literal-string': localizationRule },
+  },
+  ...localizationMachineRules,
   {
     files: ['**/*.mjs', '**/*.cjs'],
     ...ts.configs.disableTypeChecked,

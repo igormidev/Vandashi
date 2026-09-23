@@ -120,6 +120,21 @@ export class ProjectStore {
     return clip;
   }
 
+  async repositories(scope: Scope): Promise<string[]> {
+    const brand = await this.brand(scope.brandId);
+    const paths = [
+      await containedPath(brand.path, 'brand_identity'),
+      await containedPath(brand.path, 'shared_assets'),
+    ];
+    const parent = await this.video({ ...scope, clipId: null });
+    if (parent) paths.push(parent.path);
+    if (scope.clipId !== null) {
+      const clip = await this.video(scope);
+      if (clip) paths.push(clip.path);
+    }
+    return paths;
+  }
+
   async clips(video: VideoSummary): Promise<Clip[]> {
     const clips: Clip[] = [];
     for (const { path, record } of await this.records(await containedPath(video.path, 'clips'))) {

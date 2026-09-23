@@ -128,10 +128,18 @@ export function Empty({
 export function Loading({ label }: { label?: string }) {
   const { t } = useTranslation();
   return (
-    <div className="loading">
-      <LoaderCircle className="spin" size={22} />
+    <div className="loading" role="status" aria-live="polite">
+      <LoaderCircle className="spin" size={22} aria-hidden="true" />
       <span>{label ?? t('loading')}</span>
     </div>
+  );
+}
+export function PendingLabel({ label }: { label: string }) {
+  return (
+    <span className="pending-label">
+      <LoaderCircle className="spin" size={16} aria-hidden="true" />
+      <span>{label}</span>
+    </span>
   );
 }
 export function Logo({ size = 28 }: { size?: number }) {

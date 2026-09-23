@@ -3,9 +3,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ChatMessage, Scope } from '../../../domain/models';
 import { scopeKey } from '../../../domain/defaults';
+import { publishingUndoIssue } from '../../../domain/chat-undo-policy';
 import { useApp } from '../../app/store';
 import { diagnosticText, messageText } from '../../app/diagnostics';
-import { Empty, IconButton, Loading, Modal } from '../../shared/ui';
+import { Empty, IconButton, Loading, Modal, Tip, PendingLabel } from '../../shared/ui';
 import { clearDraft } from './draft-cache';
 import { Composer } from './Composer';
 import { useSessions } from './use-sessions';
@@ -27,7 +28,7 @@ function Message({
   const { t } = useTranslation();
   if (message.appMessage)
     return (
-      <article className="message receipt">
+      <article className={`message ${message.role === 'user' ? 'user' : 'receipt'}`}>
         <p>{messageText(message.appMessage)}</p>
         {message.files.length > 0 && <DiffFiles files={message.files} />}
       </article>
@@ -75,14 +76,25 @@ export function ChatPane() {
 function Conversation({ scope }: { scope: Scope }) {
   const { t } = useTranslation();
   const { api, run, chatTarget, setChatTarget, busy, activity, dirty, workspace } = useApp();
-  const { sessions, selected, setSelected, loading, failed, refresh, replace, close, mediaGeneration } =
-    useSessions(scope);
+  const {
+    sessions,
+    selected,
+    setSelected,
+    loading,
+    opening,
+    failed,
+    refresh,
+    replace,
+    close,
+    mediaGeneration,
+  } = useSessions(scope);
   const [confirm, setConfirm] = useState<'reset' | 'undo' | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [resetVersion, setResetVersion] = useState<Record<string, number>>({});
   const scroll = useRef<HTMLDivElement>(null);
   const follow = useRef(true);
   const session = sessions.find((entry) => entry.id === selected && entry.open);
+  const undoIssue = session ? publishingUndoIssue(session) : null;
   const lastMessage = session?.messages.at(-1);
   useEffect(() => {
     follow.current = true;
@@ -126,6 +138,11 @@ function Conversation({ scope }: { scope: Scope }) {
             </div>
           ))}
       </div>
+      {opening && session && (
+        <div className="chat-toolbar" role="status">
+          <PendingLabel label={t('loading')} />
+        </div>
+      )}
       {session ? (
         <>
           <div className="chat-toolbar">
@@ -133,18 +150,26 @@ function Conversation({ scope }: { scope: Scope }) {
               <Sparkles size={13} />
               {sessionTitle(session, t)}
             </span>
-            <IconButton
-              label={t('undoTurn')}
-              disabled={busy || dirty || !session.checkpoints?.length}
-              onClick={() => {
-                setConfirm('undo');
-              }}
-            >
-              <Undo2 size={14} />
-            </IconButton>
+            {undoIssue ? (
+              <Tip label={messageText(undoIssue)}>
+                <button className="icon-button" type="button" aria-label={t('undoTurn')} aria-disabled="true">
+                  <Undo2 size={14} />
+                </button>
+              </Tip>
+            ) : (
+              <IconButton
+                label={t('undoTurn')}
+                disabled={busy || dirty || opening || !session.checkpoints?.length}
+                onClick={() => {
+                  setConfirm('undo');
+                }}
+              >
+                <Undo2 size={14} />
+              </IconButton>
+            )}
             <IconButton
               label={t('newConversation')}
-              disabled={busy || dirty}
+              disabled={busy || dirty || opening}
               onClick={() => {
                 setConfirm('reset');
               }}
@@ -185,11 +210,15 @@ function Conversation({ scope }: { scope: Scope }) {
             .filter((entry) => entry.open)
             .map((entry) => (
               <div key={entry.id} hidden={entry.id !== selected}>
-                <Composer key={`${entry.id}:${String(resetVersion[entry.id] ?? 0)}`} session={entry} />
+                <Composer
+                  key={`${entry.id}:${String(resetVersion[entry.id] ?? 0)}`}
+                  session={entry}
+                  disabled={opening}
+                />
               </div>
             ))}
         </>
-      ) : loading ? (
+      ) : loading || opening ? (
         <Loading />
       ) : (
         <Empty
@@ -204,13 +233,14 @@ function Conversation({ scope }: { scope: Scope }) {
           <button
             className="button small"
             type="button"
-            disabled={busy}
+            disabled={busy || opening}
+            aria-busy={opening}
             onClick={() => {
               if (chatTarget) setChatTarget({ ...chatTarget });
               else void run(() => refresh());
             }}
           >
-            {t('retry')}
+            {opening ? <PendingLabel label={t('loading')} /> : t('retry')}
           </button>
         </div>
       )}
@@ -238,6 +268,7 @@ function Conversation({ scope }: { scope: Scope }) {
             className="button primary"
             type="button"
             disabled={confirming}
+            aria-busy={confirming}
             onClick={() => {
               if (!session) return;
               setConfirming(true);
@@ -256,7 +287,7 @@ function Conversation({ scope }: { scope: Scope }) {
               });
             }}
           >
-            {t(confirming ? 'loading' : 'continue')}
+            {confirming ? <PendingLabel label={t('loading')} /> : t('continue')}
           </button>
         </div>
       </Modal>

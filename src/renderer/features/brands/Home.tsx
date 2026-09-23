@@ -5,7 +5,7 @@ import type { Workspace } from '../../../domain/models';
 import { diagnosticFromBridge, type Diagnostic } from '../../../domain/diagnostics';
 import { useApp } from '../../app/store';
 import { diagnosticText } from '../../app/diagnostics';
-import { Empty, InfoTip, Modal } from '../../shared/ui';
+import { Empty, InfoTip, Modal, PendingLabel } from '../../shared/ui';
 
 export function Home({ onOpen }: { onOpen: (workspace: Workspace) => void }) {
   const { t, i18n } = useTranslation();
@@ -14,6 +14,7 @@ export function Home({ onOpen }: { onOpen: (workspace: Workspace) => void }) {
   const [name, setName] = useState('');
   const [folder, setFolder] = useState('');
   const [loading, setLoading] = useState(false);
+  const [opening, setOpening] = useState<string | null>(null);
   const [failure, setFailure] = useState<Diagnostic | null>(null);
   const [createdId, setCreatedId] = useState<string | null>(null);
   const chooseLocation = () => {
@@ -53,7 +54,12 @@ export function Home({ onOpen }: { onOpen: (workspace: Workspace) => void }) {
           <h1>{t(state?.brands.length ? 'recentBrands' : 'welcome')}</h1>
         </div>
         {!!state?.brands.length && (
-          <button className="button primary" type="button" onClick={chooseLocation}>
+          <button
+            className="button primary"
+            type="button"
+            disabled={opening !== null}
+            onClick={chooseLocation}
+          >
             <Plus size={15} />
             {t('createBrand')}
           </button>
@@ -66,19 +72,24 @@ export function Home({ onOpen }: { onOpen: (workspace: Workspace) => void }) {
               type="button"
               className="brand-row"
               key={brand.id}
+              disabled={opening !== null}
+              aria-busy={opening === brand.id}
               onClick={() => {
+                setOpening(brand.id);
                 void run(async () => {
                   onOpen(await api.openBrand(brand.id));
+                }).finally(() => {
+                  setOpening(null);
                 });
               }}
             >
               <span className="brand-avatar">{brand.name.slice(0, 1).toUpperCase()}</span>
-              <div>
+              <div className="brand-row-text">
                 <h2>{brand.name}</h2>
                 <div className="path">{brand.path}</div>
               </div>
               <span className="last">{new Date(brand.lastOpened).toLocaleDateString(i18n.language)}</span>
-              <ArrowRight size={17} />
+              {opening === brand.id ? <PendingLabel label={t('loading')} /> : <ArrowRight size={17} />}
             </button>
           ))}
         </div>
@@ -172,8 +183,9 @@ export function Home({ onOpen }: { onOpen: (workspace: Workspace) => void }) {
               className="button primary"
               type="submit"
               disabled={!folder || name.trim().length < 3 || loading}
+              aria-busy={loading}
             >
-              {t(loading ? 'loading' : failure ? 'retry' : 'create')}
+              {loading ? <PendingLabel label={t('loading')} /> : t(failure ? 'retry' : 'create')}
             </button>
           </div>
         </form>

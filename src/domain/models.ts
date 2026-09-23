@@ -145,6 +145,7 @@ export interface DependencyCheck {
   detail: string;
   diagnostic?: Diagnostic;
   label?: AppMessage;
+  recovery?: AppMessage;
   repairPrompt: string | null;
   helpUrl: string | null;
 }
@@ -172,6 +173,7 @@ export interface ChatSession {
 }
 export interface ChatCheckpoint {
   turnId: string;
+  mode?: 'read' | 'edit';
   threadId: string;
   heads: Record<string, string>;
   postHeads?: Record<string, string>;

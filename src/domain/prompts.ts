@@ -120,7 +120,7 @@ function context(input: WorkspacePromptInput): TopicContext {
         taste(input, 'VISUAL_IDENTITY_TASTE.md'),
       ],
       guidance: [
-        'Give thumbnail files descriptive names and keep packaging.thumbnails ordered with the main candidate first. Update references if filenames change.',
+        'Give thumbnail files descriptive names and keep packaging.thumbnails ordered with the main candidate first. If an image edit makes its filename misleading, rename it to describe the new content and update its metadata sidecar, packaging entry, and every affected reference without changing candidate order.',
         'The thumbnails directory holds release artwork. Keep composition media in video_assets; if release artwork must appear inside the video, copy it into video_assets and reference that copy so future thumbnail edits do not change the composition.',
         'Use available image tools when asked to create or edit images. Report unavailable capabilities; do not claim an image exists without checking its output file.',
       ],

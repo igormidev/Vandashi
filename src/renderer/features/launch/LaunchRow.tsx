@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import type { LaunchStatus, Platform } from '../../../domain/models';
 import { useApp } from '../../app/store';
 import { PlatformIcon } from '../../shared/PlatformIcon';
-import { IconButton } from '../../shared/ui';
+import { IconButton, PendingLabel } from '../../shared/ui';
 
 const statuses: LaunchStatus[] = ['not_started', 'uploading', 'uploaded', 'failed'];
 export function LaunchRow({
@@ -59,10 +59,15 @@ export function LaunchRow({
     });
   };
   return (
-    <div className={`launch-row ${label ? 'clip-release' : ''}`}>
+    <div className={`launch-row ${label ? 'clip-release' : ''}`} aria-busy={saving}>
       <div className="launch-platform">
         {!label && <PlatformIcon platform={platform} />}
         <h3>{label ?? t(platform)}</h3>
+        {saving && (
+          <span role="status">
+            <PendingLabel label={t('loading')} />
+          </span>
+        )}
         {!headingOnly && (
           <span className={`badge ${launch?.status === 'uploaded' ? 'success' : ''}`}>
             {t(launch?.status ?? 'not_started')}

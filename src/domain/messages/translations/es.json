@@ -251,7 +251,7 @@
   "mediaRendererPreparing": "Preparando el renderizador de video",
   "mediaCheckUnavailable": "No se pudo verificar {{name}}.",
   "mediaStudioIncluded": "Hyperframes {{version}} · Studio incluido",
-  "mediaSkillMissing": "No se encontró la habilidad de Hyperframes para agentes en las carpetas de habilidades configuradas de Codex.",
+  "mediaSkillMissing": "Es necesario verificar la habilidad principal hyperframes con Codex. Sigue la guía de instalación para configurarla fuera de Vandashi y vuelve a comprobarlo.",
   "mediaSkillLabel": "Habilidad de Hyperframes",
   "mediaEnvironmentLabel": "Entorno de video",
   "mediaHyperframesLabel": "Hyperframes",
@@ -262,5 +262,16 @@
   "mediaBridgeSaveHttp": "Studio no pudo guardar una edición (HTTP {{status}}). Resuelve el error de guardado en el editor antes de salir.",
   "mediaBridgeSaveConnection": "Studio no pudo guardar una edición. Comprueba la conexión local de Studio antes de salir.",
   "mediaBridgePending": "Studio aún está guardando. Espera a que guarde las ediciones pendientes antes de salir.",
-  "mediaBridgeUnavailable": "La conexión de guardado de Studio no está disponible. Mantén el editor abierto y vuelve a intentarlo."
+  "mediaBridgeUnavailable": "La conexión de guardado de Studio no está disponible. Mantén el editor abierto y vuelve a intentarlo.",
+  "scriptHandoff": "Actualiza el video para que coincida con el guion.",
+  "storageAssetDeleteConflict": "Este recurso cambió fuera del editor. Cierra esta confirmación y revisa la versión más reciente antes de eliminarlo.",
+  "appPublishUndoUnavailable": "La publicación puede haber realizado cambios en una plataforma externa. No se puede revertir; verifica la publicación en el navegador y actualiza su estado aquí.",
+  "appHyperframesSkillMissing": "Codex no ha detectado la habilidad principal hyperframes habilitada. Abre la guía de instalación para instalarla o habilitarla fuera de Vandashi y vuelve a comprobarlo.",
+  "appHyperframesSkillUnverified": "No se pudo verificar con Codex que la habilidad principal hyperframes esté habilitada. Revisa la configuración de Codex e inténtalo de nuevo.",
+  "appUsageUnverified": "No se pudo verificar tu cuota disponible de Codex. Comprueba la conexión e inténtalo de nuevo.",
+  "appWorkspaceRecoveryRequired": "No se pudo recuperar el espacio de trabajo. Resuelve el error de Git o de archivo indicado fuera de Vandashi sin descartar tus cambios y vuelve a comprobar.",
+  "mediaBundledRuntimeRecovery": "No se pudo verificar el entorno de vídeo incluido en Vandashi. Repara o reinstala Vandashi siguiendo la guía de configuración, reinicia la aplicación y vuelve a comprobar.",
+  "mediaEnvironmentRecovery": "Falló la comprobación de las dependencias de vídeo. Sigue la guía de configuración para reparar las herramientas fuera de Vandashi, reinicia la aplicación y vuelve a comprobar.",
+  "mediaToolSetupRequired": "{{name}} no está disponible. Instálalo o repáralo fuera de Vandashi siguiendo la guía, reinicia Vandashi y vuelve a comprobar.",
+  "mediaBrowserSetupRequired": "El navegador de renderizado no está disponible. Sigue la guía para instalar o reparar el navegador de Hyperframes fuera de Vandashi, reinicia Vandashi y vuelve a comprobar."
 }

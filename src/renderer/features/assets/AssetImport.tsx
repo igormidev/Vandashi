@@ -4,7 +4,7 @@ import { scopeKey } from '../../../domain/defaults';
 import type { AssetInspectionProgress } from '../../../domain/asset-inspection';
 import type { AssetDraft } from '../../../domain/models';
 import { useApp } from '../../app/store';
-import { Loading, Modal } from '../../shared/ui';
+import { Loading, Modal, PendingLabel } from '../../shared/ui';
 import { fallbackAssetKind, parseAssetTags } from './asset-index';
 import { errorText } from '../../app/diagnostics';
 
@@ -231,30 +231,28 @@ export function AssetImport({ paths, onClose }: { paths: string[]; onClose: () =
           className="button"
           type="button"
           disabled={saving || cancelling || (describing && !inspection)}
+          aria-busy={cancelling}
           onClick={() => {
             if (describing) void cancelInspection();
             else advance();
           }}
         >
-          {t(
-            cancelling
-              ? 'assetInspectionCancelling'
-              : describing
-                ? 'cancel'
-                : paths.length > 1
-                  ? 'assetImportSkip'
-                  : 'cancel',
+          {cancelling ? (
+            <PendingLabel label={t('assetInspectionCancelling')} />
+          ) : (
+            t(describing ? 'cancel' : paths.length > 1 ? 'assetImportSkip' : 'cancel')
           )}
         </button>
         <button
           className="button primary"
           type="button"
           disabled={describing || saving || cancelling || !draft?.title.trim() || !draft.description.trim()}
+          aria-busy={saving}
           onClick={() => {
             void importAsset();
           }}
         >
-          {t(saving ? 'loading' : 'importAsset')}
+          {saving ? <PendingLabel label={t('loading')} /> : t('importAsset')}
         </button>
       </div>
     </Modal>

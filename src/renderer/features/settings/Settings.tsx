@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useApp } from '../../app/store';
-import { Modal, InfoTip } from '../../shared/ui';
+import { Modal, InfoTip, PendingLabel } from '../../shared/ui';
 import { ModelPicker } from '../chat/ModelPicker';
 import { availableLocales, normalizeLocale } from '../../../domain/locales';
 import { languageLabels } from '../../locales/catalogs';
@@ -96,6 +96,7 @@ export function Settings({ onClose, onChecks }: { onClose: () => void; onChecks:
           type="button"
           className="button primary"
           disabled={saving}
+          aria-busy={saving}
           onClick={() => {
             setSaving(true);
             void run(async () => {
@@ -109,7 +110,7 @@ export function Settings({ onClose, onChecks }: { onClose: () => void; onChecks:
             });
           }}
         >
-          {t(saving ? 'loading' : 'save')}
+          {saving ? <PendingLabel label={t('loading')} /> : t('save')}
         </button>
       </div>
     </Modal>

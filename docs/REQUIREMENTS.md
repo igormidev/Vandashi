@@ -9,7 +9,7 @@ product sign-off. UI evidence is from macOS Electron; controlled AI/browser fixt
 identified separately from real Codex/media execution. A combined requirement stays
 unchecked when any clause lacks evidence. Historical package tests establish the tested
 integration only: **the final release installer, Windows/Linux execution, real external uploads,
-landing deployment, and final independent reviews remain unaccepted**.
+and final independent reviews remain unaccepted**. Landing deployment is verified in E15.
 
 ## 1. Product and local data model
 
@@ -254,13 +254,13 @@ Source: `genesis_prompt.md:L606–L650`, `L671–L676`, `L711–L712`.
 
 Source: `genesis_prompt.md:L652–L670` and `L678–L714`.
 
-- [ ] SITE-01 — Build the landing site only after the app is complete, then host it on GitHub Pages under the repository/account URL without requiring a custom domain.
+- [x] SITE-01 — Build the landing site only after the app is complete, then host it on GitHub Pages under the repository/account URL without requiring a custom domain. [E15](#e15).
 - [x] SITE-02 — Landing highlights open source and free Vandashi software, accurately explains supported Codex/ChatGPT access requirements, and links the source. [E15](#e15).
 - [x] SITE-03 — Use strong web-design guidance/research, concise useful copy, and a distinctive design; app screenshots are accurate if used. [E15](#e15).
 - [x] SITE-04 — Verify mobile/desktop and intermediate viewport responsiveness with real browser use and no clipped controls/content. [E15](#e15).
 - [x] SITE-05 — Detect browser language, support all requested locales, and fall back to English; language can be deliberately selected where provided. [E15](#e15).
 - [x] DOC-01 — Human-readable GitHub README explains what the app does, setup, usage, prerequisites, and current integration limitations accurately. [E14](#e14).
-- [ ] DOC-02 — README includes real app screenshots, landing URL after deployment, and a copy/paste prompt for an agent to clone, install, run, and open the app.
+- [x] DOC-02 — README includes real app screenshots, landing URL after deployment, and a copy/paste prompt for an agent to clone, install, run, and open the app. [E15](#e15).
 - [x] DOC-03 — Maintain architecture/integration/upgrading guidance and records of material decisions. Re-read genesis for every feature and after context compaction. [E14](#e14).
 - [ ] QA-01 — Before each meaningful commit, evaluate UX simplicity, edge cases, all lint rules, documentation updates, and no warnings/errors; run relevant tests.
 - [ ] QA-02 — Manually test every screen, tab, shared-component use, and real external integration with computer use. Record exactly what was and was not exercised.
@@ -565,8 +565,11 @@ production run passes 306 cases across Chromium, Firefox and WebKit, including a
 eight locales at eight viewports, 200% text, failure recovery, keyboard dialogs and
 production-path 404s. Independent visual review accepted the refreshed typography
 fixes. The journal records direct browser checks and the real packaged-app provenance
-of all four screenshots. GitHub deployment and the live README link remain SITE-01
-and DOC-02; this local acceptance is not deployment evidence.
+of all four screenshots. Following the English and translated implementation checkpoints,
+Pages workflow35899327039 deployed `9f93dae` successfully. The public repository URL
+returned HTTP200 and direct browser interaction verified language selection and the
+full-resolution Clips gallery. README now links the live site. Later final-review fixes
+retain their own acceptance gates; this deployment does not approve final desktop artifacts.
 
 ### Residual acceptance, kept explicit
 
@@ -578,18 +581,17 @@ from a demonstrated defect; they do not ask to rewrite verified behavior or star
 | ENG-07, ENG-13             | The fresh macOS checkpoint passes speech and Studio/render/Codex package smoke tests. Observe the actual CI gate and native matrix, especially Windows/Linux execution. Verify final distributed artifacts, native resources, notices and source materials; repeat relevant checks after release changes. This checkpoint does not accept the final translated release. |
 | BRAND-19                   | Complete video-row thumbnail/identification/theme expansion.                                                                                                                                                                                                                                                                                                            |
 | CHAT-03, CHAT-15           | Verify tab ordering/hover close/close-all empty state together and picker plus drag/drop attachments across contexts, including explicit local/shared choice. Existing drafts/mentions/grant tests cover only parts.                                                                                                                                                    |
-| VIDEO-06–08                | Complete native missing-dependency retry/failure feedback and prepared repair-chat send/retry/close, including official Codex setup/login/quota routes. First-brand missing-Git recovery is separately verified.                                                                                                                                                        |
+| VIDEO-06–08                | Complete current native missing-dependency retry/failure and official setup/recovery routes. Current host dependencies are outside AI writable roots; retain the prepared-chat contract only for a demonstrated writable repair target, rather than claiming unsupported installation. First-brand missing-Git recovery is separately verified.                         |
 | VIDEO-10                   | Schema, backup and typed notices pass; perform malformed-packaging entry and inspect the actual feedback/backup without discarding invalid content.                                                                                                                                                                                                                     |
 | PACK-04/05                 | Generation, import and reorder work. Verify content-driven filename/reference updates and actual leading candidate limits with platform/account capability, rather than prompt instructions alone.                                                                                                                                                                      |
 | CREATE-04/08, CREATE-14/15 | Locks, refresh, saved-file receipt, history diff display and Unicode script diff work. Verify the history copy-SHA action and line-ending-specific diff behavior. Verify a real visual/audio asset edit records every used asset with the common mention representation, plus attachment import from Creation.                                                          |
 | ASSET-03/04/11/12/16       | Complete animated GIF, image clipboard, picker/drop interaction and an actual folder create/import/delete AI turn. Reference-aware deletion and unavailable-asset scope rejection pass; filename rename/reference repair still lacks a complete exercised scenario. Verify supported media rather than assuming every format.                                           |
 | LAUNCH-10–13/16            | Complete authorized test-account publication: browser/account verification, login/account recovery, destination fields/candidate limits, upload/processing monitoring, verified URL/manifest, cancellation/error recovery and lock release. No external upload has occurred.                                                                                            |
 | UX-01–03, UX-05/06         | Complete independent visual/style, installed icon/identity, concise-copy and all-consumer layout/accessibility review. Minimum/split and several modal/keyboard/tooltip states pass; this is not exhaustive all-screen/size acceptance.                                                                                                                                 |
-| SITE-01, DOC-02            | The local site, translations, real screenshots and installation prompt pass browser/visual acceptance. Deploy Pages, observe the public URL, and add that verified link to README.                                                                                                                                                                                      |
 | QA-01–06                   | Maintain per-commit checks, then run final-state static/tests and real integration/manual acceptance. Conduct the requested strongest-model/highest-effort independent section review/fix/re-review loops. Verify final artifacts, GitHub push and deployment. Interim audits and historical green checkpoints do not satisfy the final loop.                           |
 
 Native source archives and licensing have separate recorded evidence. Release acceptance still
 requires the actual delivered artifacts to include their corresponding materials. The current
 macOS integration checkpoint is verified as described above. Final distributed packages,
-Windows/Linux execution, external account workflows, site deployment and final
+Windows/Linux execution, external account workflows and final
 section audits remain unaccepted by this documentation update.

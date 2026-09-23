@@ -1,13 +1,12 @@
-import { AppFault, diagnosticFromError } from '../../domain/diagnostics';
-import { existsSync } from 'node:fs';
-import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { AppFault, diagnosticEnglish, diagnosticFromError } from '../../domain/diagnostics';
 import { z } from 'zod';
 import type { DependencyCheck } from '../../domain/models';
 import type { MediaProbe } from '../../domain/media';
 import { resolveMediaBinary } from './binaries';
 import { inspectionProcess } from './inspection-process';
-import { HYPERFRAMES_VERSION, runProcess, type MediaRuntime } from './runtime';
+import { runProcess, type MediaRuntime } from './runtime';
+
+const appSetupUrl = 'https://github.com/igormidev/Vandashi#run-from-source';
 
 const doctorSchema = z.object({
   checks: z.array(
@@ -97,30 +96,44 @@ export function requiredDoctorChecks(output: string): DependencyCheck[] {
   const report = doctorSchema.parse(JSON.parse(output) as unknown);
   // Docker, Whisper, music and TTS are optional; doctor.ok includes them and is NOT a gate.
   const dependencies = [
-    { name: 'Node.js', label: { id: 'mediaNodeLabel' } },
-    { name: 'FFmpeg', label: { id: 'mediaFfmpegLabel' } },
-    { name: 'FFprobe', label: { id: 'mediaFfprobeLabel' } },
-    { name: 'Chrome', label: { id: 'mediaChromeLabel' } },
+    {
+      name: 'Node.js',
+      label: { id: 'mediaNodeLabel' },
+      recovery: { id: 'mediaBundledRuntimeRecovery' },
+      helpUrl: appSetupUrl,
+    },
+    {
+      name: 'FFmpeg',
+      label: { id: 'mediaFfmpegLabel' },
+      recovery: { id: 'mediaToolSetupRequired', params: { name: 'FFmpeg' } },
+      helpUrl: 'https://ffmpeg.org/download.html',
+    },
+    {
+      name: 'FFprobe',
+      label: { id: 'mediaFfprobeLabel' },
+      recovery: { id: 'mediaToolSetupRequired', params: { name: 'FFprobe' } },
+      helpUrl: 'https://ffmpeg.org/download.html',
+    },
+    {
+      name: 'Chrome',
+      label: { id: 'mediaChromeLabel' },
+      recovery: { id: 'mediaBrowserSetupRequired' },
+      helpUrl: 'https://hyperframes.heygen.com/packages/cli#browser',
+    },
   ] as const;
-  return dependencies.map(({ name, label }) => {
+  return dependencies.map(({ name, label, recovery, helpUrl }) => {
     const check = report.checks.find((candidate) => candidate.name === name);
+    const fault = check?.ok
+      ? null
+      : new AppFault(recovery, [check?.detail, check?.hint].filter(Boolean).join('\n') || undefined);
     return {
       id: `media-${name.toLowerCase().replace(/[^a-z]/g, '')}`,
       label,
       status: check?.ok ? 'ready' : 'missing',
-      detail: check?.detail ?? `${name} could not be verified.`,
-      ...(check
-        ? {}
-        : {
-            diagnostic: {
-              kind: 'app' as const,
-              message: { id: 'mediaCheckUnavailable' as const, params: { name } },
-            },
-          }),
-      repairPrompt: check?.ok
-        ? null
-        : `Install or repair ${name} for local Hyperframes video preview and rendering. ${check?.hint ?? ''} Verify the result with hyperframes doctor --json. Do not modify unrelated settings.`,
-      helpUrl: 'https://hyperframes.heygen.com/quickstart',
+      detail: fault?.message ?? check?.detail ?? '',
+      ...(fault ? { diagnostic: fault.diagnostic } : {}),
+      repairPrompt: null,
+      helpUrl,
     };
   });
 }
@@ -155,31 +168,26 @@ export async function checkMediaDependencies(
     );
     for (const check of requiredDoctorChecks(output)) record(check);
   } catch (error) {
+    const cause = diagnosticFromError(error);
     record({
       id: checks.length > 0 ? 'media-environment' : 'hyperframes',
       status: 'error',
-      detail: error instanceof Error ? error.message : String(error),
-      diagnostic: diagnosticFromError(error),
+      detail: diagnosticEnglish(cause),
+      diagnostic: cause,
+      recovery: { id: checks.length > 0 ? 'mediaEnvironmentRecovery' : 'mediaBundledRuntimeRecovery' },
       label: { id: checks.length > 0 ? 'mediaEnvironmentLabel' : 'mediaHyperframesLabel' },
-      repairPrompt: `Restore the Vandashi bundled Hyperframes ${HYPERFRAMES_VERSION} dependency. Verify Node.js 22 or newer, then run hyperframes doctor --json.`,
-      helpUrl: 'https://hyperframes.heygen.com/quickstart',
+      repairPrompt: null,
+      helpUrl: checks.length > 0 ? 'https://hyperframes.heygen.com/guides/troubleshooting' : appSetupUrl,
     });
   }
-  const roots = [
-    ...runtime.skillRoots,
-    join(homedir(), '.agents', 'skills'),
-    join(homedir(), '.codex', 'skills'),
-  ];
-  const skill = roots.map((root) => join(root, 'hyperframes', 'SKILL.md')).find(existsSync);
+  const skill = new AppFault({ id: 'mediaSkillMissing' });
   record({
     id: 'skill',
     label: { id: 'mediaSkillLabel' },
-    status: skill ? 'ready' : 'missing',
-    detail: skill ?? 'The Hyperframes agent skill has not been found in the configured Codex skill folders.',
-    ...(skill ? {} : { diagnostic: { kind: 'app' as const, message: { id: 'mediaSkillMissing' as const } } }),
-    repairPrompt: skill
-      ? null
-      : 'Install the official Hyperframes core agent skills with `npx hyperframes@0.8.64 skills update`. Verify that Codex discovers the hyperframes skill. Do not overwrite existing agent settings.',
+    status: 'missing',
+    detail: skill.message,
+    diagnostic: skill.diagnostic,
+    repairPrompt: null,
     helpUrl: 'https://hyperframes.heygen.com/guides/skills',
   });
   return checks;

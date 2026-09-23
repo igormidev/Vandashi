@@ -62,7 +62,11 @@ describe('asset path and conversation scope boundaries', () => {
       });
       await app.api.sendChat({ ...app.request, sessionId: session.id, mode, text: 'Describe this asset.' });
       await app.idle();
-      await app.store.deleteAsset({ scope: app.scope, assetId: selected.id });
+      await app.store.deleteAsset({
+        scope: app.scope,
+        assetId: selected.id,
+        expectedRevision: selected.revision,
+      });
       const before = await app.store.getSession(session.id);
       const heads = await Promise.all(
         (await app.store.repositories(app.scope)).map((path) => app.git.head(path)),

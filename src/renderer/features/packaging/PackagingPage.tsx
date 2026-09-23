@@ -2,7 +2,7 @@ import { ArrowLeft, ArrowRight, ImagePlus, RotateCcw } from 'lucide-react';
 import { useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useApp } from '../../app/store';
-import { AiButton, IconButton, InfoTip } from '../../shared/ui';
+import { AiButton, IconButton, InfoTip, PendingLabel } from '../../shared/ui';
 import { CommitDialog } from '../history/CommitDialog';
 import { TagsInput } from '../../shared/TagsInput';
 
@@ -15,13 +15,14 @@ export function PackagingPage() {
     workspace?.video?.ratio === '16:9' ? 'long' : 'short',
   );
   const [confirm, setConfirm] = useState(false);
+  const [importing, setImporting] = useState(false);
   const dirty = JSON.stringify(packaging) !== JSON.stringify(workspace?.video?.packaging);
   useEffect(() => {
-    setDirty(dirty);
+    setDirty(dirty || importing);
     return () => {
       setDirty(false);
     };
-  }, [dirty, setDirty]);
+  }, [dirty, importing, setDirty]);
   if (!workspace?.video || !packaging) return null;
   const move = (index: number, direction: number) => {
     const list = [...packaging.thumbnails];
@@ -32,7 +33,7 @@ export function PackagingPage() {
   return (
     <>
       <div className="panel-scroll">
-        <fieldset disabled={busy}>
+        <fieldset disabled={busy || importing}>
           <div className="section-title">
             <h2>{t('packaging')}</h2>
           </div>
@@ -198,16 +199,26 @@ export function PackagingPage() {
                 className="button"
                 type="button"
                 disabled={dirty}
+                aria-busy={importing}
                 onClick={() => {
+                  setImporting(true);
                   void run(async () => {
                     const path = (await api.chooseFiles('images'))[0];
                     if (path)
                       setWorkspace(await api.importThumbnail({ scope: workspace.scope, sourcePath: path }));
+                  }).finally(() => {
+                    setImporting(false);
                   });
                 }}
               >
-                <ImagePlus size={15} />
-                {t('addThumbnail')}
+                {importing ? (
+                  <PendingLabel label={t('loading')} />
+                ) : (
+                  <>
+                    <ImagePlus size={15} />
+                    {t('addThumbnail')}
+                  </>
+                )}
               </button>
             </div>
           </div>

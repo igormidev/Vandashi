@@ -168,6 +168,7 @@ export function PublishReview({
                 <button
                   className="button"
                   type="button"
+                  aria-busy={generating}
                   onClick={() => {
                     setGenerating(true);
                     void run(async () => {
@@ -181,7 +182,11 @@ export function PublishReview({
                     });
                   }}
                 >
-                  {generating ? <LoaderCircle className="spin" size={14} /> : <Sparkles size={14} />}
+                  {generating ? (
+                    <LoaderCircle className="spin" size={14} aria-hidden="true" />
+                  ) : (
+                    <Sparkles size={14} />
+                  )}
                   {t(generating ? 'launchGeneratingChapters' : 'generateChapters')}
                 </button>
                 <button
@@ -216,6 +221,7 @@ export function PublishReview({
           <button
             className="button primary"
             type="button"
+            aria-busy={preparing}
             disabled={
               lock ||
               !channel?.url.trim() ||
@@ -226,7 +232,11 @@ export function PublishReview({
               void run(prepare);
             }}
           >
-            {preparing ? <LoaderCircle className="spin" size={14} /> : <Rocket size={14} />}
+            {preparing ? (
+              <LoaderCircle className="spin" size={14} aria-hidden="true" />
+            ) : (
+              <Rocket size={14} />
+            )}
             {t(preparing ? 'loading' : 'publishPrompt')}
           </button>
           <p className="muted">{t('publishingHelp')}</p>

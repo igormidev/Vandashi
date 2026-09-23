@@ -19,7 +19,7 @@ import '../../styles/clips.css';
 
 export function ClipsPage() {
   const { t } = useTranslation();
-  const { workspace, api, run, busy, dirty, setWorkspace, setChatTarget, chatTarget } = useApp();
+  const { workspace, api, run, busy, dirty, beginNavigation, setChatTarget, chatTarget } = useApp();
   const [parent, setParent] = useState<Workspace | null>(workspace);
   const [view, setView] = useState<'list' | 'checks' | 'create' | 'edit'>(
     workspace?.scope.clipId ? 'edit' : 'list',
@@ -44,24 +44,40 @@ export function ClipsPage() {
   const selectedClip = main.clips.find((clip) => clip.id === selected) ?? main.clips[0];
   const parentScope: Scope = { ...main.scope, clipId: null };
   const back = async () => {
-    const result = await api.openWorkspace(parentScope);
-    setParent(result);
-    setChatTarget(null);
-    setWorkspace(result);
-    setView('list');
-    setInitialRun(false);
+    const navigation = beginNavigation();
+    if (!navigation) return;
+    try {
+      const result = await api.openWorkspace(parentScope);
+      if (!navigation.adopt(result)) return;
+      setParent(result);
+      setChatTarget(null);
+      setView('list');
+      setInitialRun(false);
+    } catch (error) {
+      if (navigation.current()) throw error;
+    } finally {
+      navigation.release();
+    }
   };
   const openClip = async (id: string, first = false, prompt?: string) => {
-    setParent(main);
-    const next = await api.openWorkspace({ ...parentScope, clipId: id });
-    setWorkspace(next);
-    setInitialRun(first);
-    setView('edit');
-    setChatTarget(
-      next.video?.origin === 'imported'
-        ? { topic: 'packaging:theme', title: t('theme') }
-        : { topic: 'clip', title: t('clipEditor'), ...(prompt === undefined ? {} : { prompt }) },
-    );
+    const navigation = beginNavigation();
+    if (!navigation) return;
+    try {
+      const next = await api.openWorkspace({ ...parentScope, clipId: id });
+      if (!navigation.adopt(next)) return;
+      setParent(main);
+      setInitialRun(first);
+      setView('edit');
+      setChatTarget(
+        next.video?.origin === 'imported'
+          ? { topic: 'packaging:theme', title: t('theme') }
+          : { topic: 'clip', title: t('clipEditor'), ...(prompt === undefined ? {} : { prompt }) },
+      );
+    } catch (error) {
+      if (navigation.current()) throw error;
+    } finally {
+      navigation.release();
+    }
   };
   if (view === 'edit' && workspace.scope.clipId)
     return (

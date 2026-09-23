@@ -24,20 +24,25 @@ import type {
   StoragePort,
 } from '../../domain/storage';
 import { AssetStore, assetKind } from './assets';
-import { saveBrandImage } from './brand-image';
 import { assetReferences } from './asset-references';
 import { atomicWrite, containedPath, hashText, isWithin, SerialQueue } from './files';
 import { ProjectStore } from './projects';
 import { Registry } from './registry';
-import { brandConfigSchema, launchesSchema, launchSchema, packagingSchema } from './schemas';
+import { launchesSchema, launchSchema } from './schemas';
 import { readYaml, writeYaml } from './yaml-files';
 import { parseStorage } from './validation';
+import { ManualMutation } from './manual-mutation';
+import { saveWorkspaceFiles } from './save-workspace';
+import { brandImageRevision } from './brand-image';
+import { syncProjectAssets } from './sync-project-assets';
+import { discoverAgentScope } from './agent-scope';
 
 export class LocalStorage implements StoragePort {
   private readonly registry: Registry;
   private readonly assets: AssetStore;
   private readonly projects: ProjectStore;
   private readonly writes = new SerialQueue();
+  private readonly manual: ManualMutation;
 
   constructor(
     userData: string,
@@ -48,6 +53,7 @@ export class LocalStorage implements StoragePort {
     this.registry = new Registry(userData);
     this.assets = new AssetStore(mediaUrl);
     this.projects = new ProjectStore(this.registry, git, this.assets, onRecovery);
+    this.manual = new ManualMutation(git);
   }
 
   async getState(): Promise<AppState> {
@@ -122,16 +128,15 @@ export class LocalStorage implements StoragePort {
     await this.writes.run(() => this.projects.setRenderedPath(scope, path));
   }
 
-  async repositories(scope: Scope): Promise<string[]> {
-    const brand = await this.projects.brand(scope.brandId);
-    const paths = [
-      await containedPath(brand.path, 'brand_identity'),
-      await containedPath(brand.path, 'shared_assets'),
-    ];
-    const parent = await this.projects.video({ ...scope, clipId: null });
-    if (parent) paths.push(parent.path);
-    if (scope.clipId !== null) paths.push(await this.projectPath(scope));
-    return paths;
+  syncSharedAssets(scope: Scope): Promise<void> {
+    return this.writes.run(() => syncProjectAssets(this.registry, this.git, this.assets, scope));
+  }
+  discoverAgentScope(scope: Scope) {
+    return discoverAgentScope(this.registry, this.git, scope);
+  }
+
+  repositories(scope: Scope): Promise<string[]> {
+    return this.projects.repositories(scope);
   }
 
   async openWorkspace(scope: Scope): Promise<Workspace> {
@@ -157,6 +162,10 @@ export class LocalStorage implements StoragePort {
     const revision = hashText(
       JSON.stringify({
         config: brand.config,
+        image: await brandImageRevision(
+          await containedPath(brand.path, 'brand_identity'),
+          brand.config.image,
+        ),
         packaging: video?.packaging,
         documents,
         source: video ? await this.git.contentRevision(video.path) : null,
@@ -183,34 +192,10 @@ export class LocalStorage implements StoragePort {
 
   saveWorkspace(input: SaveInput): Promise<Workspace> {
     return this.writes.run(async () => {
-      if (!input.commit.title.trim() || !input.commit.body.trim())
-        throw new AppFault({ id: 'appCommitRequired' });
-      const workspace = await this.assertRevision(input.scope, input.revision);
-      const config =
-        input.brandConfig === null
-          ? null
-          : parseStorage(brandConfigSchema, input.brandConfig, { id: 'storageBrandConfigInvalid' });
-      const packaging =
-        input.packaging === null
-          ? null
-          : parseStorage(packagingSchema, input.packaging, { id: 'storagePackagingInvalid' });
-      if (packaging !== null && !workspace.video) throw new AppFault({ id: 'storagePackagingVideoRequired' });
-      const targets = new Set(workspace.documents.map((document) => document.path));
-      const updates = input.documents.map((document) => {
-        if (!targets.has(document.path)) throw new AppFault({ id: 'storageDocumentReadOnly' });
-        return document;
-      });
-      for (const document of updates)
-        await atomicWrite(await this.allowedPath(document.path), document.content);
-      if (config !== null) {
-        const identity = await containedPath(workspace.brand.path, 'brand_identity');
-        config.image = await saveBrandImage(identity, config.image);
-        await writeYaml(identity, 'brand_config.yml', config);
-      }
-      if (packaging !== null && workspace.video)
-        await writeYaml(workspace.video.path, 'video_packaging.yml', packaging);
-      for (const repository of await this.repositories(input.scope))
-        await this.git.commit(repository, input.commit.title, input.commit.body);
+      const workspace = this.manual.has(JSON.stringify(input))
+        ? await this.openWorkspace(input.scope)
+        : await this.assertRevision(input.scope, input.revision);
+      await saveWorkspaceFiles(input, workspace, await this.repositories(input.scope), this.manual);
       return this.openWorkspace(input.scope);
     });
   }
@@ -271,40 +256,56 @@ export class LocalStorage implements StoragePort {
     return this.writes.run(async () => {
       if (input.commit && (!input.commit.title.trim() || !input.commit.body.trim()))
         throw new AppFault({ id: 'appCommitRequired' });
-      const asset = await this.assets.update(
-        await this.assetDirectory(input.scope),
-        input.assetId,
-        input,
-        input.scope.videoId === null,
+      const root = await this.assetDirectory(input.scope);
+      const asset = (await this.assets.list(root, input.scope.videoId === null)).find(
+        (item) => item.id === input.assetId,
       );
-      await this.assetCommit(
-        input.scope,
-        input.commit?.title ?? `Update asset: ${asset.title}`,
-        input.commit?.body ?? `Update metadata for ${asset.relativePath}.`,
-      );
-      return asset;
+      if (!asset) throw new AppFault({ id: 'storageAssetMissing' });
+      return this.manual.run({
+        key: JSON.stringify(input),
+        repositories: [input.scope.videoId === null ? root : await this.projectPath(input.scope)],
+        paths: [asset.path, asset.path + '.vandashi.json'],
+        commit: input.commit ?? {
+          title: `Update asset: ${input.title.trim()}`,
+          body: `Update metadata for ${asset.relativePath}.`,
+        },
+        mutate: (receipt) =>
+          this.assets.update(root, input.assetId, input, input.scope.videoId === null, receipt),
+      });
     });
   }
 
-  async deleteAsset(input: { scope: Scope; assetId: string }): Promise<void> {
+  async deleteAsset(input: { scope: Scope; assetId: string; expectedRevision: string }): Promise<void> {
     await this.writes.run(async () => {
       const root = await this.assetDirectory(input.scope);
       const asset = (await this.assets.list(root, input.scope.videoId === null)).find(
         (item) => item.id === input.assetId,
       );
       if (!asset) throw new AppFault({ id: 'storageAssetMissing' });
+      if (asset.revision !== input.expectedRevision) throw new AppFault({ id: 'storageAssetDeleteConflict' });
       if (input.scope.videoId !== null) {
         const project = await this.projectPath(input.scope);
         const references = await assetReferences(project, asset);
         if (references.length)
           throw new AppFault({ id: 'storageAssetReferenced', params: { paths: references.join(', ') } });
       }
-      await this.assets.delete(root, input.assetId, input.scope.videoId === null);
-      await this.assetCommit(
-        input.scope,
-        `Remove asset: ${asset.title}`,
-        `Remove ${asset.relativePath} and its metadata.`,
-      );
+      await this.manual.run({
+        key: JSON.stringify(input),
+        repositories: [input.scope.videoId === null ? root : await this.projectPath(input.scope)],
+        paths: [asset.path, asset.path + '.vandashi.json'],
+        commit: {
+          title: `Remove asset: ${asset.title}`,
+          body: `Remove ${asset.relativePath} and its metadata.`,
+        },
+        mutate: (receipt) =>
+          this.assets.delete(
+            root,
+            input.assetId,
+            input.scope.videoId === null,
+            input.expectedRevision,
+            receipt,
+          ),
+      });
     });
   }
 

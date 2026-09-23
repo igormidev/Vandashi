@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import type { Platform } from '../../../domain/models';
 import { horizontalPlatforms, verticalPlatforms } from '../../../domain/launch';
 import { useApp } from '../../app/store';
-import { IconButton } from '../../shared/ui';
+import { IconButton, PendingLabel } from '../../shared/ui';
 import { Split } from '../../shared/Split';
 import { ChatPane } from '../chat/ChatPane';
 import { LaunchRow } from './LaunchRow';
@@ -82,6 +82,7 @@ export function LaunchPage({ onCreateClips }: { onCreateClips: () => void }) {
             className="button"
             type="button"
             disabled={lock}
+            aria-busy={importing}
             onClick={() => {
               setImporting(true);
               void run(async () => {
@@ -106,8 +107,14 @@ export function LaunchPage({ onCreateClips }: { onCreateClips: () => void }) {
               });
             }}
           >
-            <Upload size={14} />
-            {t(importing ? 'loading' : 'importVideo')}
+            {importing ? (
+              <PendingLabel label={t('loading')} />
+            ) : (
+              <>
+                <Upload size={14} />
+                {t('importVideo')}
+              </>
+            )}
           </button>
           <button
             className="button primary"

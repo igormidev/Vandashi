@@ -1,5 +1,5 @@
 import { AppFault } from '../../domain/diagnostics';
-import { mkdir, readFile } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { defaultSettings, scopeKey } from '../../domain/defaults';
 import type { AppState, ChatSession, Scope, Settings } from '../../domain/models';
@@ -13,7 +13,6 @@ export class Registry {
   constructor(readonly directory: string) {}
 
   async state(): Promise<AppState> {
-    await mkdir(this.directory, { recursive: true });
     try {
       return registrySchema.parse(JSON.parse(await readFile(join(this.directory, 'registry.json'), 'utf8')));
     } catch (error) {

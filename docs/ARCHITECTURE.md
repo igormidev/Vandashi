@@ -12,6 +12,32 @@ Vandashi is an Electron desktop application. There is no hosted backend. The ren
 
 An application registry in the OS user-data directory stores selected brand, brand folders, settings, chat-to-Codex-thread mappings, and layout preferences. Each brand owns `brand_identity/` as a Git repository; each video and each clip is an independent Git repository. Markdown and validated YAML are authoritative. Shared assets have their own tracked metadata and are synchronized into the selected video's asset tree without overwriting local assets. Media binaries remain local. Writes use atomic replacement and revision guards where manual editing could race with external edits.
 
+Manual asset updates/deletions and Brand/Packaging/document saves use `ManualMutation` behind the
+storage port. It records owned regular-file copies, absent paths, file modes, and the complete
+Git index entries under ignored `.vandashi-recovery/manual-*` directories with a recovery manifest.
+The Git port can inspect a prospective staged index using a disposable index file without changing
+the user's index. Staging or commit failure rolls back only verified operation-owned files and index
+entries, including unrelated entries changed by repository-wide staging. Before writing it captures
+repository HEAD, the full index, and owned/dirty file hashes. Writers issue exact intended-byte
+receipts before installation; later reads verify that state instead of adopting arbitrary bytes as
+operation-owned. Pre-existing
+staged and unstaged bytes survive rollback. External edits invalidate ownership and preserve both
+current files and recovery evidence. Completed commits are never rewritten: a partial multi-repository
+save retains a same-request retry checkpoint for the current storage session and commits the remaining
+repositories with the reviewed title/body without repeating writes. It does not provide a cross-repository
+atomic commit or a process-crash transaction; preserved manifests/backups support recovery after a crash.
+
+Asset deletion requires the exact media/sidecar revision from the opened confirmation through the
+validated IPC contract and rechecks it at the physical deletion boundary. The scanner includes child
+clip repositories: their references must identify the parent asset path, so a same-named clip-owned
+asset does not block parent removal. Encoded paths, scripts, native Studio state, bounded source reads,
+and symlink containment remain part of deletion validation. Shared-library deletion retains the
+existing materialized video snapshots.
+
+Reference matching preserves literal native filenames separately from decoded source-string
+escapes, including names such as `x64.png` and `u1234.wav` on Windows. Actual mention serialization,
+JSON, percent/entity encodings, and independent child-owned basenames have deletion regressions.
+
 Brand creation preflights the Git executable, then prepares both initial repositories and commits in
 a private hidden sibling directory. Initialization or commit failure removes only that owned staging
 tree and leaves the requested name available for retry. Publication reserves a new directory with
@@ -45,6 +71,12 @@ and directs the user back to the video list. It does not suggest repeating creat
 
 Renderer-local preferences retain the selected conversation and unsent text/read-mode drafts across view changes and restarts. External-file selection grants are owned by the desktop process, not persisted as arbitrary trusted paths. Pane sizing saves merge the latest settings so resizing one workspace cannot erase another workspace's saved width. Settings for chat, commit messages, asset descriptions, chapters, and script synchronization are separate.
 
+Renderer navigation claims a provider-owned transaction synchronously before asynchronous
+workspace or Studio reads. It locks every editing/chat/navigation consumer through
+destination adoption or failure, rejects duplicate requests and stale workspace versions,
+and cannot release another request’s lock. Parent video metadata remains available while
+a clip is selected, so parent Creation/Manual capabilities use the parent’s origin.
+
 The renderer keeps editing locked until the current workspace reload finishes. Request
 tickets reject older responses; incoming snapshots wait while a local draft is dirty,
 and explicit workspace changes invalidate deferred snapshots. Validation state belongs
@@ -55,7 +87,30 @@ the permanent live region keeps error feedback accessible while a modal remains 
 
 ## Agent execution
 
+Prerequisite checks require fresh Codex discovery of the exact `hyperframes` core skill
+with valid name/path and explicit enabled status. Filesystem presence cannot prove readiness;
+failed discovery remains unverified. Missing skills link to external installation guidance
+because global setup exceeds the repository-only repair sandbox. The bundled runtime and
+host media tools likewise require external setup; no current check advertises an AI repair
+for an unreachable installation path. Git recovery failures retain their original details
+and route to external recovery without weakening clean preflight. The generic prepared,
+unsent repair composer is reserved for a future verified repository-writable repair target,
+and requires a successful Codex check; failed revalidation hides an existing repair pane.
+
 Use the installed Codex harness and its app-server protocol. Models and reasoning levels come from the live server. Conversation IDs persist per context. Read mode is enforced by the harness sandbox. A global operation lease spans foreground chat, metadata generation, commit generation, script synchronization, and publishing. Prompts repeat required context each turn. Every edit operation captures Git checkpoints across affected repositories. Completion reconciles commits, including interrupted runs. Undo verifies a recoverable Codex turn and Git checkpoint before touching either, preserving a backup ref.
+
+An AI operation whose writable root contains the parent video also includes all registered
+child repositories in clean preflight, checkpoints, reconciliation, receipts, and Undo. This
+application-only repository resolver leaves manual-save scopes unchanged. Publishing chats
+remain visible under their parent while a validated topic selects the clip operation scope;
+send-time checks probe its current media and repeat the parent ledger path explicitly.
+
+Undo revalidates clean expected heads after provider forking and before restoring. The Git
+adapter uses a non-forcing two-tree checkout and a compare-and-swap HEAD update. Compensation
+touches only commits returned by this Undo operation and checks their expected heads again.
+Publishing edit checkpoints, legacy checkpoints with unknown mode, and an older read checkpoint
+followed by an uncertain publication are not reversible through generic Undo: a local Git change
+cannot undo a remote post. Explicit read-only publishing checkpoints retain ordinary Undo.
 
 Successful edit turns also persist an application-owned receipt derived from the net Git
 diff between captured and verified final commits in every repository. This includes
@@ -66,6 +121,10 @@ retain their error history without a success receipt. The Git port exposes immut
 commit comparison; the adapter validates full commit hashes and uses literal file paths.
 
 Layout/preferences writes are outside the project-operation lease because they do not change creative files or a running turn's captured model selection. Workspace reads use a stable cached snapshot while a lease is active: reading storage can itself synchronize shared assets or repair malformed YAML, so it must not race an agent halfway through a write. Change notifications are deferred until the lease is released.
+
+Studio startup/render origin checks and storage preflight run inside their existing
+operation lease. Backend wrappers must not open the workspace before delegating to
+those methods: even a preliminary origin check can repair files during another turn.
 
 An uncertain Codex start acknowledgement cannot release that lease or roll back staged
 files while its process might still write. The adapter awaits process shutdown, then the
@@ -126,13 +185,22 @@ lease. Late events and cancellation IDs cannot target the next asset in a queue.
 
 `renderer/shared/owned-request.ts` retains a component's logical request across React
 development effect replay, including its settled result. It is not a global operation
-cache and does not bypass the application gate. API identity, scope, retry attempt,
-and preview revision determine when a new request starts; stale effect subscribers
+cache and does not bypass the application gate. API identity, scope, and retry attempt
+determine when a new request starts; preview startup uses the provider's adopted
+workspace snapshot identity so unchanged-revision completions restart stopped watchers
+without a competing independent workspace read. Stale effect subscribers
 cannot publish results. Workspace checks include their single successful refresh in
 the shared promise and unlock only after its final result. Commit confirmations pin
 the opening scope, revision, and summary, preserving reviewed text through passive
 workspace refreshes. Native regressions use the actual Vite development renderer,
 prove StrictMode replay, and hold gated responses so duplicate requests would fail.
+
+The script editor's accepted handoff belongs to the exact submitted text and original
+workspace snapshot. Editing, undo/redo, or adopting a later snapshot restores ordinary
+dirty tracking. A failed refresh therefore cannot turn subsequent edits into disposable
+clean state. Empty script guidance creates an app-owned message descriptor that follows
+the current UI language; nonempty guidance remains verbatim user content, even when it
+has exactly the same text as the descriptor's English fallback.
 
 ## Localization
 
@@ -186,6 +254,53 @@ and current loaded document. Clipboard reads, embedded Studio, other windows, an
 unrecognized permissions are denied. Native image copying remains behind its validated
 asset capability; it does not grant browser clipboard reads.
 
+## Brand drafts and image identity
+
+Brand snapshots include a bounded hash of the contained logo bytes, checked for file
+replacement or mutation during reading. Same-path image changes therefore invalidate
+stale manual saves and refresh the preview. The media protocol permits an optional
+64-character hexadecimal revision solely for cache identity; exact path authorization,
+methods, supported extensions and restrictive response policies still apply. Owned Brand
+saves explicitly adopt normalized config/documents even if the revision is unchanged;
+passive snapshots continue to preserve unsaved drafts.
+
+## Shared assets during AI changes
+
+Shared-asset materialization participates in the AI transaction. Read-only registered
+path discovery validates manifests without broad project summaries, YAML recovery or
+materialization. `ChatPreparation` checks every captured repository before any write;
+an untouched rejection emits no workspace refresh, while partial preparation does.
+After strict clean preflight, captured parent/clip scopes synchronize their copies and save deterministic
+housekeeping commits before the turn's baseline heads are captured. The same scopes
+synchronize again under the operation lease before final reconciliation, verified heads
+and receipts, including interrupted or uncertain edits. A conflict preserves partial
+work and its commits but prevents a verified receipt/Undo boundary. The narrow serialized
+`StoragePort.syncSharedAssets` method avoids broad workspace repair during finalization;
+ordinary workspace entry and Checks retain their existing behavior. Final AI edit commits
+still use the configured commit-message helper with deterministic failure fallback.
+
+## Source and commit verification
+
+Localization lint validates literals throughout renderer and landing TS/TSX, including
+templates, helpers, uppercase constants and accessible attributes. Exact file-specific
+machine tokens are the only allowances; translated catalogs and raw user/provider data
+retain their separate contracts. Architecture rules constrain both internal layers and
+external packages, including Node host modules. The application layer permits the pure
+`node:path` utility while filesystem/process capabilities stay behind infrastructure ports.
+
+The pre-commit hook materializes an immutable copy of the Git index and runs the entire
+`npm run check` there using a validated matching dependency installation. It preserves
+unstaged edits and original index bytes, rejects escaping source symlinks, gitlinks and
+checkout-filter substitutions, strips inherited Git routing from test subprocesses, and
+rejects concurrent index changes. A commit cannot pass using an unstaged correction or
+an untracked helper. Shared dependency symlinks retain package paths during boundary checks.
+
+Video lists hold a coalesced per-brand silent workspace-read lease because YAML recovery
+can write files. Reads wait behind active work; mutations cannot overlap those reads.
+The renderer separates loading, persistent failure/retry and confirmed empty results.
+Thumbnail requests reset on replacement/removal and ignore obsolete replies; failed
+grants or image decoding preserve a usable placeholder and explicit retry.
+
 ## References
 
 - [Electron security recommendations](https://www.electronjs.org/docs/latest/tutorial/security)
@@ -195,3 +310,33 @@ asset capability; it does not grant browser clipboard reads.
 - [Dependency Cruiser rules](https://github.com/sverweij/dependency-cruiser/blob/main/doc/rules-reference.md)
 
 See integration-specific documents for pinned upstream versions, protocol details, and upgrade checks.
+
+## Loading feedback
+
+Pending user actions use a shared inline spinner and localized label, with busy semantics
+on action controls and status announcements for background waits. The commit dialog
+shows an indeterminate progress strip while generating reviewed text; no fabricated
+completion percentage is presented. Generation can be dismissed without losing the draft,
+and late results cannot reopen the dialog. Reduced-motion mode retains the visible status
+without movement. Request ownership also governs loading completion so stale responses
+cannot clear the current operation’s indicator.
+
+## Studio discard recovery and save flushing
+
+Studio retains the opening baseline plus its exact owned discard safety commit until
+restore succeeds. Its changes view combines the preserved diff and current working
+changes, keeping navigation pending after a failed restore even when Git is clean. Retry
+restores from that same safety commit; Save instead synchronizes the complete retained
+diff into the script and records the reviewed approval. Guarded safety commits use a
+private index, index lock, exact commit parent and compare-and-swap HEAD update; restore
+receives that exact expected HEAD. Concurrent external commits/index changes are preserved.
+
+The isolated iframe bridge tracks pinned Hyperframes source-mutation routes. Export,
+selection and probe failures do not become editor-save failures. File-write HTTP409 is
+accepted only when the vendor’s returned current content exactly matches the attempted
+body and a current version exists. Request/response clones preserve vendor streams;
+conflicting or malformed replies continue to block flush.
+
+Dependency checks carry the original typed diagnostic and a separate typed recovery
+message. The renderer translates both independently, preserving parameters and raw
+provider details without converting an app-owned cause into English-only external text.

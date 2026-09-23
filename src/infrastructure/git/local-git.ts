@@ -1,11 +1,14 @@
 import { AppFault } from '../../domain/diagnostics';
 import { execFile } from 'node:child_process';
-import { lstat, readFile } from 'node:fs/promises';
+import { copyFile, lstat, mkdtemp, readFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 import { promisify } from 'node:util';
 import type { Commit, FileChange } from '../../domain/models';
 import type { GitPort, GitStatus } from '../../domain/storage';
 import { renderFingerprint } from './render-fingerprint';
+import { restoreCheckpoint } from './checkpoint-restore';
+import { commitCheckpoint } from './checkpoint-commit';
 
 const execute = promisify(execFile);
 const validRevision = /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/u;
@@ -27,7 +30,7 @@ export class LocalGit implements GitPort {
     }
   }
 
-  private async run(repository: string, args: string[]): Promise<string> {
+  private async run(repository: string, args: string[], input?: string, indexFile?: string): Promise<string> {
     try {
       const directory = await lstat(join(repository, '.git'));
       if (!directory.isDirectory() || directory.isSymbolicLink())
@@ -39,7 +42,7 @@ export class LocalGit implements GitPort {
     const environment = Object.fromEntries(
       Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')),
     );
-    const { stdout } = await execute(
+    const execution = execute(
       this.binary,
       [
         '-c',
@@ -55,9 +58,16 @@ export class LocalGit implements GitPort {
         maxBuffer: 16 * 1024 * 1024,
         encoding: 'utf8',
         windowsHide: true,
-        env: { ...environment, GIT_TERMINAL_PROMPT: '0', GIT_CONFIG_NOSYSTEM: '1' },
+        env: {
+          ...environment,
+          GIT_TERMINAL_PROMPT: '0',
+          GIT_CONFIG_NOSYSTEM: '1',
+          ...(indexFile ? { GIT_INDEX_FILE: indexFile } : {}),
+        },
       },
     );
+    if (input !== undefined) execution.child.stdin?.end(input);
+    const { stdout } = await execution;
     return stdout;
   }
 
@@ -96,8 +106,73 @@ export class LocalGit implements GitPort {
     await this.run(repository, ['add', '--all', '--', ...(paths ?? ['.'])]);
   }
 
-  async commit(repository: string, title: string, body: string): Promise<string> {
+  async indexEntries(repository: string, paths?: string[]): Promise<string> {
+    return this.run(repository, [
+      'ls-files',
+      '--stage',
+      '-z',
+      '--',
+      ...(paths?.map((path) => `:(literal)${path}`) ?? []),
+    ]);
+  }
+
+  async stagedIndexEntries(repository: string): Promise<string> {
+    const directory = await mkdtemp(join(tmpdir(), 'vandashi-index-'));
+    const index = join(directory, 'index');
+    try {
+      await copyFile(join(repository, '.git', 'index'), index);
+      await this.run(repository, ['add', '--all', '--', '.'], undefined, index);
+      return await this.run(repository, ['ls-files', '--stage', '-z'], undefined, index);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  }
+
+  async restoreIndexEntries(
+    repository: string,
+    paths: string[],
+    entries: string,
+    expected: string,
+  ): Promise<void> {
+    if (
+      paths.length === 0 ||
+      paths.some(
+        (path) =>
+          !path ||
+          /^[\\/]|^[a-z]:/iu.test(path) ||
+          path.split(/[\\/]/u).some((part) => part === '..' || part === '.git'),
+      )
+    )
+      throw new AppFault({ id: 'gitRestoreFilesInvalid' });
+    if ((await this.indexEntries(repository, paths)) !== expected)
+      throw new AppFault({ id: 'storageWorkspaceConflict' });
+    if (entries === expected) return;
+    const records = entries.split('\0').filter(Boolean);
+    if (
+      records.some(
+        (record) =>
+          !/^[0-7]{6} [a-f0-9]{40,64} [0-3]\t/u.test(record) ||
+          !paths.includes(record.slice(record.indexOf('\t') + 1)),
+      )
+    )
+      throw new AppFault({ id: 'gitRestoreFilesInvalid' });
+    await this.run(
+      repository,
+      ['update-index', '-z', '--index-info'],
+      paths.map((path) => `0 ${'0'.repeat(40)}\t${path}\0`).join('') + entries,
+    );
+  }
+
+  async commit(repository: string, title: string, body: string, expectedHead?: string): Promise<string> {
     if (!title.trim() || !body.trim()) throw new AppFault({ id: 'appCommitRequired' });
+    if (expectedHead !== undefined)
+      return commitCheckpoint(
+        { run: this.run.bind(this), head: this.head.bind(this) },
+        repository,
+        title,
+        body,
+        expectedHead,
+      );
     if ((await this.status(repository)).dirty) {
       await this.stage(repository);
       await this.run(repository, ['commit', '--no-gpg-sign', '-m', title.trim(), '-m', body.trim()]);
@@ -203,27 +278,17 @@ export class LocalGit implements GitPort {
       .filter(Boolean);
   }
 
-  async restore(repository: string, revision: string): Promise<void> {
-    if (!validRevision.test(revision)) throw new AppFault({ id: 'gitRestoreRevisionInvalid' });
-    if ((await this.status(repository)).dirty) throw new AppFault({ id: 'gitRestoreDirty' });
-    const backup = await this.head(repository);
-    await this.run(repository, ['update-ref', `refs/vandashi/backups/${String(Date.now())}`, backup]);
-    try {
-      await this.run(repository, ['restore', `--source=${revision}`, '--staged', '--worktree', '--', '.']);
-      await this.commit(
-        repository,
-        'Restore workspace checkpoint',
-        `Restore tracked content from ${revision}. The previous state remains in Git history and a backup reference.`,
-      );
-    } catch (error) {
-      await this.run(repository, ['restore', `--source=${backup}`, '--staged', '--worktree', '--', '.']);
-      await this.commit(
-        repository,
-        'Recover interrupted checkpoint restore',
-        `Restore the pre-operation content from ${backup}.`,
-      );
-      throw error;
-    }
+  restore(repository: string, revision: string, expectedHead?: string): Promise<string> {
+    return restoreCheckpoint(
+      {
+        run: (path, args, input) => this.run(path, args, input),
+        head: (path) => this.head(path),
+        status: (path) => this.status(path),
+      },
+      repository,
+      revision,
+      expectedHead,
+    );
   }
 
   async restoreFiles(repository: string, revision: string, paths: string[]): Promise<void> {

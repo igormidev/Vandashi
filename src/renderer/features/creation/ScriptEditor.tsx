@@ -3,8 +3,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { createPatch } from 'diff';
 import { defaultSettings } from '../../../domain/defaults';
+import type { Workspace } from '../../../domain/models';
 import { useApp } from '../../app/store';
-import { IconButton, Modal } from '../../shared/ui';
+import { IconButton, Modal, PendingLabel } from '../../shared/ui';
 import { ModelPicker } from '../chat/ModelPicker';
 import { RichComposer } from '../chat/RichComposer';
 import { mentionReferences } from '../chat/mention-references';
@@ -19,7 +20,7 @@ export function ScriptEditor({ onBegin }: { onBegin: () => void }) {
   const [guidance, setGuidance] = useState('');
   const [selection, setSelection] = useState(state?.settings.chat ?? defaultSettings.chat);
   const [saving, setSaving] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [submitted, setSubmitted] = useState<{ content: string; workspace: Workspace } | null>(null);
   const [fontSize, setFontSize] = useState(12);
   const logoLabel = t('logo');
   const references = useMemo(
@@ -27,11 +28,19 @@ export function ScriptEditor({ onBegin }: { onBegin: () => void }) {
     [workspace, logoLabel],
   );
   const content = versions[position] ?? original;
-  const dirty = !submitted && content !== original;
+  // Only the accepted draft belongs to the handoff. Later edits and adopted snapshots
+  // must recover normal dirty checks even when the source revision did not change.
+  const handedOff = submitted?.content === content && submitted.workspace === workspace;
+  const dirty = !handedOff && content !== original;
+  const move = (next: number) => {
+    if (next === position) return;
+    setSubmitted(null);
+    setPosition(next);
+  };
   const update = (value: string) => {
     if (value === content) return;
     setVersions([...versions.slice(0, position + 1), value]);
-    setPosition(position + 1);
+    move(position + 1);
   };
   useEffect(() => {
     setDirty(dirty);
@@ -79,7 +88,7 @@ export function ScriptEditor({ onBegin }: { onBegin: () => void }) {
           onKeyDown={(event) => {
             if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'z') {
               event.preventDefault();
-              setPosition(Math.max(0, Math.min(versions.length - 1, position + (event.shiftKey ? 1 : -1))));
+              move(Math.max(0, Math.min(versions.length - 1, position + (event.shiftKey ? 1 : -1))));
             }
             if ((event.metaKey || event.ctrlKey) && ['+', '=', '-'].includes(event.key)) {
               event.preventDefault();
@@ -102,7 +111,7 @@ export function ScriptEditor({ onBegin }: { onBegin: () => void }) {
           label={t('undo')}
           disabled={position === 0 || busy}
           onClick={() => {
-            setPosition(position - 1);
+            move(position - 1);
           }}
         >
           <Undo2 size={15} />
@@ -111,7 +120,7 @@ export function ScriptEditor({ onBegin }: { onBegin: () => void }) {
           label={t('redo')}
           disabled={position === versions.length - 1 || busy}
           onClick={() => {
-            setPosition(position + 1);
+            move(position + 1);
           }}
         >
           <Redo2 size={15} />
@@ -168,6 +177,7 @@ export function ScriptEditor({ onBegin }: { onBegin: () => void }) {
                 className="button primary"
                 type="button"
                 disabled={saving}
+                aria-busy={saving}
                 onClick={() => {
                   if (!workspace) return;
                   setSaving(true);
@@ -179,7 +189,7 @@ export function ScriptEditor({ onBegin }: { onBegin: () => void }) {
                       guidance,
                       selection,
                     });
-                    setSubmitted(true);
+                    setSubmitted({ content, workspace });
                     setDirty(false);
                     setDialog(null);
                     onBegin();
@@ -188,7 +198,7 @@ export function ScriptEditor({ onBegin }: { onBegin: () => void }) {
                   });
                 }}
               >
-                {t(saving ? 'loading' : 'applyScript')}
+                {saving ? <PendingLabel label={t('loading')} /> : t('applyScript')}
               </button>
             </div>
           </>

@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { DesktopApi } from '../../domain/api';
-import type { AppState, ChatActivity, ModelInfo, Scope, Workspace } from '../../domain/models';
+import type { AppState, ChatActivity, ModelInfo, Scope, VideoSummary, Workspace } from '../../domain/models';
 import i18n from '../i18n';
 import { scopeKey } from '../../domain/defaults';
 import { diagnosticFromBridge, diagnosticFromError, parseDiagnostic } from '../../domain/diagnostics';
@@ -14,10 +14,16 @@ interface ChatTarget {
   title: string;
   prompt?: string;
 }
+interface WorkspaceNavigation {
+  current: () => boolean;
+  adopt: (value: Workspace | null) => boolean;
+  release: () => void;
+}
 interface Store {
   api: DesktopApi;
   state: AppState | null;
   workspace: Workspace | null;
+  parentVideo: VideoSummary | null;
   models: ModelInfo[];
   activity: ChatActivity | null;
   dirty: boolean;
@@ -27,6 +33,7 @@ interface Store {
   setDirty: (value: boolean) => void;
   setToast: (value: Toast | null) => void;
   setWorkspace: (value: Workspace | null) => void;
+  beginNavigation: () => WorkspaceNavigation | null;
   setChatTarget: (value: ChatTarget | null) => void;
   refresh: () => Promise<void>;
   reload: (scope?: Scope) => Promise<Workspace | null>;
@@ -38,24 +45,61 @@ const matchesScope = (current: Scope | null, target: Scope): boolean =>
 export function AppProvider({ api, children }: { api: DesktopApi; children: ReactNode }) {
   const [state, setState] = useState<AppState | null>(null);
   const [workspace, updateWorkspace] = useState<Workspace | null>(null);
+  const [parentVideo, setParentVideo] = useState<VideoSummary | null>(null);
   const workspaceScope = useRef<Scope | null>(null);
   const workspaceVersion = useRef(0);
   const deferredWorkspace = useRef<{ ticket: number; value: Workspace } | null>(null);
   const [refreshingWorkspace, setRefreshingWorkspace] = useState<number | null>(null);
+  const navigationOwner = useRef<object | null>(null);
+  const [navigating, setNavigating] = useState(false);
   const [dirty, updateDirty] = useState(false);
   const dirtyRef = useRef(false);
   const setDirty = useCallback((value: boolean) => {
     dirtyRef.current = value;
     updateDirty(value);
   }, []);
-  const setWorkspace = useCallback((value: Workspace | null) => {
-    workspaceVersion.current++;
-    deferredWorkspace.current = null;
-    setRefreshingWorkspace(null);
+  const adoptWorkspace = useCallback((value: Workspace | null) => {
     workspaceScope.current = value?.scope ?? null;
     updateWorkspace(value);
+    setParentVideo((current) => {
+      if (!value?.scope.videoId) return null;
+      if (!value.scope.clipId) return value.video;
+      return current?.id === value.scope.videoId && current.brandId === value.scope.brandId ? current : null;
+    });
     if (value) setState((current) => rememberBrand(current, value.brand));
   }, []);
+  const setWorkspace = useCallback(
+    (value: Workspace | null) => {
+      workspaceVersion.current++;
+      deferredWorkspace.current = null;
+      setRefreshingWorkspace(null);
+      adoptWorkspace(value);
+    },
+    [adoptWorkspace],
+  );
+  const beginNavigation = useCallback((): WorkspaceNavigation | null => {
+    if (navigationOwner.current || dirtyRef.current) return null;
+    const owner = {};
+    let version = workspaceVersion.current;
+    navigationOwner.current = owner;
+    setNavigating(true);
+    const current = () =>
+      navigationOwner.current === owner && version === workspaceVersion.current && !dirtyRef.current;
+    return {
+      current,
+      adopt: (value) => {
+        if (!current()) return false;
+        setWorkspace(value);
+        version = workspaceVersion.current;
+        return true;
+      },
+      release: () => {
+        if (navigationOwner.current !== owner) return;
+        navigationOwner.current = null;
+        setNavigating(false);
+      },
+    };
+  }, [setWorkspace]);
   const [models, setModels] = useState<ModelInfo[]>([]);
   const [activity, setActivity] = useState<ChatActivity | null>(null);
   const [toast, setToast] = useState<Toast | null>(null);
@@ -102,18 +146,14 @@ export function AppProvider({ api, children }: { api: DesktopApi; children: Reac
         const result = await api.openWorkspace(target);
         if (ticket === workspaceVersion.current && matchesScope(workspaceScope.current, target)) {
           if (dirtyRef.current) deferredWorkspace.current = { ticket, value: result };
-          else {
-            workspaceScope.current = result.scope;
-            updateWorkspace(result);
-            setState((current) => rememberBrand(current, result.brand));
-          }
+          else adoptWorkspace(result);
         }
         return result;
       } finally {
         setRefreshingWorkspace((current) => (current === ticket ? null : current));
       }
     },
-    [api],
+    [api, adoptWorkspace],
   );
   useEffect(() => {
     const deferred = deferredWorkspace.current;
@@ -123,11 +163,9 @@ export function AppProvider({ api, children }: { api: DesktopApi; children: Reac
       deferred.ticket === workspaceVersion.current &&
       matchesScope(workspaceScope.current, deferred.value.scope)
     ) {
-      workspaceScope.current = deferred.value.scope;
-      updateWorkspace(deferred.value);
-      setState((current) => rememberBrand(current, deferred.value.brand));
+      adoptWorkspace(deferred.value);
     }
-  }, [dirty]);
+  }, [dirty, adoptWorkspace]);
   useEffect(() => {
     void refresh().catch((error: unknown) => {
       setToast(diagnosticFromBridge(error));
@@ -176,15 +214,17 @@ export function AppProvider({ api, children }: { api: DesktopApi; children: Reac
         api,
         state,
         workspace,
+        parentVideo,
         models,
         activity,
         dirty,
-        busy: activity !== null || refreshingWorkspace !== null,
+        busy: activity !== null || refreshingWorkspace !== null || navigating,
         toast,
         chatTarget,
         setDirty,
         setToast,
         setWorkspace,
+        beginNavigation,
         setChatTarget,
         refresh,
         reload,

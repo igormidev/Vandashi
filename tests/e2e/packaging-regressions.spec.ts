@@ -5,6 +5,35 @@ import {
   addRenderCommit,
 } from './packaging-regression-fixture';
 
+test('edits and reorders a library larger than 500 thumbnails without dropping candidates', async ({
+  desktopApp,
+  page,
+}) => {
+  await installPackagingRegressionFixture(desktopApp, 501);
+  await page.reload();
+  const thumbnails = page.locator('.thumbnail');
+  await expect(thumbnails).toHaveCount(501);
+  await page.getByRole('textbox', { name: 'Titles', exact: true }).fill('Reviewed library title');
+  await thumbnails.last().getByRole('button', { name: 'Move earlier', exact: true }).click();
+  await page.getByRole('button', { name: 'Save changes', exact: true }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByRole('button', { name: 'Save changes', exact: true }).click();
+  await expect(dialog).toBeHidden();
+  const saved = (await packagingRequests(desktopApp)).saves[0]?.packaging;
+  expect(saved?.titles.long).toEqual(['Reviewed library title']);
+  const originalOrder = Array.from({ length: 501 }, (_, index) => `thumbnails/portrait-${String(index)}.svg`);
+  expect(saved?.thumbnails).toEqual([
+    ...originalOrder.slice(0, 499),
+    'thumbnails/portrait-500.svg',
+    'thumbnails/portrait-499.svg',
+  ]);
+  await page.reload();
+  await expect(page.getByRole('textbox', { name: 'Titles', exact: true })).toHaveValue(
+    'Reviewed library title',
+  );
+  await expect(thumbnails).toHaveCount(501);
+});
+
 test('preserves multiword tag typing, dirty locks, format drafts, and uncropped thumbnail display', async ({
   desktopApp,
   page,

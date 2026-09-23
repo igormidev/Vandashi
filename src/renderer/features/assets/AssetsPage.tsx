@@ -1,10 +1,10 @@
 import { ArrowLeft, Check, ChevronRight, Folder, Images, Plus, RefreshCw, Search, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { AssetKind } from '../../../domain/models';
+import type { Asset, AssetKind } from '../../../domain/models';
 import { useApp } from '../../app/store';
 import { Split } from '../../shared/Split';
-import { AiButton, Empty, IconButton, Modal } from '../../shared/ui';
+import { AiButton, Empty, IconButton, Modal, PendingLabel } from '../../shared/ui';
 import { ChatPane } from '../chat/ChatPane';
 import { AssetImport } from './AssetImport';
 import { AssetInspector } from './AssetInspector';
@@ -24,14 +24,15 @@ export function AssetsPage() {
   const [selectedKinds, setSelectedKinds] = useState<AssetKind[]>(kinds);
   const [tag, setTag] = useState('');
   const [imports, setImports] = useState<string[]>([]);
-  const [deleting, setDeleting] = useState(false);
+  const [deleting, setDeleting] = useState<Asset | null>(null);
   const [mutating, setMutating] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [dragging, setDragging] = useState(false);
   const assets = workspace?.assets;
   const scopeKey = workspace
     ? [workspace.scope.brandId, workspace.scope.videoId, workspace.scope.clipId].join(':')
     : '';
-  useAssetRefresh(scopeKey, busy || dirty || mutating || imports.length > 0);
+  useAssetRefresh(scopeKey, busy || dirty || mutating || deleting !== null || imports.length > 0);
   const index = useMemo(() => indexAssets(assets ?? []), [assets]);
   const visible = useMemo(
     () => filterAssets(index, { query, folder, kinds: selectedKinds, tag }),
@@ -80,14 +81,17 @@ export function AssetsPage() {
           <IconButton
             label={t('assetRefresh')}
             disabled={locked || dirty}
+            aria-busy={refreshing}
             onClick={() => {
               setMutating(true);
+              setRefreshing(true);
               void run(reload).finally(() => {
                 setMutating(false);
+                setRefreshing(false);
               });
             }}
           >
-            <RefreshCw size={14} />
+            <RefreshCw size={14} className={refreshing ? 'spin' : undefined} aria-hidden="true" />
           </IconButton>
           <button
             className="button small"
@@ -254,7 +258,7 @@ export function AssetsPage() {
           asset={selected}
           locked={locked}
           onDelete={() => {
-            setDeleting(true);
+            setDeleting(selected);
           }}
         />
       ) : (
@@ -282,10 +286,10 @@ export function AssetsPage() {
       <Modal
         title={t('deleteAsset')}
         description={t('deleteAssetHelp')}
-        open={deleting}
+        open={deleting !== null}
         locked={mutating}
         onClose={() => {
-          if (!mutating) setDeleting(false);
+          if (!mutating) setDeleting(null);
         }}
       >
         <div className="modal-actions">
@@ -294,7 +298,7 @@ export function AssetsPage() {
             className="button"
             disabled={mutating}
             onClick={() => {
-              setDeleting(false);
+              setDeleting(null);
             }}
           >
             {t('cancel')}
@@ -302,21 +306,26 @@ export function AssetsPage() {
           <button
             type="button"
             className="button danger"
-            disabled={mutating || busy || dirty || !selected}
+            disabled={mutating || busy || dirty || !deleting}
+            aria-busy={mutating}
             onClick={() => {
-              if (!selected) return;
+              if (!deleting) return;
               setMutating(true);
               void run(async () => {
-                await api.deleteAsset({ scope: workspace.scope, assetId: selected.id });
+                await api.deleteAsset({
+                  scope: workspace.scope,
+                  assetId: deleting.id,
+                  expectedRevision: deleting.revision,
+                });
                 setSelectedId(null);
-                setDeleting(false);
+                setDeleting(null);
                 await reload();
               }).finally(() => {
                 setMutating(false);
               });
             }}
           >
-            {t(mutating ? 'loading' : 'delete')}
+            {mutating ? <PendingLabel label={t('loading')} /> : t('delete')}
           </button>
         </div>
       </Modal>

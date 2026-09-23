@@ -4,31 +4,18 @@ import { openChatSession } from './chat-history';
 import { repositoryHeads, turnReceipt } from './turn-receipt';
 import type { MediaPort } from '../domain/media';
 import type { OpenedChat } from '../domain/api';
-import type { AgentPort, AgentRunInput } from '../domain/agent';
+import type { AgentPort } from '../domain/agent';
 import { AgentError } from '../domain/agent';
-import type { AppEvent, ChatMessage, ChatRequest, ChatSession, Scope, Settings } from '../domain/models';
-import { buildWorkspacePrompt } from '../domain/prompts';
+import type { AppEvent, ChatMessage, ChatRequest, ChatSession, Scope } from '../domain/models';
+import { appMessagesEn } from '../domain/messages';
 import type { GitPort, StoragePort } from '../domain/storage';
 import type { Commits } from './commits';
 import type { OperationGate } from './operation-gate';
-
-type ScriptInput = {
-  scope: Scope;
-  revision: string;
-  content: string;
-  guidance: string;
-  selection: Settings['chat'];
-};
-type Prepared = {
-  session: ChatSession;
-  original: ChatSession;
-  request: ChatRequest;
-  input: AgentRunInput;
-  heads: Record<string, string>;
-  rollback: () => Promise<void>;
-};
+import type { Prepared, ScriptInput } from './chat-types';
+import { ChatPreparation } from './chat-preparation';
 
 export class Chats {
+  private readonly preparation: ChatPreparation;
   constructor(
     private readonly store: StoragePort,
     private readonly git: GitPort,
@@ -36,8 +23,19 @@ export class Chats {
     private readonly commits: Commits,
     private readonly gate: OperationGate,
     private readonly emit: (event: AppEvent) => void,
-    private readonly media?: MediaPort,
-  ) {}
+    media?: MediaPort,
+  ) {
+    this.preparation = new ChatPreparation(
+      store,
+      git,
+      agent,
+      commits,
+      (event) => {
+        this.notify(event);
+      },
+      media,
+    );
+  }
   private notify(event: AppEvent): void {
     try {
       this.emit(event);
@@ -87,18 +85,23 @@ export class Chats {
     if (!request.text.trim()) throw new AppFault({ id: 'appMessageEmpty' });
     const release = this.gate.acquire(request.sessionId);
     let scope: Scope | undefined;
+    const preparation = { filesTouched: false, handedOff: false };
     try {
       const session = await this.store.getSession(request.sessionId);
       scope = session.scope;
-      await this.launch(await this.prepare(session, request), release);
+      const prepared = await this.preparation.prepare(session, request, preparation);
+      preparation.handedOff = true;
+      await this.launch(prepared, release);
     } catch (error) {
-      if (scope) this.notify({ type: 'workspace-changed', scope });
+      if (scope && preparation.filesTouched && !preparation.handedOff)
+        this.notify({ type: 'workspace-changed', scope });
       release();
       throw error;
     }
   }
   async saveScript(input: ScriptInput): Promise<ChatSession> {
     const release = this.gate.acquire('script-handoff');
+    const preparation = { filesTouched: false, handedOff: false };
     try {
       const session = await this.openUnlocked({
         scope: input.scope,
@@ -107,89 +110,19 @@ export class Chats {
       });
       const request: ChatRequest = {
         sessionId: session.id,
-        text: input.guidance.trim() || 'Implement the staged script changes in the video.',
+        text: input.guidance.trim() ? input.guidance : appMessagesEn.scriptHandoff,
         mode: 'edit',
         selection: input.selection,
         attachments: [],
       };
-      await this.launch(await this.prepare(session, request, input), release);
+      const prepared = await this.preparation.prepare(session, request, preparation, input);
+      preparation.handedOff = true;
+      await this.launch(prepared, release);
       return structuredClone(session);
     } catch (error) {
-      this.notify({ type: 'workspace-changed', scope: input.scope });
+      if (preparation.filesTouched && !preparation.handedOff)
+        this.notify({ type: 'workspace-changed', scope: input.scope });
       release();
-      throw error;
-    }
-  }
-  private async prepare(session: ChatSession, request: ChatRequest, script?: ScriptInput): Promise<Prepared> {
-    const repositories = await this.store.repositories(session.scope);
-    if (request.mode === 'edit' && session.scope.videoId) await this.media?.stopStudio();
-    for (const repository of repositories)
-      if ((await this.git.status(repository)).dirty) throw new AppFault({ id: 'appSaveBeforeAi' });
-    const heads = await repositoryHeads(this.git, repositories);
-    const cwd = await this.store.projectPath(session.scope);
-    const capabilities = await this.agent.capabilities(cwd);
-    const skill = capabilities.skills.find((entry) => entry.name === 'hyperframes');
-    const original = structuredClone(session);
-    const scriptHead = heads[cwd];
-    if (script && !scriptHead) throw new AppFault({ id: 'appScriptCheckpointMissing' });
-    const originalScript = script && scriptHead ? await this.git.readAt(cwd, scriptHead, 'script.md') : null;
-    let staged = false;
-    const rollback = async () => {
-      if (!staged || !script) return;
-      const workspace = await this.store.openWorkspace(session.scope);
-      const current = workspace.documents.find((document) => document.kind === 'script');
-      if (current?.content !== script.content && current?.content !== originalScript)
-        throw new AppFault({ id: 'appScriptChangedDuringStart' });
-      const head = heads[cwd];
-      if (!head) throw new AppFault({ id: 'appScriptCheckpointPreserved' });
-      await this.git.restoreFiles(cwd, head, ['script.md']);
-    };
-    try {
-      if (script) {
-        staged = true;
-        await this.store.writeScript(script);
-        await this.git.stage(cwd, ['script.md']);
-      }
-      const workspace = await this.store.openWorkspace(session.scope);
-      const prompt = buildWorkspacePrompt({
-        workspace,
-        topic: session.topic,
-        mode: request.mode,
-        text: request.text,
-        scriptStaged: !!script,
-        ...(skill ? { hyperframesSkill: skill } : {}),
-      });
-      const message: ChatMessage = {
-        id: crypto.randomUUID(),
-        role: 'user',
-        text: request.text,
-        turnId: null,
-        files: [],
-        createdAt: new Date().toISOString(),
-      };
-      session.messages.push(message);
-      session.updatedAt = new Date().toISOString();
-      await this.store.saveSession(session);
-      this.notify({ type: 'chat', sessionId: session.id, message, delta: false });
-      this.notify({ type: 'activity', activity: { sessionId: session.id, phase: 'starting', detail: '' } });
-      return {
-        session,
-        original,
-        request,
-        heads,
-        rollback,
-        input: {
-          threadId: session.threadId,
-          cwd,
-          mode: request.mode,
-          writableRoots: request.mode === 'edit' ? repositories : [],
-          selection: request.selection,
-          prompt,
-          attachments: request.attachments,
-        },
-      };
-    } catch (error) {
-      await rollback();
       throw error;
     }
   }
@@ -198,6 +131,7 @@ export class Chats {
       // The caller receives success only once Codex has accepted a turn. The lease outlives that response.
       void this.execute(prepared, resolve, reject)
         .catch((error: unknown) => {
+          this.notify({ type: 'workspace-changed', scope: prepared.session.scope });
           reject(error instanceof Error ? error : new Error(String(error)));
           this.notify({
             type: 'notice',
@@ -241,6 +175,7 @@ export class Chats {
             ...(session.checkpoints ?? []),
             {
               turnId: event.turnId,
+              mode: prepared.request.mode,
               threadId: session.threadId ?? '',
               heads,
               messageCount: original.messages.length,
@@ -306,7 +241,12 @@ export class Chats {
           type: 'activity',
           activity: { sessionId: session.id, phase: 'committing', detail: '' },
         });
-        await this.commits.reconcile(session.scope, prepared.request.mode === 'edit');
+        await this.commits.reconcile(
+          prepared.scope,
+          prepared.request.mode === 'edit',
+          Object.keys(heads),
+          prepared.request.mode === 'edit' ? prepared.sharedScopes : [],
+        );
         const latest = lifecycle.started ? session.checkpoints?.at(-1) : undefined;
         if (latest) latest.postHeads = await repositoryHeads(this.git, Object.keys(heads));
         const receipt =

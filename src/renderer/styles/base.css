@@ -44,9 +44,13 @@ select {
 button {
   cursor: pointer;
 }
-button:disabled {
+button:disabled,
+button[aria-disabled='true'] {
   cursor: default;
   opacity: 0.35;
+}
+button:disabled[aria-busy='true'] {
+  opacity: 1;
 }
 button,
 input,
@@ -414,6 +418,42 @@ svg {
 .spin {
   animation: spin 1.1s linear infinite;
 }
+.pending-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.pending-label svg {
+  flex-shrink: 0;
+}
+.commit-generation {
+  display: grid;
+  gap: 12px;
+  margin: 4px 0 22px;
+  color: var(--text);
+  font-size: 13px;
+}
+.commit-generation .pending-label {
+  justify-content: flex-start;
+}
+.commit-generation .spin {
+  color: var(--accent);
+}
+.indeterminate-track {
+  height: 3px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--border);
+}
+.indeterminate-track > span {
+  display: block;
+  width: 35%;
+  height: 100%;
+  background: var(--accent);
+  border-radius: inherit;
+  animation: progress-slide 1.6s ease-in-out infinite;
+}
 .home {
   max-width: 1060px;
   width: 100%;
@@ -424,6 +464,7 @@ svg {
   height: 100%;
 }
 .home-head {
+  flex-shrink: 0;
   display: flex;
   justify-content: space-between;
   align-items: end;
@@ -450,6 +491,7 @@ svg {
   color: var(--accent);
 }
 .home-footer {
+  flex-shrink: 0;
   margin-top: auto;
   display: flex;
   align-items: center;
@@ -462,8 +504,12 @@ svg {
   display: flex;
   flex-direction: column;
   gap: 3px;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 3px;
 }
 .brand-row {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   padding: 20px 15px;
@@ -477,6 +523,7 @@ svg {
   background: var(--surface);
 }
 .brand-avatar {
+  flex-shrink: 0;
   width: 47px;
   height: 47px;
   border-radius: 10px;
@@ -491,17 +538,23 @@ svg {
   font-size: 15px;
   margin-bottom: 7px;
 }
+.brand-row-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 .brand-row .path {
   font-size: 11px;
   color: var(--faint);
   font-family: var(--code-font);
 }
 .brand-row .last {
+  flex-shrink: 0;
   margin-left: auto;
   color: var(--faint);
   font-size: 11px;
 }
 .brand-row > svg {
+  flex-shrink: 0;
   margin-left: 16px;
   color: var(--muted);
 }
@@ -785,6 +838,7 @@ svg {
 .video-tile {
   text-align: left;
   width: 100%;
+  min-width: 0;
 }
 .video-cover {
   aspect-ratio: 16/9;
@@ -816,6 +870,7 @@ svg {
 .video-tile h2 {
   font-size: 14px;
   margin-bottom: 8px;
+  overflow-wrap: anywhere;
 }
 .video-tile p {
   font-size: 11px;
@@ -824,6 +879,8 @@ svg {
 }
 .video-meta {
   display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
   justify-content: space-between;
   margin-top: 10px;
   font-size: 10px;
@@ -975,6 +1032,14 @@ svg {
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+@keyframes progress-slide {
+  from {
+    transform: translateX(-105%);
+  }
+  to {
+    transform: translateX(290%);
   }
 }
 @keyframes pulse {

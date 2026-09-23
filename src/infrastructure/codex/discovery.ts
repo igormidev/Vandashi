@@ -50,16 +50,16 @@ export async function loadCapabilities(client: RpcClient, cwd: string): Promise<
     client.request('plugin/installed', {}),
   ]);
   const skillSchema = z.object({
-    name: z.string(),
-    path: z.string(),
-    description: z.string().default(''),
-    enabled: z.boolean().optional(),
+    name: z.string().regex(/\S/),
+    path: z.string().regex(/\S/),
+    description: z.string(),
+    enabled: z.literal(true),
   });
   const skills = array(object(skillsResponse)['data'])
     .flatMap((entry) => array(object(entry)['skills']))
     .flatMap((entry) => {
       const skill = skillSchema.safeParse(entry);
-      return skill.success && skill.data.enabled !== false ? [skill.data] : [];
+      return skill.success ? [skill.data] : [];
     });
   const plugins = array(object(pluginsResponse)['marketplaces'])
     .flatMap((entry) => array(object(entry)['plugins']))

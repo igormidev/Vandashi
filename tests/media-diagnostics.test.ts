@@ -57,6 +57,6 @@ it('uses app descriptors for probe and project guards without classifying unrela
   expect(checks[0]?.diagnostic).toBeUndefined();
   expect(checks[1]?.diagnostic).toEqual({
     kind: 'app',
-    message: { id: 'mediaCheckUnavailable', params: { name: 'FFmpeg' } },
+    message: { id: 'mediaToolSetupRequired', params: { name: 'FFmpeg' } },
   });
 });

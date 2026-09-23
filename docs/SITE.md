@@ -95,4 +95,14 @@ actual clipboard setup prompt, language selection, mobile enlargement and dismis
 Full PNG/WebP comparisons confirm all four encoded screenshots are pixel-identical
 to their source captures. Source-boundary negative probes reject Node/host imports
 into the landing page and landing imports into the desktop app. GitHub Pages
-deployment remains unverified until its workflow and public URL are observed.
+deployment was subsequently verified as recorded below.
+
+## Verified public deployment — 2026-09-23
+
+The [Pages workflow for `9f93dae`](https://github.com/igormidev/Vandashi/actions/runs/35899327039)
+completed successfully. The public [Vandashi site](https://igormidev.github.io/Vandashi/)
+returned HTTP 200 and rendered in the in-app browser. Direct interaction switched English
+to Brazilian Portuguese, opened the Clips screenshot dialog and decoded its 2960×1880
+image, then closed it. The remaining initially visible images also decoded; the Clips
+image loaded when brought into view. This verifies deployment of that checkpoint, not
+later uncommitted desktop changes or all platform packaging jobs.

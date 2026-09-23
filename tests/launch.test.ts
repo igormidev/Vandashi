@@ -83,6 +83,48 @@ describe('release workflows with real storage and Git', () => {
     if (!value) throw new Error('No video');
     return value;
   }
+  it.each([
+    { placement: 'leading', titles: ['  ', 'First choice', 'Second choice'] },
+    { placement: 'intermediate', titles: ['First choice', '\t\n', 'Second choice'] },
+    { placement: 'trailing', titles: ['First choice', 'Second choice', '  '] },
+  ])(
+    'removes $placement blank title candidates while preserving reviewed nonblank order',
+    async ({ titles }) => {
+      const reviewed = {
+        ...(await packaging()),
+        titles: { long: titles, short: [' ', 'Short choice', '\t'] },
+      };
+      const before = structuredClone(reviewed);
+      const result = await app.api.preparePublish({
+        scope: app.scope,
+        platform: 'youtube',
+        browser: 'Chrome',
+        packaging: reviewed,
+        clipId: null,
+      });
+      expect(result.prompt).toContain(
+        JSON.stringify(
+          { ...reviewed, titles: { long: ['First choice', 'Second choice'], short: ['Short choice'] } },
+          null,
+          2,
+        ),
+      );
+      expect(reviewed).toEqual(before);
+      expect(app.agent.run).not.toHaveBeenCalled();
+    },
+  );
+  it('rejects all-blank active title candidates rather than preparing an empty first choice', async () => {
+    await expect(
+      app.api.preparePublish({
+        scope: app.scope,
+        platform: 'youtube',
+        browser: 'Chrome',
+        packaging: { ...(await packaging()), titles: { long: [' ', '\t\n'], short: ['Short choice'] } },
+        clipId: null,
+      }),
+    ).rejects.toThrow('title');
+    expect(app.agent.run).not.toHaveBeenCalled();
+  });
   it('prepares the selected main media with reviewed fields and chapters without publishing or altering saved packaging', async () => {
     const original = await packaging();
     const reviewed = { ...original, descriptions: { ...original.descriptions, long: 'Reviewed only' } };

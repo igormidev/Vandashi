@@ -8,6 +8,7 @@ import type { Commits } from './commits';
 
 export class Studio {
   private readonly baselines = new Map<string, string>();
+  private readonly discards = new Map<string, { baseline: string; backup: string }>();
   private readonly studioUrls = new Map<string, string>();
   constructor(
     private readonly store: StoragePort,
@@ -23,8 +24,12 @@ export class Studio {
   async start(scope: Scope) {
     return this.gate.run('studio-open', async () => {
       if (!scope.videoId) throw new AppFault({ id: 'appOpenVideo' });
+      // Opening storage may repair YAML or synchronize assets, so preflight owns the same lease.
+      if ((await this.store.openWorkspace(scope)).video?.origin === 'imported')
+        throw new AppFault({ id: 'appImportedNoComposition' });
       const path = await this.store.projectPath(scope);
-      if (!(await this.git.status(path)).dirty) this.baselines.set(path, await this.git.head(path));
+      if (!(await this.git.status(path)).dirty && !this.discards.has(path))
+        this.baselines.set(path, await this.git.head(path));
       else if (!this.baselines.has(path)) throw new AppFault({ id: 'appSaveBeforeStudio' });
       const studio = await this.media.startStudio(path);
       this.studioUrls.set(path, studio.url);
@@ -39,7 +44,30 @@ export class Studio {
   async changes(scope: Scope) {
     const path = await this.store.projectPath(scope);
     await this.flush(path);
-    return { dirty: (await this.git.status(path)).dirty, files: await this.git.diff(path) };
+    return {
+      dirty: (await this.git.status(path)).dirty || this.discards.has(path),
+      files: await this.pendingChanges(path),
+    };
+  }
+  private async pendingChanges(path: string) {
+    const discard = this.discards.get(path);
+    const preserved = discard ? await this.git.diffBetween(path, discard.baseline, discard.backup) : [];
+    const files = new Map(preserved.map((file) => [file.path, file]));
+    for (const file of await this.git.diff(path)) {
+      const prior = files.get(file.path);
+      files.set(
+        file.path,
+        prior
+          ? {
+              ...file,
+              additions: prior.additions + file.additions,
+              deletions: prior.deletions + file.deletions,
+              diff: `${prior.diff}\n${file.diff}`,
+            }
+          : file,
+      );
+    }
+    return [...files.values()];
   }
   async discard(scope: Scope): Promise<void> {
     await this.gate.run('studio-discard', async () => {
@@ -47,15 +75,22 @@ export class Studio {
       const sha = this.baselines.get(path);
       await this.flush(path);
       if (!sha) throw new AppFault({ id: 'appStudioCheckpointMissing' });
-      if ((await this.git.head(path)) !== sha) throw new AppFault({ id: 'appStudioCheckpointChanged' });
-      if ((await this.git.status(path)).dirty) {
-        await this.git.commit(
-          path,
-          'Preserve discarded Studio edits',
-          'Safety snapshot of manual Studio changes before restoring the editor checkpoint.',
-        );
-        await this.git.restore(path, sha);
+      let discard = this.discards.get(path);
+      if (!discard) {
+        if ((await this.git.head(path)) !== sha) throw new AppFault({ id: 'appStudioCheckpointChanged' });
+        if ((await this.git.status(path)).dirty) {
+          const backup = await this.git.commit(
+            path,
+            'Preserve discarded Studio edits',
+            'Safety snapshot of manual Studio changes before restoring the editor checkpoint.',
+            sha,
+          );
+          discard = { baseline: sha, backup };
+          this.discards.set(path, discard);
+        }
       }
+      if (discard) await this.git.restore(path, discard.baseline, discard.backup);
+      this.discards.delete(path);
       this.baselines.delete(path);
       this.emit({ type: 'workspace-changed', scope });
     });
@@ -69,7 +104,7 @@ export class Studio {
         if (repository !== cwd && (await this.git.status(repository)).dirty)
           throw new AppFault({ id: 'appStudioOtherChanges' });
       await this.flush(cwd);
-      const diff = await this.git.diff(cwd);
+      const diff = await this.pendingChanges(cwd);
       const result = await this.agent.run(
         {
           threadId: null,
@@ -93,7 +128,11 @@ Pending changes (inspect the full files yourself if this excerpt is truncated): 
       if (result.status !== 'completed')
         throw new AppFault({ id: 'appScriptSyncFailed' }, result.error ?? undefined);
       await this.media.normalizeProject(cwd);
-      await this.git.commit(cwd, input.title, input.body);
+      // A failed discard already committed its edits for safety. Record the reviewed save even if
+      // synchronization correctly leaves the script unchanged; the safety message is not its approval.
+      const preservedHead = this.discards.has(cwd) ? await this.git.head(cwd) : undefined;
+      await this.git.commit(cwd, input.title, input.body, preservedHead);
+      this.discards.delete(cwd);
       this.baselines.delete(cwd);
       this.emit({ type: 'workspace-changed', scope: input.scope });
       return this.store.openWorkspace(input.scope);
@@ -101,6 +140,8 @@ Pending changes (inspect the full files yourself if this excerpt is truncated): 
   }
   async render(scope: Scope): Promise<string> {
     return this.gate.run('render', async () => {
+      if ((await this.store.openWorkspace(scope)).video?.origin === 'imported')
+        throw new AppFault({ id: 'appFinishedNoRender' });
       for (const repository of await this.store.repositories(scope))
         if ((await this.git.status(repository)).dirty) throw new AppFault({ id: 'appSaveBeforeRender' });
       const project = await this.store.projectPath(scope);

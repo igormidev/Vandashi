@@ -1,4 +1,4 @@
-import { ArrowUp, Paperclip, Square, X } from 'lucide-react';
+import { ArrowUp, LoaderCircle, Paperclip, Square, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ChatSession, ModelSelection } from '../../../domain/models';
@@ -12,9 +12,21 @@ import { cacheDraft, readDraft } from './draft-cache';
 import { RichComposer } from './RichComposer';
 import { mentionReferences } from './mention-references';
 
-export function Composer({ session }: { session: ChatSession }) {
+export function Composer({ session, disabled = false }: { session: ChatSession; disabled?: boolean }) {
   const { t } = useTranslation();
-  const { api, state, models, workspace, run, busy, activity, dirty, chatTarget, refresh } = useApp();
+  const {
+    api,
+    state,
+    models,
+    workspace,
+    run,
+    busy: appBusy,
+    activity,
+    dirty,
+    chatTarget,
+    refresh,
+  } = useApp();
+  const busy = appBusy || disabled;
   const seed = chatTarget?.topic === session.topic ? (chatTarget.prompt ?? null) : null;
   const [restored] = useState(() => readDraft(session.id, seed));
   const [draft, setDraft] = useState<Draft>(restored.draft);
@@ -31,6 +43,7 @@ export function Composer({ session }: { session: ChatSession }) {
   }, [session.id, draft, mode]);
   const selection = validSelection(chosen ?? state?.settings.chat ?? defaultSettings.chat, models);
   const [sending, setSending] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const logoLabel = t('logo');
   const references = useMemo(
     () => (workspace ? mentionReferences(workspace, session.topic, logoLabel) : []),
@@ -161,12 +174,21 @@ export function Composer({ session }: { session: ChatSession }) {
               <button
                 className="send-button stop"
                 type="button"
+                disabled={cancelling}
+                aria-busy={cancelling}
                 onClick={() => {
-                  void run(() => api.cancelChat());
+                  setCancelling(true);
+                  void run(() => api.cancelChat()).finally(() => {
+                    setCancelling(false);
+                  });
                 }}
                 aria-label={t('stop')}
               >
-                <Square size={14} fill="currentColor" />
+                {cancelling ? (
+                  <LoaderCircle className="spin" size={16} aria-hidden="true" />
+                ) : (
+                  <Square size={14} fill="currentColor" />
+                )}
               </button>
             </Tip>
           ) : (
@@ -174,12 +196,17 @@ export function Composer({ session }: { session: ChatSession }) {
               className="send-button"
               type="button"
               disabled={busy || !text.trim() || !!draft.pending || dirty || sending || !models.length}
+              aria-busy={sending}
               aria-label={t('send')}
               onClick={() => {
                 void send();
               }}
             >
-              <ArrowUp size={18} />
+              {sending ? (
+                <LoaderCircle className="spin" size={18} aria-hidden="true" />
+              ) : (
+                <ArrowUp size={18} />
+              )}
             </button>
           )}
         </div>

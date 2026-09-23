@@ -185,7 +185,11 @@ describe('asset persistence and metadata', () => {
     expect(synced.assets[0]?.description).toBe('Reviewed description');
     expect(synced.assets[0]?.tags).toEqual(['identity']);
     expect(synced.dirty).toBe(true);
-    await storage.deleteAsset({ scope, assetId: asset.id });
+    await storage.deleteAsset({
+      scope,
+      assetId: asset.id,
+      expectedRevision: (await storage.openWorkspace(scope)).assets[0]?.revision ?? '',
+    });
     expect((await storage.openWorkspace(scope)).assets).toHaveLength(0);
     const retained = (await storage.openWorkspace(video.scope)).assets[0];
     expect(retained?.title).toBe('Updated shared mark');
@@ -243,13 +247,13 @@ describe('asset persistence and metadata', () => {
     const scene = join(project, 'src', 'scene.html');
     await writeFile(native, JSON.stringify({ media: 'video_assets/mark%20final.png' }));
     await writeFile(scene, '<img src="../video_assets/mark&#32;final.png">');
-    await expect(storage.deleteAsset({ scope: video.scope, assetId: asset.id })).rejects.toThrow(
-      '.hyperframes/studio-manual-edits.json, src/scene.html',
-    );
+    await expect(
+      storage.deleteAsset({ scope: video.scope, assetId: asset.id, expectedRevision: asset.revision }),
+    ).rejects.toThrow('.hyperframes/studio-manual-edits.json, src/scene.html');
     expect(await readFile(asset.path)).not.toHaveLength(0);
     await writeFile(native, '{}');
     await writeFile(scene, '<main>Asset removed from scene</main>');
-    await storage.deleteAsset({ scope: video.scope, assetId: asset.id });
+    await storage.deleteAsset({ scope: video.scope, assetId: asset.id, expectedRevision: asset.revision });
     expect((await storage.openWorkspace(video.scope)).assets).toHaveLength(0);
   });
 

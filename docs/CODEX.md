@@ -6,6 +6,12 @@ Vandashi embeds the installed Codex CLI through its local app-server JSONL proto
 
 The integration was verified with `codex-cli 0.155.1` on macOS on 2026-09-23. The runtime discovers the CLI through `VANDASHI_CODEX_PATH`, `PATH`, or conventional Homebrew/local paths. Finder launches on macOS often omit Homebrew Node from `PATH`. `launch.ts` detects a Node shebang and runs that official Codex launcher with Electron's bundled Node runtime, preserves the existing environment, and appends conventional executable directories. Its bootstrap removes `ELECTRON_RUN_AS_NODE` before vendor code spawns native children. Native binaries keep direct execution and argument boundaries; no shell is enabled. The local account must already be signed in (`codex login`). Windows installations must expose an executable Codex binary through that setting or PATH; a shell script is not accepted as arbitrary executable code.
 
+Each prerequisite retry reads account usage afresh. For ChatGPT accounts, a null,
+missing or failed `ordinaryUsageAllowed` result remains unverified; percentages and
+reset times never establish recovery. Workspace entry and AI repair remain blocked
+until explicit permission is available. Authenticated API-key, Bedrock and custom
+providers are not required to expose ChatGPT subscription quotas.
+
 Run:
 
 ```sh
@@ -66,6 +72,11 @@ provider output or user content. Pre-migration messages remain readable as raw t
 subprocess stderr; `application-diagnostics.test.ts` verifies the persisted boundary.
 
 Model names, reasoning levels, image support, and speed tiers come from paginated `model/list`. Standard mode clears the persisted service tier; Fast uses the catalog's priority tier. Explicit unavailable selections fail instead of silently changing models.
+
+Core Hyperframes readiness requires fresh successful skill discovery with a nonempty name
+and path, explicit `enabled: true`, and the exact name `hyperframes`. Filesystem presence
+and auxiliary skill names are insufficient. Missing core skills route to the official
+external installation guide; unavailable or unverified Codex suppresses AI repair actions.
 
 ## Read and edit modes
 

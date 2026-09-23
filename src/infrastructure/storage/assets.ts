@@ -25,6 +25,7 @@ import {
 import { z } from 'zod';
 import { storageFault } from './validation';
 import { appMessageEnglish } from '../../domain/messages';
+import type { WriteReceipt } from './files';
 
 export const metadataSuffix = '.vandashi.json';
 
@@ -140,6 +141,7 @@ export class AssetStore {
     assetId: string,
     metadata: { title: string; description: string; tags: string[]; expectedRevision: string },
     shared: boolean,
+    receipt?: WriteReceipt,
   ): Promise<Asset> {
     const asset = (await this.list(root, shared)).find((item) => item.id === assetId);
     if (!asset) throw new AppFault({ id: 'storageAssetMissing' });
@@ -169,22 +171,27 @@ export class AssetStore {
       : await prepareEmbeddedMetadata(asset.path, fields);
     const stagedSidecar = join(dirname(path), `.vandashi-metadata-${randomUUID()}.json`);
     try {
+      const contentHash = await hashFile(prepared.path ?? asset.path);
       await atomicWrite(
         stagedSidecar,
         JSON.stringify(
           {
             ...fields,
             hash: asset.hash,
-            contentHash: await hashFile(prepared.path ?? asset.path),
+            contentHash,
             ...prepared.result,
             ...(preserveBytes ? { preserveBytes } : {}),
           },
           null,
           2,
         ),
+        (_temporary, hash) => receipt?.(path, hash),
       );
       this.assertRevision(await this.read(root, asset.path, shared), metadata.expectedRevision);
-      if (prepared.path) await rename(prepared.path, await containedPath(root, asset.path));
+      if (prepared.path) {
+        receipt?.(asset.path, contentHash);
+        await rename(prepared.path, await containedPath(root, asset.path));
+      }
       await rename(stagedSidecar, await containedPath(root, path));
     } finally {
       try {
@@ -200,12 +207,23 @@ export class AssetStore {
     if (asset.revision !== expected) throw new AppFault({ id: 'assetMetadataConflict' });
   }
 
-  async delete(root: string, assetId: string, shared: boolean): Promise<void> {
+  async delete(
+    root: string,
+    assetId: string,
+    shared: boolean,
+    expectedRevision: string,
+    receipt?: WriteReceipt,
+  ): Promise<void> {
     const asset = (await this.list(root, shared)).find((item) => item.id === assetId);
     if (!asset) throw new AppFault({ id: 'storageAssetMissing' });
     if (!shared && asset.shared) throw new AppFault({ id: 'storageSharedRemoveRequired' });
-    await rm(await containedPath(root, asset.path));
-    await rm(await containedPath(root, asset.path + metadataSuffix), { force: true });
+    if (asset.revision !== expectedRevision) throw new AppFault({ id: 'storageAssetDeleteConflict' });
+    const path = await containedPath(root, asset.path);
+    const sidecar = await containedPath(root, asset.path + metadataSuffix);
+    receipt?.(path, null);
+    await rm(path);
+    receipt?.(sidecar, null);
+    await rm(sidecar, { force: true });
     this.cache.delete(asset.path);
   }
 

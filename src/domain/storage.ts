@@ -35,11 +35,14 @@ export interface GitPort {
   diff(repository: string): Promise<FileChange[]>;
   diffBetween(repository: string, from: string, to: string): Promise<FileChange[]>;
   stage(repository: string, paths?: string[]): Promise<void>;
-  commit(repository: string, title: string, body: string): Promise<string>;
+  indexEntries(repository: string, paths?: string[]): Promise<string>;
+  stagedIndexEntries(repository: string): Promise<string>;
+  restoreIndexEntries(repository: string, paths: string[], entries: string, expected: string): Promise<void>;
+  commit(repository: string, title: string, body: string, expectedHead?: string): Promise<string>;
   history(repository: string, page: number): Promise<{ commits: Commit[]; hasMore: boolean }>;
   readAt(repository: string, revision: string, path: string): Promise<string>;
   revisions(repository: string, path: string): Promise<string[]>;
-  restore(repository: string, revision: string): Promise<void>;
+  restore(repository: string, revision: string, expectedHead?: string): Promise<string>;
   restoreFiles(repository: string, revision: string, paths: string[]): Promise<void>;
 }
 
@@ -70,6 +73,13 @@ export type ProjectPreparation = (project: {
   ratio: AspectRatio;
 }) => Promise<void>;
 
+/** Registered paths only: discovery must never synchronize assets or repair project files. */
+export interface AgentScopePaths {
+  repositories: string[];
+  sharedScopes: Scope[];
+  cwd: string;
+}
+
 /** Persistence contracts contain no Electron or provider-specific dependencies. */
 export interface StoragePort {
   getState(): Promise<AppState>;
@@ -87,9 +97,11 @@ export interface StoragePort {
   createClip(input: NewClip, prepare?: ProjectPreparation): Promise<Clip>;
   importClip(input: ImportedClip, validateCopy: (path: string) => Promise<void>): Promise<Clip>;
   repositories(scope: Scope): Promise<string[]>;
+  discoverAgentScope(scope: Scope): Promise<AgentScopePaths>;
   projectPath(scope: Scope): Promise<string>;
   setRenderedPath(scope: Scope, path: string): Promise<void>;
   assetDirectory(scope: Scope): Promise<string>;
+  syncSharedAssets(scope: Scope): Promise<void>;
   writeScript(input: { scope: Scope; revision: string; content: string }): Promise<void>;
   sessions(scope: Scope): Promise<ChatSession[]>;
   getSession(id: string): Promise<ChatSession>;
@@ -104,7 +116,7 @@ export interface StoragePort {
     tags: string[];
     commit?: { title: string; body: string };
   }): Promise<Asset>;
-  deleteAsset(input: { scope: Scope; assetId: string }): Promise<void>;
+  deleteAsset(input: { scope: Scope; assetId: string; expectedRevision: string }): Promise<void>;
   importThumbnail(input: { scope: Scope; sourcePath: string }): Promise<Workspace>;
   updateLaunch(input: { scope: Scope; launch: Launch }): Promise<void>;
   allowedPath(path: string): Promise<string>;

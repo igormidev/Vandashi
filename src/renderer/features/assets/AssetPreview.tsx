@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Asset, AssetKind } from '../../../domain/models';
 import { useApp } from '../../app/store';
+import { PendingLabel } from '../../shared/ui';
 
 export function AssetTypeIcon({ kind, size = 20 }: { kind: AssetKind; size?: number }) {
   if (kind === 'image') return <Image size={size} />;
@@ -14,30 +15,37 @@ export function AssetTypeIcon({ kind, size = 20 }: { kind: AssetKind; size?: num
 function AudioWaveform({ asset }: { asset: Asset }) {
   const { t } = useTranslation();
   const { api, workspace } = useApp();
-  const [peaks, setPeaks] = useState<number[]>([]);
+  const [waveform, setWaveform] = useState<{ key: string; peaks: number[] } | null>(null);
   const brandId = workspace?.scope.brandId;
   const videoId = workspace?.scope.videoId ?? null;
   const clipId = workspace?.scope.clipId ?? null;
+  const key = JSON.stringify([brandId, videoId, clipId, asset.id, asset.hash]);
+  const peaks = waveform?.key === key ? waveform.peaks : null;
   useEffect(() => {
     if (!brandId) return;
     let disposed = false;
     void api
       .assetWaveform({ scope: { brandId, videoId, clipId }, assetId: asset.id })
       .then((values) => {
-        if (!disposed) setPeaks(values);
+        if (!disposed) setWaveform({ key, peaks: values });
       })
-      .catch(() => undefined);
+      .catch(() => {
+        if (!disposed) setWaveform({ key, peaks: [] });
+      });
     return () => {
       disposed = true;
     };
-  }, [api, brandId, videoId, clipId, asset.id, asset.hash]);
+  }, [api, brandId, videoId, clipId, asset.id, key]);
   return (
     <div
       className="asset-waveform"
-      role="img"
-      aria-label={t(peaks.length ? 'assetWaveform' : 'assetWaveformUnavailable')}
+      role={peaks === null ? 'status' : 'img'}
+      aria-busy={peaks === null}
+      aria-label={t(peaks === null ? 'loading' : peaks.length ? 'assetWaveform' : 'assetWaveformUnavailable')}
     >
-      {peaks.length ? (
+      {peaks === null ? (
+        <PendingLabel label={t('loading')} />
+      ) : peaks.length ? (
         <svg viewBox="0 0 300 70" preserveAspectRatio="none" aria-hidden="true">
           {peaks.map((peak, index) => (
             <rect key={index} x={index * 3} y={35 - peak * 30} width={2} height={peak * 60} rx={1} />

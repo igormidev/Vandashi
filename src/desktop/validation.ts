@@ -33,7 +33,7 @@ const packaging = z
     titles: z.object({ long: texts, short: texts }).strict(),
     descriptions: z.object({ long: text, short: text }).strict(),
     tags: z.object({ long: texts, short: texts }).strict(),
-    thumbnails: z.array(path).max(500),
+    thumbnails: z.array(path),
     theme: text,
   })
   .strict();
@@ -132,7 +132,9 @@ export const validators: Readonly<Record<ApiMethod, z.ZodType>> = Object.freeze(
       })
       .strict(),
   ]),
-  deleteAsset: z.tuple([z.object({ scope, assetId: id }).strict()]),
+  deleteAsset: z.tuple([
+    z.object({ scope, assetId: id, expectedRevision: z.string().regex(/^[a-f0-9]{64}$/u) }).strict(),
+  ]),
   importThumbnail: z.tuple([z.object({ scope, sourcePath: path }).strict()]),
   startStudio: z.tuple([scope]),
   studioChanges: z.tuple([scope]),
@@ -320,6 +322,7 @@ const mediaExtensions = new Set([
 export function mediaRequestPath(value: string, method: string): string {
   const url = desktopUrl(value, { id: 'desktopMediaRequestUnsupported' });
   const requested = url.searchParams.get('path');
+  const revision = url.searchParams.get('revision');
   if (
     !['GET', 'HEAD'].includes(method) ||
     url.protocol !== 'vandashi-media:' ||
@@ -328,7 +331,9 @@ export function mediaRequestPath(value: string, method: string): string {
     url.port ||
     url.username ||
     url.password ||
-    url.searchParams.size !== 1 ||
+    (revision === null
+      ? url.searchParams.size !== 1
+      : url.searchParams.size !== 2 || !/^[a-f0-9]{64}$/.test(revision)) ||
     !requested ||
     !mediaExtensions.has(extname(requested).toLowerCase())
   ) {

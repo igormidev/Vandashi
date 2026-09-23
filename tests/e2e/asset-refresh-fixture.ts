@@ -8,8 +8,10 @@ interface RefreshAction {
   release?: boolean;
   externalTitle?: string;
   notify?: boolean;
+  commitFailures?: number;
 }
 type AssetUpdate = Parameters<DesktopApi['updateAsset']>[0];
+type AssetDelete = Parameters<DesktopApi['deleteAsset']>[0];
 interface RefreshStatus {
   reads: number;
   pending: number;
@@ -34,10 +36,13 @@ export async function installAssetRefreshFixture(desktop: ElectronApplication, v
       let workspace = fixture.workspace;
       let hold = false;
       let reads = 0;
+      let commitFailures = 0;
       const saves: AssetUpdate[] = [];
+      const deletes: AssetDelete[] = [];
       const pending: { snapshot: Workspace; resolve: (value: Workspace) => void }[] = [];
       ipcMain.on('vandashi:asset-refresh-control', (_event, action: RefreshAction) => {
         if (action.hold !== undefined) hold = action.hold;
+        if (action.commitFailures !== undefined) commitFailures = action.commitFailures;
         if (action.externalTitle) {
           workspace = {
             ...workspace,
@@ -66,6 +71,9 @@ export async function installAssetRefreshFixture(desktop: ElectronApplication, v
       ipcMain.on('vandashi:asset-save-requests', (_event, reply: (value: AssetUpdate[]) => void) => {
         reply(saves);
       });
+      ipcMain.on('vandashi:asset-delete-requests', (_event, reply: (value: AssetDelete[]) => void) => {
+        reply(deletes);
+      });
       ipcMain.removeHandler('vandashi:invoke');
       ipcMain.handle('vandashi:invoke', (_event, method: string, args: unknown[]) => {
         if (method === 'getState') return fixture.state;
@@ -90,6 +98,7 @@ export async function installAssetRefreshFixture(desktop: ElectronApplication, v
           if (!asset) throw new Error('Missing asset');
           if (input.expectedRevision !== asset.revision)
             throw new Error('This asset changed outside the editor. Reset its details before saving.');
+          if (commitFailures-- > 0) throw new Error('Injected Git commit failure; files restored.');
           const saved = {
             ...asset,
             title: input.title,
@@ -99,6 +108,16 @@ export async function installAssetRefreshFixture(desktop: ElectronApplication, v
           };
           workspace = { ...workspace, assets: [saved], revision: 'saved' };
           return saved;
+        }
+        if (method === 'deleteAsset') {
+          const input = args[0] as AssetDelete;
+          deletes.push(input);
+          const asset = workspace.assets.find((entry) => entry.id === input.assetId);
+          if (!asset || input.expectedRevision !== asset.revision)
+            throw new Error('This asset changed outside the editor. Reset its details before saving.');
+          if (commitFailures-- > 0) throw new Error('Injected Git commit failure; files restored.');
+          workspace = { ...workspace, assets: [], revision: 'deleted' };
+          return;
         }
         throw new Error(`Unexpected asset refresh method ${method}`);
       });
@@ -112,6 +131,15 @@ export function assetSaveRequests(desktop: ElectronApplication): Promise<AssetUp
     ({ ipcMain }) =>
       new Promise<AssetUpdate[]>((resolve) => {
         ipcMain.emit('vandashi:asset-save-requests', undefined, resolve);
+      }),
+  );
+}
+
+export function assetDeleteRequests(desktop: ElectronApplication): Promise<AssetDelete[]> {
+  return desktop.evaluate(
+    ({ ipcMain }) =>
+      new Promise<AssetDelete[]>((resolve) => {
+        ipcMain.emit('vandashi:asset-delete-requests', undefined, resolve);
       }),
   );
 }

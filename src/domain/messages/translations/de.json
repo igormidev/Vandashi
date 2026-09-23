@@ -251,7 +251,7 @@
   "mediaRendererPreparing": "Videorenderer wird vorbereitet",
   "mediaCheckUnavailable": "{{name}} konnte nicht überprüft werden.",
   "mediaStudioIncluded": "Hyperframes {{version}} · Studio enthalten",
-  "mediaSkillMissing": "Der Hyperframes-Skill wurde in den konfigurierten Codex-Skill-Ordnern nicht gefunden.",
+  "mediaSkillMissing": "Der hyperframes-Hauptskill muss mit Codex überprüft werden. Richte ihn gemäß der Installationsanleitung außerhalb von Vandashi ein und prüfe erneut.",
   "mediaSkillLabel": "Hyperframes-Skill",
   "mediaEnvironmentLabel": "Videoumgebung",
   "mediaHyperframesLabel": "Hyperframes",
@@ -262,5 +262,16 @@
   "mediaBridgeSaveHttp": "Studio konnte eine Änderung nicht speichern (HTTP {{status}}). Behebe den Speicherfehler im Editor, bevor du ihn verlässt.",
   "mediaBridgeSaveConnection": "Studio konnte eine Änderung nicht speichern. Prüfe die lokale Studio-Verbindung, bevor du den Editor verlässt.",
   "mediaBridgePending": "Studio speichert noch. Warte, bis die ausstehenden Änderungen gespeichert sind, bevor du den Editor verlässt.",
-  "mediaBridgeUnavailable": "Die Speicherverbindung zu Studio ist nicht verfügbar. Lass den Editor geöffnet und versuche es erneut."
+  "mediaBridgeUnavailable": "Die Speicherverbindung zu Studio ist nicht verfügbar. Lass den Editor geöffnet und versuche es erneut.",
+  "scriptHandoff": "Passe das Video an das Skript an.",
+  "storageAssetDeleteConflict": "Diese Mediendatei wurde außerhalb des Editors geändert. Schließe diese Bestätigung und prüfe die aktuelle Version, bevor du sie löschst.",
+  "appPublishUndoUnavailable": "Die Veröffentlichung könnte eine externe Plattform verändert haben. Zurücksetzen ist nicht verfügbar. Prüfe die Veröffentlichung im Browser und aktualisiere ihren Status hier.",
+  "appHyperframesSkillMissing": "Codex hat keinen aktivierten hyperframes-Hauptskill gefunden. Öffne die Installationsanleitung, installiere oder aktiviere ihn außerhalb von Vandashi und prüfe erneut.",
+  "appHyperframesSkillUnverified": "Es konnte nicht mit Codex überprüft werden, ob der hyperframes-Hauptskill aktiviert ist. Prüfe die Codex-Einrichtung und versuche es erneut.",
+  "appUsageUnverified": "Dein verfügbares Codex-Kontingent konnte nicht überprüft werden. Prüfe deine Verbindung und versuche es erneut.",
+  "appWorkspaceRecoveryRequired": "Der Arbeitsbereich konnte nicht wiederhergestellt werden. Behebe den gemeldeten Git- oder Dateifehler außerhalb von Vandashi, ohne deine Änderungen zu verwerfen, und prüfe dann erneut.",
+  "mediaBundledRuntimeRecovery": "Die mit Vandashi gelieferte Laufzeitumgebung für Videos konnte nicht überprüft werden. Repariere oder installiere Vandashi anhand der Einrichtungsanleitung neu. Starte die App danach neu und prüfe erneut.",
+  "mediaEnvironmentRecovery": "Die Prüfung der Videoabhängigkeiten ist fehlgeschlagen. Repariere die Werkzeuge anhand der Einrichtungsanleitung außerhalb von Vandashi. Starte die App danach neu und prüfe erneut.",
+  "mediaToolSetupRequired": "{{name}} ist nicht verfügbar. Installiere oder repariere es anhand der Anleitung außerhalb von Vandashi. Starte Vandashi danach neu und prüfe erneut.",
+  "mediaBrowserSetupRequired": "Der Browser zum Rendern ist nicht verfügbar. Installiere oder repariere den Hyperframes-Browser anhand der Anleitung außerhalb von Vandashi. Starte Vandashi danach neu und prüfe erneut."
 }

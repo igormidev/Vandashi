@@ -10,6 +10,7 @@ import type { DesktopApi } from '../domain/api';
 import { platforms } from '../domain/defaults';
 import { appendChapters, chapterIssue, horizontalPlatforms } from '../domain/launch';
 import { importFinishedClip } from './finished-clip';
+import { publishScope, verifyPublishMedia } from './publish-scope';
 
 function webUrl(value: string): URL | null {
   try {
@@ -114,28 +115,21 @@ export class Publishing {
     const clipId = input.clipId ?? input.scope.clipId;
     const topic = `publish:${platform}${clipId ? `:${clipId}` : ''}`;
     return chats.withSession({ scope, topic, title: platform }, async (session) => {
-      const workspace = await this.store.openWorkspace(scope);
-      const target = clipId ? await this.store.openWorkspace({ ...scope, clipId }) : workspace;
-      const video = target.video;
-      if (target.dirty) throw new AppFault({ id: 'appSaveBeforePublish' });
-      if (!video?.renderedPath) throw new AppFault({ id: 'appPublishNeedRender' });
+      const context = await publishScope(this.store, scope, topic);
+      if (!context) throw new AppFault({ id: 'appPublishTargetMissing' });
+      const { workspace } = context;
+      const { video, probe } = await verifyPublishMedia(context, this.media);
       if (!input.browser.trim()) throw new AppFault({ id: 'appPublishBrowserRequired' });
       const channel = workspace.brand.config.platforms[platform === 'youtubeShorts' ? 'youtube' : platform];
       if (!channel?.url.trim()) throw new AppFault({ id: 'appPublishChannelRequired' });
       const channelUrl = webUrl(channel.url);
       if (!channelUrl) throw new AppFault({ id: 'appPublishChannelInvalid' });
-      const probe = await this.media.probeMedia(video.renderedPath);
-      if (!Number.isFinite(probe.duration) || probe.duration <= 0 || !probe.width || !probe.height)
-        throw new AppFault({ id: 'appRenderedVideoInvalid' });
       const horizontal = horizontalPlatforms.includes(platform);
-      if (horizontal && (clipId || video.ratio !== '16:9' || probe.width <= probe.height))
-        throw new AppFault({ id: 'appPublishLandscapeRequired' });
-      if (!horizontal && (video.ratio === '16:9' || probe.width > probe.height))
-        throw new AppFault({ id: 'appPublishPortraitRequired' });
       const packaging = structuredClone(input.packaging);
+      packaging.titles.long = packaging.titles.long.filter((title) => title.trim());
+      packaging.titles.short = packaging.titles.short.filter((title) => title.trim());
       const format = horizontal ? 'long' : 'short';
-      if (!packaging.titles[format].some((title) => title.trim()))
-        throw new AppFault({ id: 'appPublishTitleRequired' });
+      if (packaging.titles[format].length === 0) throw new AppFault({ id: 'appPublishTitleRequired' });
       if (input.chapters?.length) {
         if (platform !== 'youtube') throw new AppFault({ id: 'appManualChaptersUnsupported' });
         const issue = chapterIssue(input.chapters, probe.duration);
@@ -151,7 +145,7 @@ export class Publishing {
       if (!capabilities.browserTools?.length) throw new AppFault({ id: 'appBrowserControlsUnavailable' });
       return {
         session,
-        prompt: `Upload ${JSON.stringify(video.name)} using this verified local video file: ${JSON.stringify(video.renderedPath)}. Destination: ${platform}. Browser: ${JSON.stringify(input.browser.trim())}. Exact channel: ${JSON.stringify(channelUrl.toString())}.\nUse this reviewed packaging (use the ${format}-form fields):\n${JSON.stringify(packaging, null, 2)}\nOrdered thumbnail files: ${JSON.stringify(thumbnails)}. The first is the main thumbnail; use additional title/thumbnail candidates only when this account and platform currently support testing, and report unsupported options.\nLaunch file: ${JSON.stringify(`${workspace.video?.path ?? video.path}/launch.yml`)}. Update only the record {platform:${JSON.stringify(platform)},clipId:${JSON.stringify(clipId)}}; preserve other releases.\nVerify the exact channel before taking any upload action. If the account differs, switch only when the matching account can be positively identified; otherwise stop and notify me. If signed out, pause so I can sign in directly in the browser. Never request passwords or codes in chat. Monitor actual upload and processing through completion, then set uploaded and the verified public URL. If it fails, set failed and explain the remaining work. Do not invent successful results.`,
+        prompt: `Upload ${JSON.stringify(video.name)} using this verified local video file: ${JSON.stringify(video.renderedPath)}. Destination: ${platform}. Browser: ${JSON.stringify(input.browser.trim())}. Exact channel: ${JSON.stringify(channelUrl.toString())}.\nUse this reviewed packaging (use the ${format}-form fields):\n${JSON.stringify(packaging, null, 2)}\nOrdered thumbnail files: ${JSON.stringify(thumbnails)}. The first is the main thumbnail. Before submitting candidates, inspect the destination and exact account to determine whether title/thumbnail testing is available and its current maximum for each kind. Use only the leading supported prefix of each ordered list; never skip an earlier candidate or exceed the verified maximum. If testing is unavailable or its limit cannot be verified, use only the first title and main thumbnail where supported and report omitted alternatives. Never infer capability from the number of supplied candidates.\nLaunch file: ${JSON.stringify(`${workspace.video?.path ?? video.path}/launch.yml`)}. Update only the record {platform:${JSON.stringify(platform)},clipId:${JSON.stringify(clipId)}}; preserve other releases.\nVerify the exact channel before taking any upload action. If the account differs, switch only when the matching account can be positively identified; otherwise stop and notify me. If signed out, pause so I can sign in directly in the browser. Never request passwords or codes in chat. Monitor actual upload and processing through completion, then set uploaded and the verified public URL. If it fails, set failed and explain the remaining work. Do not invent successful results.`,
       };
     });
   }

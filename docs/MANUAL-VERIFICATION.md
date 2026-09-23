@@ -286,3 +286,116 @@ The complete native suite then passed **112/112** in 2.2 minutes. The source gat
 passes **553 tests**, with 13 explicitly opt-in integration cases skipped, and
 reports zero static-analysis errors/warnings. Separate real packaged integration
 evidence remains documented above; skipped live tests are not counted as passed.
+
+## Final-review checkpoint: direct clipboard and history retest
+
+The frozen unsigned `a1d69e1` app at `/tmp/vandashi-site-checkpoint-package/mac-arm64/Vandashi.app`
+was opened with the existing isolated manual-test preferences after the Mac was unlocked.
+Northstar Stories / the-hidden-city loaded its real six-second Hyperframes preview and
+12-entry history page. Copy commit SHA on the latest entry showed Copied; pasting into
+an unsent Creation chat draft produced `2b828e0461219295a5e1f8d1c9cfd99d7a04ab24`,
+exactly matching the repository's resolved commit. The draft was then cleared without
+sending. Expanding the real `index.html` history diff displayed the two-line title
+restoration from THE QUIET CITY to THE HIDDEN CITY. The app closed cleanly and the
+repository remained clean. This closes the packaged SHA-copy retest for that checkpoint;
+it does not verify the later final-review fixes or the remaining image-copy walkthroughs.
+
+## Final-review development build: shared image and public site
+
+The current development build (final-review functional fixes before the Home layout
+changes) opened Northstar Stories / Shared assets. Selecting The Hidden City exposed
+its actual metadata; an accidental unsaved leading newline during keyboard inspection
+was discarded with Reset details. Copy image produced a real clipboard image: Preview's
+New from Clipboard displayed the full city artwork. The temporary document was saved
+as `/tmp/vandashi-final-manual-inputs/vandashi-shared-image-copy.png` for evidence.
+This is the shared-library consumer; the video-assets consumer and final package retest
+remain separate checks. Native Electron screenshot capture appeared stale during this
+walkthrough, so the actual Preview image and accessibility state establish this result.
+
+The public Pages deployment for `9f93dae` returned HTTP 200. Browser interaction verified
+English → Brazilian Portuguese, real screenshot loading, opening the Clips gallery image
+(2960×1880), and closing it. See `SITE.md` for the successful workflow link.
+
+The current Home build was exercised directly with the two real isolated brands.
+Northstar Stories initially appeared first; opening Recovery Studio and returning
+to Home moved Recovery Studio to the first row. Cancelling the native parent-folder
+picker returned to the unchanged list. Selecting the isolated temporary parent then
+cancelling the untouched single-field name dialog also returned to the same two brands
+without creating a folder. The complementary 24-brand layout regression verifies
+keyboard access to the final row and retained header controls at 1200×720.
+
+## Final-review current build: animated shared asset
+
+Recovery Studio's Brand → Videos → Shared assets navigation was exercised in the
+current build. The native picker selected the prepared three-second, six-frame GIF
+`moving-colors.gif`. Actual Codex inspection reported five sampled frames and produced
+an accurate editable description of the moving colored bars/timecode. Import completed
+as shared-assets commit `94cf259`; that repository remained clean. Both the selected tile
+and inspector visibly advanced between timecode frames 00:00:01.000 and 00:00:00.500.
+FFprobe independently confirmed the saved metadata-bearing GIF retains six frames at
+160×90. This establishes native picker, real GIF inspection/import and animation;
+propagation, duplicate/drop behavior and the final packaged build remain separate checks.
+
+Repeating the native picker/import with the same original GIF produced the explicit
+already-in-library notice. The count stayed at one and original reviewed metadata stayed
+unchanged. Entering Fresh canvas through Videos ran its real prerequisite checks,
+materialized the GIF into `_shared`, and committed `fe0aba5`; the video repository was
+clean. Its Assets folder displayed the same metadata with edit/delete disabled and a
+shared-library explanation. Back returned to the brand Videos tab after checks. This
+closes that normal manual-import propagation path, not the separately identified AI
+post-turn synchronization defect.
+
+## Final-review current build: real video library and packaging theme
+
+Northstar Stories displayed the imported `finished-city` placeholder and the actual
+first thumbnail for `the-hidden-city`. Ordinary Tab navigation and Enter opened
+`the-hidden-city`, showing pending controls before prerequisite checks. Packaging accepted
+a longer theme; dirty state disabled navigation and chat. The real commit helper supplied
+a title/body, the body was reviewed/edited, and save created clean commit `675adf6`.
+Back returned to Videos. Show more expanded the persisted theme fully without navigating;
+Show less restored clamping and keyboard focus stayed on the control. The app then closed
+cleanly for the next native regression run. Together with seven native failure/race/layout
+cases, this establishes section11's real packaging-backed library flow on macOS.
+
+## Final-review current build: Brand save normalization and logo replacement
+
+The actual Northstar Stories Brand editor saved a purple-circle SVG through the native
+picker and reviewed commit dialog (`9b233b7`), then replaced it with a mint-triangle SVG
+at the same canonical `brand_icon.svg` path (`9644046`). Screenshots confirmed each image
+immediately after save; the second image retained its different aspect ratio. Navigation
+and chat locked while either draft was dirty and unlocked after successful save.
+
+A whitespace-only name edit was saved through the reviewed dialog. The returned field
+was normalized to `Northstar Stories`, Save became disabled, and navigation/chat unlocked
+although the saved content/revision did not change. A subsequent temporary name edit
+restored dirty locks; Discard restored the clean original. The brand repository was clean
+and the app exited successfully. Actual AI in-place logo refresh remains separate.
+
+The real commit helper exposed inaccurate pending-edit copy (mentioning no repository
+changes and describing unchanged taste guides as additions). Root narrowed Brand
+commit context to changed documents and clarified before/after instructions; actual
+helper follow-up is pending on the next build. User-reviewed commit text remained editable
+and the manual test saved corrected descriptions.
+
+## User-requested loading feedback audit
+
+The commit dialog now displays an animated spinner, phase label and indeterminate bar
+while its AI request is pending, plus an inline busy indicator on its action. Nine held
+development-native cases passed across Brand, Packaging, Studio, shared assets and video
+assets. They verify success, retained reviewed text, typed generation failure with manual
+recovery, cancellation with late completion, and visible nonanimated reduced-motion status.
+The current renderer capture is `/tmp/vandashi-commit-loading-brand.png`; this is a fixture
+screenshot, not evidence of a live Codex request. A real-app follow-up remains planned.
+
+The new onboarding recovery and format cases plus existing video-library cases pass
+11/11. The test fixture was corrected to use the production typed failure envelope, wait
+for the prerequisite-triggered library reload, and inspect the visible fixed-position
+toast rather than its zero-height live-region wrapper. The saved-but-unopened video now
+appears in the refreshed list and opens without another create request; preparation
+failure retains the form, while both aspect ratios expose selected state and correct tabs.
+
+The broader loading audit passes 18 held-response native cases for creation, History,
+conversation opening/reset/Undo/start/Stop, Settings refresh, Studio discard, script
+handoff, shared/video imports and waveforms, failed media access, and thumbnail import.
+These are controlled backend cases; they explicitly check failure/retry, draft retention,
+late-response ownership, and progress through the final refresh.
