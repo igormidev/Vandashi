@@ -53,6 +53,7 @@ const machineWords = [
     'src/renderer/app/navigation-tabs.ts',
     ['brand', 'videos', 'sharedAssets', 'packaging', 'creation', 'manual', 'assets', 'clips', 'launch'],
   ],
+  ['src/renderer/app/WorkspaceNavigation.tsx', ['videos', 'creation', 'manual', 'clips', 'launch']],
   // This invariant is a developer programming error; operational failures use typed AppFaults.
   ['src/renderer/app/store.tsx', ['AppProvider missing', 'done', 'error']],
   ['src/renderer/features/assets/AssetInspector.tsx', ['byte', 'kilobyte', 'megabyte', 'gigabyte', 'asset:']],

@@ -45,14 +45,18 @@ map to `pt-BR`. Invalid tags and blocked browser storage are handled independent
 Language changes update page metadata, HTML `lang`, accessible labels, the URL,
 and the selectable installation prompt. A failed copy always opens that prompt,
 including after the user closed it following an earlier failure.
+Clipboard writes show a guarded busy spinner until the browser resolves or rejects
+the request. A new attempt clears the preceding outcome, blocks duplicates and leaves
+the prompt available for manual copying after failure. Reduced motion keeps the icon static.
 
 ## Screenshot provenance
 
-All four PNGs in `docs/screenshots` are unmodified captures of the real unsigned
+All four source captures in `docs/screenshots` are unmodified images of the real unsigned
 macOS ARM64 app built from `6795514`, opened with the disposable Northstar Stories
 manual-integration workspace on 2026-09-23. Each is 2960×1880 pixels. The composition,
 rendered portrait clip, generated image, creative guide, and Git history are real
 products of recorded Codex/manual integration work, not fixture or invented UI.
+Their filenames end in `.png`, but the capture provider returned JPEG-encoded bytes.
 
 The WebP equivalents in `landing/src/assets` are lossless encodings made with
 `cwebp -lossless`. They preserve all pixels and dimensions. The icon derives from
@@ -92,7 +96,7 @@ by interaction/layout assertions; those captures do not separately depict 200% t
 The suite found real enlarged-text header overflow and WebKit keyboard-panning
 defects, both corrected and verified. Direct browser use separately verified the
 actual clipboard setup prompt, language selection, mobile enlargement and dismissal.
-Full PNG/WebP comparisons confirm all four encoded screenshots are pixel-identical
+Full source/WebP comparisons confirm all four encoded screenshots are pixel-identical
 to their source captures. Source-boundary negative probes reject Node/host imports
 into the landing page and landing imports into the desktop app. GitHub Pages
 deployment was subsequently verified as recorded below.

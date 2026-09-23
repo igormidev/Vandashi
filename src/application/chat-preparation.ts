@@ -4,6 +4,7 @@ import type { MediaPort } from '../domain/media';
 import type { AppEvent, ChatMessage, ChatRequest, ChatSession } from '../domain/models';
 import type { GitPort, StoragePort } from '../domain/storage';
 import { buildWorkspacePrompt } from '../domain/prompts';
+import { clipHandoffText } from '../domain/clip-handoff';
 import type { Commits } from './commits';
 import type { Prepared, ScriptInput } from './chat-types';
 import { prepareAgentScope } from './agent-repositories';
@@ -24,6 +25,11 @@ export class ChatPreparation {
     state: { filesTouched: boolean },
     script?: ScriptInput,
   ): Promise<Prepared> {
+    if (request.handoff) {
+      if (session.topic !== 'clip' || !session.scope.videoId || !session.scope.clipId)
+        throw new AppFault({ id: 'untrustedRequest' });
+      request = { ...request, text: clipHandoffText(request.handoff) };
+    }
     const scope = publishTarget(session.scope, session.topic)?.scope ?? session.scope;
     if (request.mode === 'edit' && scope.videoId) await this.media?.stopStudio();
     const files = await prepareAgentScope(this.store, this.git, this.commits, scope, () => {
@@ -71,6 +77,9 @@ export class ChatPreparation {
         role: 'user',
         text: request.text,
         ...(script && !script.guidance.trim() ? { appMessage: { id: 'scriptHandoff' as const } } : {}),
+        ...(request.handoff
+          ? { appMessage: request.handoff.message, userText: request.handoff.guidance }
+          : {}),
         turnId: null,
         files: [],
         createdAt: new Date().toISOString(),

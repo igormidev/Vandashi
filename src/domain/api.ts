@@ -8,6 +8,7 @@ import type {
   ChatRequest,
   ChatSession,
   Clip,
+  ClipHandoff,
   Commit,
   DependencyCheck,
   FileChange,
@@ -25,7 +26,7 @@ import type { Diagnostic } from './diagnostics';
 
 export interface CreatedClip {
   clip: Clip;
-  generation: { status: 'started' } | { status: 'failed'; diagnostic: Diagnostic; prompt: string };
+  generation: { status: 'started' } | { status: 'failed'; diagnostic: Diagnostic; handoff: ClipHandoff };
 }
 
 /** Transient response metadata; deferred history has not refreshed provider artifact grants. */

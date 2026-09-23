@@ -264,6 +264,7 @@
   "mediaBridgePending": "Studio aún está guardando. Espera a que guarde las ediciones pendientes antes de salir.",
   "mediaBridgeUnavailable": "La conexión de guardado de Studio no está disponible. Mantén el editor abierto y vuelve a intentarlo.",
   "scriptHandoff": "Actualiza el video para que coincida con el guion.",
+  "clipHandoff": "Crea el primer clip en {{ratio}}, de {{start}} s a {{end}} s.",
   "storageAssetDeleteConflict": "Este recurso cambió fuera del editor. Cierra esta confirmación y revisa la versión más reciente antes de eliminarlo.",
   "appPublishUndoUnavailable": "La publicación puede haber realizado cambios en una plataforma externa. No se puede revertir; verifica la publicación en el navegador y actualiza su estado aquí.",
   "appHyperframesSkillMissing": "Codex no ha detectado la habilidad principal hyperframes habilitada. Abre la guía de instalación para instalarla o habilitarla fuera de Vandashi y vuelve a comprobarlo.",

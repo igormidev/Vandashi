@@ -1,11 +1,11 @@
-import { ArrowLeft, ChevronRight, Settings2, X } from 'lucide-react';
+import { ChevronRight, LoaderCircle, Settings2, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Workspace } from '../../domain/models';
 import { scopeKey } from '../../domain/defaults';
 import { useApp } from './store';
 import { toastText } from './toast';
-import { IconButton, Loading, Logo } from '../shared/ui';
+import { IconButton, Loading, Logo, PendingLabel } from '../shared/ui';
 import { Split } from '../shared/Split';
 import { Home } from '../features/brands/Home';
 import { BrandPage } from '../features/brands/BrandPage';
@@ -22,7 +22,8 @@ import { Checks } from '../features/workspace/Checks';
 import { CommitDialog } from '../features/history/CommitDialog';
 import { StudioLeaveDialog } from '../features/creation/StudioLeaveDialog';
 import type { FileChange } from '../../domain/models';
-import { brandTabs, videoTabs, type Page, type Destination } from './navigation-tabs';
+import type { Page, Destination } from './navigation-tabs';
+import { WorkspaceNavigation } from './WorkspaceNavigation';
 
 export function App() {
   const { t } = useTranslation();
@@ -47,8 +48,10 @@ export function App() {
   const [pending, setPending] = useState<Destination | null>(null);
   const [studioFiles, setStudioFiles] = useState<FileChange[]>([]);
   const [saveStudio, setSaveStudio] = useState(false);
-  const navigationVideo = workspace?.scope.clipId ? parentVideo : workspace?.video;
-  const canEditVideo = navigationVideo?.origin === 'composition';
+  const [navigationStatus, setNavigationStatus] = useState<{
+    owner: object;
+    destination: Destination;
+  } | null>(null);
   const restored = useRef(false);
   const open = useCallback(
     (value: Workspace, destination?: 'packaging' | 'launch') => {
@@ -92,6 +95,7 @@ export function App() {
     if (checking && next !== 'home' && !(next === 'videos' && workspace?.video)) return;
     const navigation = beginNavigation();
     if (!navigation) return;
+    setNavigationStatus({ owner: navigation, destination: next });
     try {
       if (page === 'manual' && workspace && !checking && !skipStudio) {
         const changes = await api.studioChanges(workspace.scope);
@@ -126,6 +130,7 @@ export function App() {
       if (navigation.current()) throw error;
     } finally {
       navigation.release();
+      setNavigationStatus((current) => (current?.owner === navigation ? null : current));
     }
   };
   if (!state) return <Loading />;
@@ -176,11 +181,16 @@ export function App() {
           type="button"
           className="wordmark"
           disabled={busy || dirty}
+          aria-busy={navigationStatus?.destination === 'home'}
           onClick={() => {
             void run(() => navigate('home'));
           }}
         >
-          <Logo size={24} />
+          {navigationStatus?.destination === 'home' ? (
+            <LoaderCircle className="spin" size={24} aria-hidden="true" />
+          ) : (
+            <Logo size={24} />
+          )}
           <span>{t('appName')}</span>
         </button>
         {workspace && (
@@ -189,11 +199,16 @@ export function App() {
             <button
               type="button"
               disabled={busy || dirty || (checking && !workspace.video)}
+              aria-busy={navigationStatus?.destination === 'videos'}
               onClick={() => {
                 void run(() => navigate('videos'));
               }}
             >
-              {workspace.brand.name}
+              {navigationStatus?.destination === 'videos' ? (
+                <PendingLabel label={workspace.brand.name} />
+              ) : (
+                workspace.brand.name
+              )}
             </button>
             {workspace.video && (
               <>
@@ -204,7 +219,7 @@ export function App() {
           </div>
         )}
         <div className="titlebar-end">
-          <div className="status">
+          <div className="status" aria-busy={busy}>
             <span className={`status-dot ${busy ? 'busy' : ''}`} />
             {t(busy ? 'statusBusy' : 'statusReady')}
           </div>
@@ -221,53 +236,18 @@ export function App() {
       </header>
       <div className="app-body">
         {page !== 'home' && (
-          <nav className="nav" aria-label={t('studio')}>
-            {workspace?.video && (
-              <button
-                type="button"
-                aria-label={t('back')}
-                disabled={busy || dirty}
-                onClick={() => {
-                  void run(() => navigate('videos'));
-                }}
-              >
-                <ArrowLeft size={15} />
-              </button>
-            )}
-            {(workspace?.video ? videoTabs : brandTabs)
-              .filter(
-                (tab) => tab.id !== 'clips' || workspace?.video?.ratio === '16:9' || workspace?.scope.clipId,
-              )
-              .map(({ id, icon: Icon }) => (
-                <button
-                  type="button"
-                  key={id}
-                  className={page === id ? 'active' : ''}
-                  aria-current={page === id ? 'page' : undefined}
-                  title={
-                    navigationVideo?.origin === 'imported' && (id === 'creation' || id === 'manual')
-                      ? t('importedVideoEditingHelp')
-                      : undefined
-                  }
-                  disabled={
-                    busy ||
-                    dirty ||
-                    checking ||
-                    (!canEditVideo && (id === 'creation' || id === 'manual')) ||
-                    (!workspace?.video?.renderedPath &&
-                      !workspace?.scope.clipId &&
-                      ((id === 'clips' && !workspace?.clips.length) ||
-                        (id === 'launch' && !workspace?.clips.some((clip) => clip.renderedPath))))
-                  }
-                  onClick={() => {
-                    void run(() => navigate(id));
-                  }}
-                >
-                  <Icon />
-                  {t(id)}
-                </button>
-              ))}
-          </nav>
+          <WorkspaceNavigation
+            workspace={workspace}
+            parentVideo={parentVideo}
+            page={page}
+            busy={busy}
+            dirty={dirty}
+            checking={checking}
+            destination={navigationStatus?.destination ?? null}
+            onNavigate={(destination) => {
+              void run(() => navigate(destination));
+            }}
+          />
         )}
         {renderPage()}
       </div>

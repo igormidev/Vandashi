@@ -399,3 +399,21 @@ conversation opening/reset/Undo/start/Stop, Settings refresh, Studio discard, sc
 handoff, shared/video imports and waveforms, failed media access, and thumbnail import.
 These are controlled backend cases; they explicitly check failure/retry, draft retention,
 late-response ownership, and progress through the final refresh.
+
+The rebuilt app at `87b919b` was exercised with real Codex commit generation. A Brand
+description edit produced a precise title/body describing only the changed guidance,
+then saved successfully as `6589971`, leaving the identity repository clean. Canceling
+an earlier completed suggestion retained the draft.
+A longer guide-edit request using a temporarily selected GPT-6-Astra/Ultra helper visibly
+showed the mint spinner, “Writing a commit message…” label, indeterminate strip, disabled
+fields and busy action in the real native app. This supplements the controlled loading
+cases; the helper preference was restored after the walkthrough.
+
+The actual guide-save walkthrough exposed a strict-IPC regression: narrowed commit
+context accidentally passed display-only document `name`/`kind` into saveWorkspace.
+The dialog retained its reviewed text and displayed the validation error. Root corrected
+the save payload to path/content pairs. A new native case uses the real desktop validator,
+Git and storage to edit all 13 guide controls, save once and reload every persisted guide;
+the three-case Brand revision suite passes. The failed manual test draft was discarded
+and the temporary commit helper was restored to GPT-6-Luna/Medium. Actual guide save on
+the next built renderer remains to be repeated.

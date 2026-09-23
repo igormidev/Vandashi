@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useApp } from '../../app/store';
 import { Modal, InfoTip, PendingLabel } from '../../shared/ui';
@@ -11,6 +11,7 @@ export function Settings({ onClose, onChecks }: { onClose: () => void; onChecks:
   const { state, api, run, refresh } = useApp();
   const [settings, setSettings] = useState(state?.settings);
   const [saving, setSaving] = useState(false);
+  const saveOwner = useRef(false);
   if (!settings) return null;
   return (
     <Modal title={t('settings')} open onClose={onClose} locked={saving}>
@@ -98,13 +99,15 @@ export function Settings({ onClose, onChecks }: { onClose: () => void; onChecks:
           disabled={saving}
           aria-busy={saving}
           onClick={() => {
+            if (saveOwner.current) return;
+            saveOwner.current = true;
             setSaving(true);
             void run(async () => {
               try {
                 await api.settings(settings);
-                await refresh();
-                onClose();
+                if (await refresh()) onClose();
               } finally {
+                saveOwner.current = false;
                 setSaving(false);
               }
             });

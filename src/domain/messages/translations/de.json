@@ -264,6 +264,7 @@
   "mediaBridgePending": "Studio speichert noch. Warte, bis die ausstehenden Änderungen gespeichert sind, bevor du den Editor verlässt.",
   "mediaBridgeUnavailable": "Die Speicherverbindung zu Studio ist nicht verfügbar. Lass den Editor geöffnet und versuche es erneut.",
   "scriptHandoff": "Passe das Video an das Skript an.",
+  "clipHandoff": "Erstelle den ersten Clip im Format {{ratio}} von {{start}} s bis {{end}} s.",
   "storageAssetDeleteConflict": "Diese Mediendatei wurde außerhalb des Editors geändert. Schließe diese Bestätigung und prüfe die aktuelle Version, bevor du sie löschst.",
   "appPublishUndoUnavailable": "Die Veröffentlichung könnte eine externe Plattform verändert haben. Zurücksetzen ist nicht verfügbar. Prüfe die Veröffentlichung im Browser und aktualisiere ihren Status hier.",
   "appHyperframesSkillMissing": "Codex hat keinen aktivierten hyperframes-Hauptskill gefunden. Öffne die Installationsanleitung, installiere oder aktiviere ihn außerhalb von Vandashi und prüfe erneut.",

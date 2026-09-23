@@ -2,7 +2,7 @@ import { ArrowLeft, Film, Plus, Scissors, Sparkles } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { CreatedClip } from '../../../domain/api';
-import type { Clip, Scope, Workspace } from '../../../domain/models';
+import type { Clip, ClipHandoff, Scope, Workspace } from '../../../domain/models';
 import { scopeKey } from '../../../domain/defaults';
 import { useApp } from '../../app/store';
 import { diagnosticText } from '../../app/diagnostics';
@@ -59,7 +59,7 @@ export function ClipsPage() {
       navigation.release();
     }
   };
-  const openClip = async (id: string, first = false, prompt?: string) => {
+  const openClip = async (id: string, first = false, handoff?: ClipHandoff) => {
     const navigation = beginNavigation();
     if (!navigation) return;
     try {
@@ -71,7 +71,11 @@ export function ClipsPage() {
       setChatTarget(
         next.video?.origin === 'imported'
           ? { topic: 'packaging:theme', title: t('theme') }
-          : { topic: 'clip', title: t('clipEditor'), ...(prompt === undefined ? {} : { prompt }) },
+          : {
+              topic: 'clip',
+              title: next.video?.name ?? t('clipEditor'),
+              ...(handoff === undefined ? {} : { handoff }),
+            },
       );
     } catch (error) {
       if (navigation.current()) throw error;
@@ -103,7 +107,7 @@ export function ClipsPage() {
               label={t('clipReturnEditor')}
               disabled={busy || dirty}
               onClick={() => {
-                setChatTarget({ topic: 'clip', title: t('clipEditor') });
+                setChatTarget({ topic: 'clip', title: workspace.video?.name ?? t('clipEditor') });
               }}
             >
               <Sparkles size={15} />
@@ -200,7 +204,7 @@ export function ClipsPage() {
           await openClip(
             result.clip.id,
             result.generation.status === 'started',
-            result.generation.status === 'failed' ? result.generation.prompt : undefined,
+            result.generation.status === 'failed' ? result.generation.handoff : undefined,
           );
           setGenerationFailure(result.generation.status === 'failed' ? result : null);
         }}

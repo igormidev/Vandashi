@@ -84,12 +84,32 @@ export class Chats {
   async start(request: ChatRequest): Promise<void> {
     if (!request.text.trim()) throw new AppFault({ id: 'appMessageEmpty' });
     const release = this.gate.acquire(request.sessionId);
+    return this.startWithLease(() => this.store.getSession(request.sessionId), request, release);
+  }
+  /** The creator transfers its existing lease; accepted execution owns it through final recovery. */
+  startOwned(
+    input: { scope: Scope; topic: string; title: string },
+    request: Omit<ChatRequest, 'sessionId'>,
+    release: () => void,
+  ): Promise<void> {
+    return this.startWithLease(() => this.openUnlocked(input), request, release);
+  }
+  private async startWithLease(
+    loadSession: () => Promise<ChatSession>,
+    request: Omit<ChatRequest, 'sessionId'>,
+    release: () => void,
+  ): Promise<void> {
     let scope: Scope | undefined;
     const preparation = { filesTouched: false, handedOff: false };
     try {
-      const session = await this.store.getSession(request.sessionId);
+      if (!request.text.trim()) throw new AppFault({ id: 'appMessageEmpty' });
+      const session = await loadSession();
       scope = session.scope;
-      const prepared = await this.preparation.prepare(session, request, preparation);
+      const prepared = await this.preparation.prepare(
+        session,
+        { ...request, sessionId: session.id },
+        preparation,
+      );
       preparation.handedOff = true;
       await this.launch(prepared, release);
     } catch (error) {

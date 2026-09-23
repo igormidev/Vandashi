@@ -283,7 +283,7 @@ export function BrandPage() {
               scope: workspace.scope,
               revision: workspace.revision,
               brandConfig: config,
-              documents: changedDocuments,
+              documents: changedDocuments.map(({ path, content }) => ({ path, content })),
               packaging: null,
               commit,
             });

@@ -1078,7 +1078,7 @@ svg {
   .home {
     padding: 50px 40px;
   }
-  .status {
+  .status:not([aria-busy='true']) {
     display: none;
   }
 }

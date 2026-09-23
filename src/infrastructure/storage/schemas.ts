@@ -101,12 +101,14 @@ const messageSchema = z
     files: z.array(fileChangeSchema),
     createdAt: z.string(),
     appMessage: z.custom<AppMessage>((value) => parseAppMessage(value) !== null).optional(),
+    userText: z.string().optional(),
     diagnostic: z.custom<Diagnostic>((value) => parseDiagnostic(value) !== null).optional(),
     generatedImages: z.array(z.string()).max(20).optional(),
   })
-  .transform(({ appMessage, diagnostic, generatedImages, ...message }) => ({
+  .transform(({ appMessage, userText, diagnostic, generatedImages, ...message }) => ({
     ...message,
     ...(appMessage === undefined ? {} : { appMessage }),
+    ...(userText === undefined ? {} : { userText }),
     ...(diagnostic === undefined ? {} : { diagnostic }),
     ...(generatedImages === undefined ? {} : { generatedImages }),
   }));

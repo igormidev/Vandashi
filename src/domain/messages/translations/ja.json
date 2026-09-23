@@ -264,6 +264,7 @@
   "mediaBridgePending": "Studioで保存中です。未保存の編集内容が保存されるまで、画面を離れずにお待ちください。",
   "mediaBridgeUnavailable": "Studioの保存用接続を利用できません。エディタを開いたまま、もう一度お試しください。",
   "scriptHandoff": "台本に合わせて動画を更新してください。",
+  "clipHandoff": "{{start}}秒から{{end}}秒までの最初の{{ratio}}クリップを作成してください。",
   "storageAssetDeleteConflict": "この素材はエディターの外で変更されました。確認画面を閉じ、最新の素材を確認してから削除してください。",
   "appPublishUndoUnavailable": "公開操作によって外部プラットフォームが変更された可能性があるため、元に戻せません。ブラウザーで公開状況を確認し、ここでステータスを更新してください。",
   "appHyperframesSkillMissing": "Codexで有効なhyperframesの基本スキルが見つかりません。インストールガイドを開き、Vandashiの外でインストールまたは有効化してから、もう一度確認してください。",

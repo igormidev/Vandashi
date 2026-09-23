@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Check, Copy } from 'lucide-react';
+import { Check, Copy, LoaderCircle } from 'lucide-react';
 import type { SiteCopy } from './locales/catalogs';
 import { HeadingText } from './HeadingText';
 
@@ -7,14 +7,23 @@ export const sourceUrl = 'https://github.com/igormidev/Vandashi';
 
 export function Setup({ copy }: { copy: SiteCopy }) {
   const [result, setResult] = useState<'idle' | 'copied' | 'failed'>('idle');
+  const [copying, setCopying] = useState(false);
+  const copyOwner = useRef(false);
   const prompt = useRef<HTMLDetailsElement>(null);
   async function copyPrompt() {
+    if (copyOwner.current) return;
+    copyOwner.current = true;
+    setCopying(true);
+    setResult('idle');
     try {
       await navigator.clipboard.writeText(copy.setupPrompt);
       setResult('copied');
     } catch {
       setResult('failed');
       if (prompt.current) prompt.current.open = true;
+    } finally {
+      copyOwner.current = false;
+      setCopying(false);
     }
   }
   return (
@@ -30,11 +39,16 @@ export function Setup({ copy }: { copy: SiteCopy }) {
         <div className="action-row">
           <button
             className="button primary"
+            type="button"
+            disabled={copying}
+            aria-busy={copying}
             onClick={() => {
               void copyPrompt();
             }}
           >
-            {result === 'copied' ? (
+            {copying ? (
+              <LoaderCircle className="copy-spinner" size={18} aria-hidden="true" />
+            ) : result === 'copied' ? (
               <Check size={18} aria-hidden="true" />
             ) : (
               <Copy size={18} aria-hidden="true" />

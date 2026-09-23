@@ -4,6 +4,7 @@ import { z } from 'zod';
 import type { ApiMethod } from '../domain/api';
 import { desktopUrl } from './request-errors';
 import { supportedLocales } from '../domain/locales';
+import { clipHandoffSchema } from './clip-handoff-schema';
 
 const text = z.string().max(2_000_000);
 const id = z.string().min(1).max(500);
@@ -111,6 +112,7 @@ export const validators: Readonly<Record<ApiMethod, z.ZodType>> = Object.freeze(
         mode: z.enum(['read', 'edit']),
         selection,
         attachments: z.array(path).max(50),
+        handoff: clipHandoffSchema.optional(),
       })
       .strict(),
   ]),

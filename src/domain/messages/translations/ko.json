@@ -264,6 +264,7 @@
   "mediaBridgePending": "Studio가 아직 저장 중입니다. 남은 편집 내용이 저장될 때까지 기다린 후 나가세요.",
   "mediaBridgeUnavailable": "Studio 저장 연결을 사용할 수 없습니다. 편집기를 열어 둔 채 다시 시도하세요.",
   "scriptHandoff": "대본에 맞게 영상을 수정해 주세요.",
+  "clipHandoff": "{{start}}초부터 {{end}}초까지 첫 {{ratio}} 클립을 만들어 주세요.",
   "storageAssetDeleteConflict": "이 에셋이 편집기 외부에서 변경되었습니다. 확인 창을 닫고 최신 에셋을 검토한 후 삭제해 주세요.",
   "appPublishUndoUnavailable": "게시 작업으로 외부 플랫폼이 변경되었을 수 있어 되돌릴 수 없습니다. 브라우저에서 게시 결과를 확인하고 여기에서 상태를 업데이트해 주세요.",
   "appHyperframesSkillMissing": "Codex에서 활성화된 hyperframes 핵심 스킬을 찾지 못했습니다. 설치 가이드를 열어 Vandashi 외부에서 설치하거나 활성화한 후 다시 확인해 주세요.",

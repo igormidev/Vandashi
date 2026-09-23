@@ -16,11 +16,12 @@ Manual asset updates/deletions and Brand/Packaging/document saves use `ManualMut
 storage port. It records owned regular-file copies, absent paths, file modes, and the complete
 Git index entries under ignored `.vandashi-recovery/manual-*` directories with a recovery manifest.
 The Git port can inspect a prospective staged index using a disposable index file without changing
-the user's index. Staging or commit failure rolls back only verified operation-owned files and index
+the user's index. Writer, staging or commit failure rolls back only verified operation-owned files and index
 entries, including unrelated entries changed by repository-wide staging. Before writing it captures
 repository HEAD, the full index, and owned/dirty file hashes. Writers issue exact intended-byte
 receipts before installation; later reads verify that state instead of adopting arbitrary bytes as
-operation-owned. Pre-existing
+operation-owned. Failed writers may leave original bytes or an explicitly announced intermediate version;
+recovery accepts only those recorded versions and skips installations that never occurred. Pre-existing
 staged and unstaged bytes survive rollback. External edits invalidate ownership and preserve both
 current files and recovery evidence. Completed commits are never rewritten: a partial multi-repository
 save retains a same-request retry checkpoint for the current storage session and commits the remaining
@@ -62,10 +63,13 @@ storage write queue. The application always supplies the real media initializer;
 callers may omit it. Failed initialization, seeding, or commits remove only the owned staging tree
 and leave the requested name reusable. Published or externally replaced files are preserved.
 
+`application/clip-creation.ts` holds one operation lease before the parent read and creation.
+It retains ownership through publication and hydration, then transfers the same release handle
+to `Chats.startOwned` for session preparation, accepted startup and final AI cleanup.
 Clip creation returns a saved clip separately from its generation outcome. After publication, a
 workspace-refresh, conversation-open, or unaccepted-turn failure returns the saved clip with a typed
-diagnostic and the exact retry prompt. The renderer opens that existing clip and offers editable chat
-retry, or an Open clip recovery action if hydration fails; it never repeats the creation request.
+diagnostic and `CreatedClip.generation.handoff`. The renderer opens that existing clip and offers
+editable chat retry, or an Open clip recovery action if hydration fails; it never repeats creation.
 If final video hydration fails after publication, its diagnostic explicitly identifies the saved path
 and directs the user back to the video list. It does not suggest repeating creation with that name.
 
@@ -202,6 +206,13 @@ clean state. Empty script guidance creates an app-owned message descriptor that 
 the current UI language; nonempty guidance remains verbatim user content, even when it
 has exactly the same text as the descriptor's English fallback.
 
+Automatic clip requests persist a typed ratio/time descriptor alongside separate raw guidance.
+History renders the descriptor in the current language and guidance through the ordinary Markdown
+path. Provider prompts use an English fallback plus untouched guidance. A bounded typed handoff
+in the draft cache survives tab switches/reopen/reload; it accompanies send only while the text
+still equals its app-owned seed. Edited retry text is ordinary user content. Desktop validation
+accepts only the clip descriptor shape, and preparation rejects it outside a clip conversation.
+
 ## Localization
 
 English UI resources live in `src/renderer/locales/*-en.ts` and `en.ts`, merged through
@@ -319,7 +330,15 @@ shows an indeterminate progress strip while generating reviewed text; no fabrica
 completion percentage is presented. Generation can be dismissed without losing the draft,
 and late results cannot reopen the dialog. Reduced-motion mode retains the visible status
 without movement. Request ownership also governs loading completion so stale responses
-cannot clear the current operation’s indicator.
+cannot clear the current operation’s indicator. Session-list retry and per-tab closing have
+separate owners, so background hydration cannot hide a draft or clear another request.
+`PendingIconButton` keeps image/SHA copy actions visible and prevents repeated writes.
+`WorkspaceNavigation` renders destination-owned progress, and the global busy header remains
+visible at the minimum window width even after a helper dialog is dismissed.
+Model selection remains locally owned only while persistence or adoption is pending or
+failed. Provider refresh returns an explicit success result; failed state/model discovery
+retains the selected value, draft and Retry. Successful adoption clears the override so
+every mounted chat follows subsequent global selections, including Settings changes.
 
 ## Studio discard recovery and save flushing
 

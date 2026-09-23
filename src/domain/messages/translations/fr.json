@@ -264,6 +264,7 @@
   "mediaBridgePending": "Studio est encore en train d’enregistrer. Attendez la fin de l’enregistrement des modifications avant de le quitter.",
   "mediaBridgeUnavailable": "La connexion d’enregistrement de Studio est indisponible. Gardez l’éditeur ouvert et réessayez.",
   "scriptHandoff": "Adapte la vidéo au scénario.",
+  "clipHandoff": "Crée le premier extrait au format {{ratio}}, de {{start}} s à {{end}} s.",
   "storageAssetDeleteConflict": "Cette ressource a été modifiée en dehors de l’éditeur. Fermez cette confirmation et vérifiez sa dernière version avant de la supprimer.",
   "appPublishUndoUnavailable": "La publication a pu modifier une plateforme externe. L’annulation est indisponible ; vérifiez la publication dans le navigateur et mettez son statut à jour ici.",
   "appHyperframesSkillMissing": "Codex n’a pas détecté de compétence principale hyperframes activée. Ouvrez le guide d’installation pour l’installer ou l’activer en dehors de Vandashi, puis relancez la vérification.",

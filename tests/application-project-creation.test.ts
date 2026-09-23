@@ -2,6 +2,7 @@ import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppFault } from '../src/domain/diagnostics';
+import { clipHandoffText } from '../src/domain/clip-handoff';
 import { createClipProject, seedProject } from '../src/infrastructure/media/compositions';
 import { applicationFixture, type ApplicationFixture } from './application-fixture';
 
@@ -112,9 +113,10 @@ describe('application project acceptance', () => {
       const result = await app.api.createClip(input());
       expect(result.generation.status).toBe('failed');
       if (result.generation.status !== 'failed') throw new Error('Expected recoverable chat failure');
-      expect(result.generation.prompt).toBe(
-        'Create the first 9:16 clip from 2s to 6s. Keep the green title centered.',
-      );
+      expect(result.generation.handoff).toEqual({
+        message: { id: 'clipHandoff', params: { ratio: '9:16', start: 2, end: 6 } },
+        guidance: input().prompt,
+      });
       if (failure === 'preflight')
         expect(result.generation.diagnostic).toEqual({ kind: 'app', message: { id: 'appSaveBeforeAi' } });
       else expect(result.generation.diagnostic.kind).toBe('external');
@@ -132,7 +134,12 @@ describe('application project acceptance', () => {
         topic: 'clip',
         title: result.clip.name,
       });
-      await app.api.sendChat({ ...app.request, sessionId: session.id, text: result.generation.prompt });
+      await app.api.sendChat({
+        ...app.request,
+        sessionId: session.id,
+        text: clipHandoffText(result.generation.handoff),
+        handoff: result.generation.handoff,
+      });
       await app.idle();
       expect((await app.store.openWorkspace(app.scope)).clips).toHaveLength(1);
       expect((await app.git.status(result.clip.path)).dirty).toBe(false);

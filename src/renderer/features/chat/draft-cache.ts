@@ -1,11 +1,16 @@
 import { seedDraft, type Draft } from './session-state';
+import { parseClipHandoff } from '../../../domain/clip-handoff';
+import type { ClipHandoff } from '../../../domain/models';
 
 interface SavedDraft {
   draft: Draft;
   mode: 'read' | 'edit';
 }
-export function readDraft(id: string, seed: string | null): SavedDraft {
-  const fallback: SavedDraft = { draft: { text: seed ?? '', seed, pending: null }, mode: 'edit' };
+export function readDraft(id: string, seed: string | null, handoff?: ClipHandoff): SavedDraft {
+  const fallback: SavedDraft = {
+    draft: { text: seed ?? '', seed, pending: null, ...(handoff ? { handoff } : {}) },
+    mode: 'edit',
+  };
   try {
     const stored = localStorage.getItem(`vandashi.draft.${id}`);
     if (!stored) return fallback;
@@ -20,14 +25,17 @@ export function readDraft(id: string, seed: string | null): SavedDraft {
       ('pending' in value && value.pending !== null && typeof value.pending !== 'string')
     )
       return fallback;
+    const restoredHandoff = 'handoff' in value ? parseClipHandoff(value.handoff) : undefined;
     return {
       draft: seedDraft(
         {
           text: value.text,
           seed: value.seed,
           pending: 'pending' in value && typeof value.pending === 'string' ? value.pending : null,
+          ...(restoredHandoff ? { handoff: restoredHandoff } : {}),
         },
         seed,
+        handoff,
       ),
       mode: 'mode' in value && value.mode === 'read' ? 'read' : 'edit',
     };
@@ -39,7 +47,13 @@ export function cacheDraft(id: string, draft: Draft, mode: 'read' | 'edit'): voi
   try {
     localStorage.setItem(
       `vandashi.draft.${id}`,
-      JSON.stringify({ text: draft.text, seed: draft.seed, pending: draft.pending, mode }),
+      JSON.stringify({
+        text: draft.text,
+        seed: draft.seed,
+        pending: draft.pending,
+        mode,
+        ...(draft.handoff ? { handoff: draft.handoff } : {}),
+      }),
     );
   } catch {
     /* A full preferences store must not interrupt typing. */

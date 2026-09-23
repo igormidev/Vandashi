@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cacheDraft, readDraft } from '../src/renderer/features/chat/draft-cache';
 import { seedDraft } from '../src/renderer/features/chat/session-state';
+import type { ClipHandoff } from '../src/domain/models';
 
 describe('prepared request decisions across conversation navigation', () => {
   const entries = new Map<string, string>();
@@ -14,6 +15,49 @@ describe('prepared request decisions across conversation navigation', () => {
   });
   afterEach(() => {
     vi.unstubAllGlobals();
+  });
+
+  const handoff: ClipHandoff = {
+    message: { id: 'clipHandoff', params: { ratio: '9:16', start: 0, end: 30 } },
+    guidance: 'Keep 手書き and literal {{start}} unchanged.\n',
+  };
+
+  it('retains typed seed ownership and verbatim guidance through tab switches and cache restoration', () => {
+    const draft = seedDraft({ text: '', seed: null, pending: null }, 'Localized instruction', handoff);
+    cacheDraft('clip', seedDraft(draft, null), 'edit');
+    expect(readDraft('clip', null).draft).toEqual(draft);
+    expect(readDraft('clip', 'Localized instruction').draft).toEqual(draft);
+    expect(readDraft('clip', null).draft.handoff?.guidance).toBe(handoff.guidance);
+  });
+
+  it('keeps edited user content apart from its pending owned instruction and resets ownership for a new plain seed', () => {
+    const edited = {
+      ...seedDraft({ text: '', seed: null, pending: null }, 'Owned instruction', handoff),
+      text: 'My revised user request',
+    };
+    cacheDraft('clip', edited, 'read');
+    const restored = readDraft('clip', null).draft;
+    expect(restored.text).not.toBe(restored.seed);
+    expect(restored.handoff).toEqual(handoff);
+    const replacement = seedDraft(restored, 'Another ordinary prepared request');
+    expect(replacement.handoff).toBeUndefined();
+    expect(replacement.text).toBe(edited.text);
+    expect(replacement.pending).toBe('Another ordinary prepared request');
+  });
+
+  it.each([
+    { message: { id: 'scriptHandoff' }, guidance: 'Wrong app message' },
+    { ...handoff, message: { id: 'clipHandoff', params: { ratio: '16:9', start: 0, end: 30 } } },
+    { ...handoff, message: { id: 'clipHandoff', params: { ratio: '9:16', start: 30, end: 0 } } },
+    { ...handoff, message: { id: 'clipHandoff', params: { ratio: '9:16', start: '0', end: 30 } } },
+  ])('restores a draft without trusting a malformed cached handoff: %j', (invalid) => {
+    entries.set(
+      'vandashi.draft.clip',
+      JSON.stringify({ text: 'Retain my text', seed: 'Owned instruction', mode: 'edit', handoff: invalid }),
+    );
+    const restored = readDraft('clip', null).draft;
+    expect(restored.text).toBe('Retain my text');
+    expect(restored.handoff).toBeUndefined();
   });
 
   it('keeps a pending decision when reselecting its tab and remounting with or without the target', () => {

@@ -89,6 +89,9 @@ test('trims real media, keeps the initial conversation through packaging edits, 
   await installClipsFixture(desktopApp);
   await openForm(page);
   const start = page.getByRole('slider', { name: 'Selection start', exact: true });
+  await expect(page.getByRole('combobox', { name: 'Model', exact: true })).toBeEnabled();
+  await expect(page.getByRole('combobox', { name: 'Thinking', exact: true })).toBeEnabled();
+  await page.getByRole('combobox', { name: 'Thinking', exact: true }).selectOption('high');
   const end = page.getByRole('slider', { name: 'Selection end', exact: true });
   await start.fill('5');
   await end.fill('6');
@@ -122,9 +125,12 @@ test('trims real media, keeps the initial conversation through packaging edits, 
     .getByRole('textbox', { name: 'Creative direction', exact: true })
     .fill('Keep the opening reveal.');
   await page.getByRole('button', { name: 'Create clip', exact: true }).click();
-  await expect(
-    page.getByText('Initial clip direction: Keep the opening reveal.', { exact: true }),
-  ).toBeVisible();
+  await expect(page.getByText('Keep the opening reveal.', { exact: true })).toBeVisible();
+  expect(
+    (await clipRequests(desktopApp)).find((request) => request.method === 'createClip')?.input,
+  ).toMatchObject({
+    selection: { model: 'test-model', reasoning: 'high' },
+  });
   await expect(page.getByRole('button', { name: 'All clips', exact: true })).toBeDisabled();
   await expect(page.getByRole('region', { name: 'Clip packaging', exact: true })).toHaveCount(0);
   await expect(page.getByRole('textbox', { name: 'AI chat', exact: true })).toHaveAttribute(
@@ -134,9 +140,7 @@ test('trims real media, keeps the initial conversation through packaging edits, 
   await finishClip(desktopApp);
   await expect(page.getByRole('region', { name: 'Clip packaging', exact: true })).toBeVisible();
   await expect(page.getByText('The first clip is ready.', { exact: true })).toBeVisible();
-  await expect(
-    page.getByText('Initial clip direction: Keep the opening reveal.', { exact: true }),
-  ).toBeVisible();
+  await expect(page.getByText('Keep the opening reveal.', { exact: true })).toBeVisible();
   await expect(page.locator('.preview-stage')).toHaveCSS('aspect-ratio', '1 / 1');
   for (const width of [1200, 1480]) {
     await desktopApp.evaluate(({ BrowserWindow }, nextWidth) => {
@@ -169,9 +173,7 @@ test('trims real media, keeps the initial conversation through packaging edits, 
     .click();
   await expect(page.locator('.chat-tab.active')).toContainText('Titles · short form');
   await page.getByRole('button', { name: 'Return to editing', exact: true }).click();
-  await expect(
-    page.getByText('Initial clip direction: Keep the opening reveal.', { exact: true }),
-  ).toBeVisible();
+  await expect(page.getByText('Keep the opening reveal.', { exact: true })).toBeVisible();
   await page.getByRole('textbox', { name: 'AI chat', exact: true }).fill('Add a stronger ending.');
   await page.getByRole('button', { name: 'Send message', exact: true }).click();
   const requests = await clipRequests(desktopApp);
@@ -243,7 +245,7 @@ test('preserves the selected range and direction after a failed create, then all
   await start.fill('10');
   await end.fill('20');
   await page.getByRole('button', { name: 'Create clip', exact: true }).click();
-  await expect(page.getByRole('status')).toContainText('Clip preparation failed');
+  await expect(page.locator('.toast')).toContainText('Clip preparation failed');
   await expect(page.locator('video')).toHaveJSProperty('readyState', 4);
   await expect(start).toHaveValue('10');
   await expect(end).toHaveValue('20');
@@ -251,9 +253,7 @@ test('preserves the selected range and direction after a failed create, then all
     'Keep this direction after retry.',
   );
   await page.getByRole('button', { name: 'Create clip', exact: true }).click();
-  await expect(
-    page.getByText('Initial clip direction: Keep this direction after retry.', { exact: true }),
-  ).toBeVisible();
+  await expect(page.getByText('Keep this direction after retry.', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Stop', exact: true }).click();
   await expect(page.getByText('Stopped; your clip files were preserved.', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'All clips', exact: true })).toBeEnabled();
@@ -282,14 +282,20 @@ test('shows a preserved clip when generation cannot start after its repository w
   await expect(page.locator('.clip-workspace-name')).toHaveText('Preserved draft');
   await expect(page.getByRole('region', { name: 'Clip packaging', exact: true })).toBeVisible();
   const prompt =
-    'Create the first 9:16 clip from 0s to 30s. Keep the original direction after startup failure.';
-  await expect(page.getByRole('textbox', { name: 'AI chat', exact: true })).toHaveText(prompt);
+    'Create the first 9:16 clip from 0s to 30s.\n\nKeep the original direction after startup failure.';
+  await expect(page.getByRole('textbox', { name: 'AI chat', exact: true }).locator('p')).toHaveText(
+    prompt.split('\n'),
+  );
   await page.getByRole('button', { name: 'Send message', exact: true }).click();
   const requests = await clipRequests(desktopApp);
   expect(requests.filter((request) => request.method === 'createClip')).toHaveLength(1);
   expect(requests.find((request) => request.method === 'sendChat')?.input).toMatchObject({
     sessionId: 'created-clip:clip',
     text: prompt,
+    handoff: {
+      message: { id: 'clipHandoff', params: { ratio: '9:16', start: 0, end: 30 } },
+      guidance: 'Keep the original direction after startup failure.',
+    },
   });
   await expect(page.getByRole('textbox', { name: 'AI chat', exact: true })).toHaveText('');
   await page.getByRole('alert').getByRole('button', { name: 'Close', exact: true }).click();
@@ -306,7 +312,7 @@ test('retries opening an already saved clip without creating another project', a
   await openForm(page);
   await page.getByRole('textbox', { name: 'Clip name', exact: true }).fill('Saved opening retry');
   await page.getByRole('button', { name: 'Create clip', exact: true }).click();
-  await expect(page.getByRole('status')).toContainText('The saved clip could not be opened yet.');
+  await expect(page.locator('.toast')).toContainText('The saved clip could not be opened yet.');
   await expect(
     page.getByText('Your clip is saved. Open it to continue editing.', { exact: true }),
   ).toBeVisible();

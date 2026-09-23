@@ -1,6 +1,6 @@
 import type { ElectronApplication, Page } from '@playwright/test';
 import type { IpcMainInvokeEvent } from 'electron';
-import { writeFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { LocalGit } from '../../src/infrastructure/git/local-git';
 import type { Scope } from '../../src/domain/models';
@@ -131,4 +131,50 @@ test('same-path committed logo bytes refresh through the production media capabi
   expect(after.searchParams.get('path')).toBe(before.searchParams.get('path'));
   expect(after.searchParams.get('revision')).toMatch(/^[a-f0-9]{64}$/);
   expect(after.searchParams.get('revision')).not.toBe(before.searchParams.get('revision'));
+});
+
+test('all taste guides save through the strict desktop API and survive a renderer restart', async ({
+  desktopApp,
+  page,
+  userData,
+}) => {
+  const workspace = await openBrand(desktopApp, page, userData);
+  const chips = page.locator('.brand-panel .chip-scroll').getByRole('button');
+  await expect(chips).toHaveCount(13);
+  const edits = new Map<string, string>();
+  for (const chip of await chips.all()) {
+    await chip.click();
+    const name = await page.locator('.brand-panel .editor-toolbar .mono').innerText();
+    const original = workspace.documents.find((document) => document.name === name);
+    if (!original) throw new Error('Missing original guide');
+    const content = `${original.content}\n## My channel\nKeep examples concrete and explain unfamiliar terms.\n`;
+    edits.set(original.path, content);
+    await page.locator('.brand-panel .markdown-editor').fill(content);
+  }
+  await page.locator('.savebar').getByRole('button', { name: 'Save changes', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Save a version', exact: true });
+  await dialog
+    .getByRole('textbox', { name: 'Commit title', exact: true })
+    .fill('Personalize creative guides');
+  await dialog
+    .getByRole('textbox', { name: 'What changed', exact: true })
+    .fill('Use concrete, clear examples.');
+  await dialog.getByRole('button', { name: 'Save changes', exact: true }).click();
+  await expect(dialog).not.toBeVisible();
+  await expect(
+    page.locator('.savebar').getByRole('button', { name: 'Save changes', exact: true }),
+  ).toBeDisabled();
+  for (const [path, content] of edits) expect(await readFile(path, 'utf8')).toBe(content);
+  const git = new LocalGit();
+  const repository = join(workspace.brand.path, 'brand_identity');
+  expect((await git.status(repository)).dirty).toBe(false);
+  await page.reload();
+  await expect(chips).toHaveCount(13);
+  for (const chip of await chips.all()) {
+    await chip.click();
+    const name = await page.locator('.brand-panel .editor-toolbar .mono').innerText();
+    const original = workspace.documents.find((document) => document.name === name);
+    if (!original) throw new Error('Missing original guide');
+    await expect(page.locator('.brand-panel .markdown-editor')).toHaveValue(edits.get(original.path) ?? '');
+  }
 });

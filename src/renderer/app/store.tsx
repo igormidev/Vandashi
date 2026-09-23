@@ -1,7 +1,15 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { DesktopApi } from '../../domain/api';
-import type { AppState, ChatActivity, ModelInfo, Scope, VideoSummary, Workspace } from '../../domain/models';
+import type {
+  AppState,
+  ChatActivity,
+  ClipHandoff,
+  ModelInfo,
+  Scope,
+  VideoSummary,
+  Workspace,
+} from '../../domain/models';
 import i18n from '../i18n';
 import { scopeKey } from '../../domain/defaults';
 import { diagnosticFromBridge, diagnosticFromError, parseDiagnostic } from '../../domain/diagnostics';
@@ -13,6 +21,7 @@ interface ChatTarget {
   topic: string;
   title: string;
   prompt?: string;
+  handoff?: ClipHandoff;
 }
 interface WorkspaceNavigation {
   current: () => boolean;
@@ -35,7 +44,7 @@ interface Store {
   setWorkspace: (value: Workspace | null) => void;
   beginNavigation: () => WorkspaceNavigation | null;
   setChatTarget: (value: ChatTarget | null) => void;
-  refresh: () => Promise<void>;
+  refresh: () => Promise<boolean>;
   reload: (scope?: Scope) => Promise<Workspace | null>;
   run: <T>(task: () => Promise<T>) => Promise<T | undefined>;
 }
@@ -121,17 +130,23 @@ export function AppProvider({ api, children }: { api: DesktopApi; children: Reac
           .then(async (value) => {
             setState(value);
             await i18n.changeLanguage(value.settings.locale);
+            return true;
           })
           .catch((error: unknown) => {
             setToast(diagnosticFromBridge(error));
+            return false;
           }),
         api
           .models()
-          .then(setModels)
+          .then((value) => {
+            setModels(value);
+            return true;
+          })
           .catch((error: unknown) => {
             setToast(diagnosticFromBridge(error));
+            return false;
           }),
-      ]).then(() => undefined),
+      ]).then((results) => results.every(Boolean)),
     [api],
   );
   const reload = useCallback(

@@ -1,8 +1,9 @@
 import { Zap } from 'lucide-react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ModelSelection } from '../../../domain/models';
 import { useApp } from '../../app/store';
-import { IconButton } from '../../shared/ui';
+import { IconButton, PendingLabel } from '../../shared/ui';
 import type { chatEn } from '../../locales/chat-en';
 
 const reasoningLabels: Record<string, keyof typeof chatEn> = {
@@ -20,35 +21,49 @@ export function ModelPicker({
   value,
   onChange,
   disabled = false,
+  pending = false,
+  onRetry,
 }: {
   value: ModelSelection;
   onChange: (value: ModelSelection) => void;
   disabled?: boolean;
+  pending?: boolean;
+  onRetry?: () => void;
 }) {
   const { models, run, refresh } = useApp();
   const { t } = useTranslation();
+  const refreshOwner = useRef(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const locked = disabled || pending || refreshing;
   const model = models.find((entry) => entry.id === value.model);
   const reasoningLabel = (level: string) => {
     const key = reasoningLabels[level];
     return key ? t(key) : level;
   };
   return (
-    <div className="model-controls">
+    <div className="model-controls" aria-busy={pending || refreshing}>
       {!models.length && (
         <button
           className="button ghost small"
           type="button"
-          disabled={disabled}
+          disabled={locked}
+          aria-busy={refreshing}
           onClick={() => {
-            void run(refresh);
+            if (refreshOwner.current) return;
+            refreshOwner.current = true;
+            setRefreshing(true);
+            void run(refresh).finally(() => {
+              refreshOwner.current = false;
+              setRefreshing(false);
+            });
           }}
         >
-          {t('noModels')}
+          {refreshing ? <PendingLabel label={t('loading')} /> : t('noModels')}
         </button>
       )}
       <select
         aria-label={t('model')}
-        disabled={disabled || !models.length}
+        disabled={locked || !models.length}
         value={value.model}
         onChange={(event) => {
           const next = models.find((entry) => entry.id === event.target.value);
@@ -64,7 +79,7 @@ export function ModelPicker({
       </select>
       <select
         aria-label={t('reasoning')}
-        disabled={disabled || !model}
+        disabled={locked || !model}
         value={value.reasoning}
         onChange={(event) => {
           onChange({ ...value, reasoning: event.target.value });
@@ -82,7 +97,7 @@ export function ModelPicker({
       {model?.fast && (
         <IconButton
           label={t('fastHelp')}
-          disabled={disabled}
+          disabled={locked}
           aria-pressed={value.fast}
           onClick={() => {
             onChange({ ...value, fast: !value.fast });
@@ -90,6 +105,16 @@ export function ModelPicker({
         >
           <Zap size={15} fill={value.fast ? 'currentColor' : 'none'} />
         </IconButton>
+      )}
+      {pending && (
+        <span role="status">
+          <PendingLabel label={t('loading')} />
+        </span>
+      )}
+      {onRetry && (
+        <button className="button ghost small" type="button" disabled={locked} onClick={onRetry}>
+          {t('retry')}
+        </button>
       )}
     </div>
   );

@@ -2,6 +2,7 @@ export const coreMessagesEn = {
   turnSaved: 'Changes saved.',
   turnUnchanged: 'No file changes.',
   scriptHandoff: 'Update the video to match the script.',
+  clipHandoff: 'Create the first {{ratio}} clip from {{start}}s to {{end}}s.',
   invalidDiagnostic: 'Vandashi received an invalid response. Try again.',
   assetMetadataConflict:
     'This asset changed outside the editor. Reset its details to load the latest version before saving.',

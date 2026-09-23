@@ -1,4 +1,4 @@
-import { AppFault, diagnosticFromError } from '../domain/diagnostics';
+import { AppFault } from '../domain/diagnostics';
 import type { DesktopApi } from '../domain/api';
 import type { AgentPort } from '../domain/agent';
 import type { MediaPort } from '../domain/media';
@@ -13,6 +13,7 @@ import { Automation } from './automation';
 import { Publishing } from './publishing';
 import { Dependencies } from './dependencies';
 import { importFinishedVideo } from './finished-video';
+import { ClipCreation } from './clip-creation';
 
 export type HostMethods = Pick<
   DesktopApi,
@@ -97,6 +98,7 @@ export function createBackend(
   };
   const commits = new Commits(store, git, agent, media);
   const chats = new Chats(store, git, agent, commits, gate, dispatch, media);
+  const clips = new ClipCreation(store, media, chats, gate, remember, dispatch);
   const studio = new Studio(
     store,
     git,
@@ -183,40 +185,7 @@ export function createBackend(
     saveScript: (input) => chats.saveScript(input),
     generateChapters: (scope) => publishing.chapters(scope),
     importFinishedClip: (input) => publishing.importClip(input),
-    createClip: async (input) => {
-      const clip = await mutation(async () => {
-        const workspace = await store.openWorkspace(input.scope);
-        if (!workspace.video?.renderedPath) throw new AppFault({ id: 'appRenderBeforeClip' });
-        const sourceVideoPath = workspace.video.renderedPath;
-        const result = await store.createClip(input, ({ path, name }) =>
-          media.createClip({
-            projectPath: path,
-            sourceVideoPath,
-            ratio: input.ratio,
-            start: input.start,
-            end: input.end,
-            title: name,
-          }),
-        );
-        return result;
-      });
-      const scope = { ...input.scope, clipId: clip.id };
-      const prompt = `Create the first ${input.ratio} clip from ${String(input.start)}s to ${String(input.end)}s. ${input.prompt}`;
-      try {
-        remember(await store.openWorkspace(scope));
-        const session = await chats.open({ scope, topic: 'clip', title: input.name });
-        await chats.start({
-          sessionId: session.id,
-          text: prompt,
-          mode: 'edit',
-          selection: input.selection,
-          attachments: [],
-        });
-        return { clip, generation: { status: 'started' } };
-      } catch (error) {
-        return { clip, generation: { status: 'failed', diagnostic: diagnosticFromError(error), prompt } };
-      }
-    },
+    createClip: (input) => clips.create(input),
     updateLaunch: (input) => publishing.updateLaunch(input),
     preparePublish: (input) => publishing.prepare(input, chats),
   };

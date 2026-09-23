@@ -10,6 +10,7 @@ interface FileBackup {
   path: string;
   copy: string | null;
   mode: number | null;
+  hash: string | null;
 }
 interface Checkpoint {
   head: string;
@@ -134,7 +135,7 @@ export class ManualMutation {
             await copyFile(path, copy, constants.COPYFILE_EXCL);
             if ((await hashFile(copy)) !== hash) throw new AppFault({ id: 'storageWorkspaceConflict' });
           }
-          recovery.backups.push({ path, copy, mode: copy ? (await lstat(path)).mode : null });
+          recovery.backups.push({ path, copy, mode: copy ? (await lstat(path)).mode : null, hash });
         }
       }
       for (const directory of recovery.directories)
@@ -172,8 +173,11 @@ export class ManualMutation {
       const repository = input.repositories.find((root) => this.ownedPaths(root, [backup.path]).length > 0);
       if (!repository) throw new AppFault({ id: 'storageWorkspaceConflict' });
       const safe = await containedPath(repository, backup.path);
-      if ((await fileHash(repository, safe)) !== recovery.checkpoints.get(repository)?.files[safe])
+      const current = await fileHash(repository, safe);
+      if (current !== recovery.checkpoints.get(repository)?.files[safe])
         throw new AppFault({ id: 'storageWorkspaceConflict' });
+      // A failed installation leaves the original untouched; do not repeat the failing write to it.
+      if (current === backup.hash) continue;
       if (backup.copy) {
         await atomicWrite(safe, await readFile(backup.copy));
         if (backup.mode !== null) await chmod(safe, backup.mode);
@@ -182,19 +186,46 @@ export class ManualMutation {
     await this.dispose(recovery);
   }
 
+  private async mutate<T>(recovery: Recovery, input: Mutation<T>): Promise<T> {
+    const versions = new Map<string, Set<string | null>>();
+    for (const checkpoint of recovery.checkpoints.values())
+      for (const path of input.paths) {
+        const hash = checkpoint.files[path];
+        if (hash !== undefined) versions.set(path, new Set([hash]));
+      }
+    try {
+      // Receipts identify intended bytes before installation, which itself can still fail.
+      return await input.mutate((path, hash) => {
+        const known = versions.get(path);
+        if (!known) throw new AppFault({ id: 'storageWorkspaceConflict' });
+        known.add(hash);
+        for (const checkpoint of recovery.checkpoints.values())
+          if (Object.hasOwn(checkpoint.files, path)) checkpoint.files[path] = hash;
+      });
+    } catch (error) {
+      const verified = new Map<string, Checkpoint>();
+      for (const [repository, expected] of recovery.checkpoints) {
+        const current = await this.checkpoint(repository, expected.paths);
+        const files = { ...expected.files };
+        for (const [path, hash] of Object.entries(current.files))
+          if (versions.get(path)?.has(hash)) files[path] = hash;
+        const candidate = { ...expected, files };
+        // Accept only original/announced bytes. HEAD, index, unrelated files and path sets stay exact.
+        if (JSON.stringify(current) !== JSON.stringify(candidate))
+          throw new AppFault({ id: 'storageWorkspaceConflict' });
+        verified.set(repository, candidate);
+      }
+      for (const [repository, checkpoint] of verified) recovery.checkpoints.set(repository, checkpoint);
+      throw error;
+    }
+  }
+
   async run<T>(input: Mutation<T>): Promise<T> {
     const existing = this.pending.get(input.key);
     const recovery = existing ?? (await this.prepare(input));
     await this.assertCurrent(recovery);
-    if (!existing) {
-      // Writers report the exact bytes prepared for installation. Post-write reads only verify them.
-      recovery.result = await input.mutate((path, hash) => {
-        if (!input.paths.includes(path)) throw new AppFault({ id: 'storageWorkspaceConflict' });
-        for (const checkpoint of recovery.checkpoints.values())
-          if (Object.hasOwn(checkpoint.files, path)) checkpoint.files[path] = hash;
-      });
-    }
     try {
+      if (!existing) recovery.result = await this.mutate(recovery, input);
       for (const repository of input.repositories) {
         if (recovery.completed.has(repository)) continue;
         await this.assertCurrent(recovery);

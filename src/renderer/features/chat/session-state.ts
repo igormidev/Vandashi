@@ -1,4 +1,11 @@
-import type { AppEvent, ChatMessage, ChatSession, ModelInfo, ModelSelection } from '../../../domain/models';
+import type {
+  AppEvent,
+  ChatMessage,
+  ChatSession,
+  ClipHandoff,
+  ModelInfo,
+  ModelSelection,
+} from '../../../domain/models';
 
 type ChatEvent = Extract<AppEvent, { type: 'chat' }>;
 export function applyMessage(messages: ChatMessage[], event: ChatEvent): ChatMessage[] {
@@ -38,10 +45,17 @@ export interface Draft {
   text: string;
   seed: string | null;
   pending: string | null;
+  handoff?: ClipHandoff;
 }
-export function seedDraft(draft: Draft, seed: string | null): Draft {
+export function seedDraft(draft: Draft, seed: string | null, handoff?: ClipHandoff): Draft {
   // Selecting another tab hides the prepared target; it does not resolve its pending decision.
-  if (seed === null || seed === draft.seed) return draft;
+  if (seed === null) return draft;
+  if (seed === draft.seed) return handoff && handoff !== draft.handoff ? { ...draft, handoff } : draft;
   const edited = !!draft.text.trim() && draft.text !== draft.seed;
-  return { seed, text: edited ? draft.text : seed, pending: edited ? seed : null };
+  return {
+    seed,
+    text: edited ? draft.text : seed,
+    pending: edited ? seed : null,
+    ...(handoff ? { handoff } : {}),
+  };
 }

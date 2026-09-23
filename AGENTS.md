@@ -37,8 +37,12 @@ unregistered brand can resume registration only at the exact requested path with
 manifest, complete files, and unchanged clean initial commits. Project names cannot start with a dot.
 Video/clip media preparation runs under the unpublished storage transaction. Publish prepared files
 exclusively with the manifest last, and never reenter the storage queue from a preparation callback.
-Once a clip is published, later chat/refresh failure must return its saved receipt and retry prompt;
-it must not be treated as a failed creation or trigger automatic duplicate creation.
+Clip creation retains one operation lease through publication, workspace hydration and chat
+preparation; the accepted AI turn inherits that same lease through final cleanup. Never expose
+an idle interval between those stages. Once published, later chat/refresh failure returns the
+saved clip receipt and typed retry handoff, never automatic duplicate creation.
+Keep the automatic clip instruction separate from raw user guidance in persisted messages
+and drafts. Only an untouched app-owned retry seed may retain the typed handoff when sent.
 
 Studio discard retains the exact owned safety commit and its opening baseline until
 restoration succeeds. Retry that transaction after a transient failure; its pending diff
@@ -63,6 +67,9 @@ Every awaited user action needs immediate, visible local loading feedback throug
 actual completion, failure or cancellation. Use shared spinners and existing translated
 phase labels; disable duplicate actions and expose busy/status semantics. Indeterminate
 AI work must not display invented percentages. Respect reduced-motion preferences.
+Keep local model overrides only while saving or recovering a failed adoption. After a
+successful settings and discovery refresh, every mounted chat must follow the latest
+global model, reasoning and speed preference. A swallowed refresh failure is not success.
 
 Keep UI editing locked through workspace refreshes, not only the preceding operation.
 Never replace a dirty local draft with an asynchronous snapshot. Validation belongs to
@@ -113,8 +120,11 @@ Manual asset and workspace saves retain owned file backups and exact Git index e
 Writer receipts identify exact intended bytes before installation; never adopt post-write reads as
 proof of ownership. Rollback must restore all index entries changed by repository-wide staging,
 including unrelated pre-existing entries, while preserving unrelated working files.
-On Git failure, restore only when HEAD, index, and written bytes still match the operation; preserve
-external changes and recovery evidence otherwise. A partially committed multi-repository save retries
+On writer or Git failure, restore only when HEAD, index, and owned bytes still match the operation; preserve
+external changes and recovery evidence otherwise. When a writer fails after announcing an installation,
+only the original bytes or explicitly announced versions can be treated as owned; skip writes that
+never installed so their persistent failure cannot prevent restoring earlier files.
+A partially committed multi-repository save retries
 its original request without repeating writes or replacing reviewed commit text. Asset deletion binds
 confirmation to the reviewed media/sidecar revision and checks exact parent references from child clips.
 

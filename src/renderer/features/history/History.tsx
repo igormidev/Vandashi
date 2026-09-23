@@ -2,13 +2,14 @@ import { ChevronLeft, ChevronRight, Copy, GitCommitHorizontal } from 'lucide-rea
 import { useTranslation } from 'react-i18next';
 import { useApp } from '../../app/store';
 import { IconButton, Loading } from '../../shared/ui';
+import { PendingIconButton } from '../../shared/PendingIconButton';
 import { ExpandableText } from '../../shared/ExpandableText';
 import { DiffFiles } from './DiffFiles';
 import { useHistory } from './use-history';
 
 export function History() {
   const { t, i18n } = useTranslation();
-  const { run, setToast } = useApp();
+  const { setToast } = useApp();
   const { page, setPage, commits, hasMore, loading, failed, retry } = useHistory();
   return (
     <section className="history" aria-busy={loading}>
@@ -50,17 +51,15 @@ export function History() {
             <div className="commit-heading">
               <GitCommitHorizontal size={15} />
               <h3>{commit.title}</h3>
-              <IconButton
+              <PendingIconButton
                 label={t('commitSha')}
-                onClick={() => {
-                  void run(async () => {
-                    await navigator.clipboard.writeText(commit.sha);
-                    setToast({ kind: 'interface', key: 'copied' });
-                  });
+                action={async () => {
+                  await navigator.clipboard.writeText(commit.sha);
+                  setToast({ kind: 'interface', key: 'copied' });
                 }}
               >
                 <Copy size={12} />
-              </IconButton>
+              </PendingIconButton>
             </div>
             <div className="commit-meta">
               <span>{commit.sha.slice(0, 7)}</span>

@@ -1,9 +1,11 @@
 import { ArrowUp, LoaderCircle, Paperclip, Square, X } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ChatSession, ModelSelection } from '../../../domain/models';
 import { defaultSettings } from '../../../domain/defaults';
+import { clipHandoffText } from '../../../domain/clip-handoff';
 import { useApp } from '../../app/store';
+import { messageText } from '../../app/diagnostics';
 import { IconButton, Tip } from '../../shared/ui';
 import { ModelPicker } from './ModelPicker';
 import { seedDraft, validSelection } from './session-state';
@@ -26,11 +28,22 @@ export function Composer({ session, disabled = false }: { session: ChatSession; 
     chatTarget,
     refresh,
   } = useApp();
-  const busy = appBusy || disabled;
-  const seed = chatTarget?.topic === session.topic ? (chatTarget.prompt ?? null) : null;
-  const [restored] = useState(() => readDraft(session.id, seed));
+  const [savingModel, setSavingModel] = useState(false);
+  const [modelFailure, setModelFailure] = useState(false);
+  const modelOwner = useRef(false);
+  const busy = appBusy || disabled || savingModel;
+  // Resolve an explicit handoff once. Passive locale changes must not replace an existing draft.
+  const seed = useMemo(() => {
+    if (chatTarget?.topic !== session.topic) return null;
+    return chatTarget.handoff
+      ? clipHandoffText(chatTarget.handoff, messageText)
+      : (chatTarget.prompt ?? null);
+  }, [chatTarget, session.topic]);
+  const handoff = chatTarget?.topic === session.topic ? chatTarget.handoff : undefined;
+  const [restored] = useState(() => readDraft(session.id, seed, handoff));
   const [draft, setDraft] = useState<Draft>(restored.draft);
-  if (seed !== null && draft.seed !== seed) setDraft(seedDraft(draft, seed));
+  if (seed !== null && (draft.seed !== seed || (handoff && draft.handoff !== handoff)))
+    setDraft(seedDraft(draft, seed, handoff));
   const text = draft.text;
   const setText = (value: string) => {
     setDraft((current) => ({ ...current, text: value }));
@@ -53,7 +66,14 @@ export function Composer({ session, disabled = false }: { session: ChatSession; 
     if (!text.trim() || draft.pending || busy || dirty || sending || !models.length) return;
     setSending(true);
     const value = await run(async () => {
-      await api.sendChat({ sessionId: session.id, text: text.trim(), mode, selection, attachments });
+      await api.sendChat({
+        sessionId: session.id,
+        text: text.trim(),
+        mode,
+        selection,
+        attachments,
+        ...(draft.handoff && text === draft.seed ? { handoff: draft.handoff } : {}),
+      });
       return true;
     });
     if (value) {
@@ -63,12 +83,24 @@ export function Composer({ session, disabled = false }: { session: ChatSession; 
     setSending(false);
   };
   const changeModel = (value: ModelSelection) => {
+    if (!state || modelOwner.current) return;
+    modelOwner.current = true;
     setChosen(value);
-    if (state)
-      void run(async () => {
+    setSavingModel(true);
+    setModelFailure(false);
+    void run(async () => {
+      try {
         await api.settings({ ...state.settings, chat: value });
-        await refresh();
-      });
+        if (await refresh()) setChosen(null);
+        else setModelFailure(true);
+      } catch (error) {
+        setModelFailure(true);
+        throw error;
+      }
+    }).finally(() => {
+      modelOwner.current = false;
+      setSavingModel(false);
+    });
   };
   return (
     <div className="composer-wrap">
@@ -211,7 +243,19 @@ export function Composer({ session, disabled = false }: { session: ChatSession; 
           )}
         </div>
       </div>
-      <ModelPicker value={selection} onChange={changeModel} disabled={busy || sending} />
+      <ModelPicker
+        value={selection}
+        onChange={changeModel}
+        disabled={busy || sending}
+        pending={savingModel}
+        {...(modelFailure
+          ? {
+              onRetry: () => {
+                changeModel(selection);
+              },
+            }
+          : {})}
+      />
     </div>
   );
 }

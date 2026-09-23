@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import type { Asset } from '../../../domain/models';
 import { useApp } from '../../app/store';
 import { AiButton, IconButton, InfoTip, PendingLabel } from '../../shared/ui';
+import { PendingIconButton } from '../../shared/PendingIconButton';
 import { CommitDialog } from '../history/CommitDialog';
 import { AssetPreview } from './AssetPreview';
 import { parseAssetTags } from './asset-index';
@@ -98,17 +99,15 @@ export function AssetInspector({
           {asset.shared && <span className="badge">{t('shared')}</span>}
           <div className="spacer" />
           {asset.kind === 'image' && (
-            <IconButton
+            <PendingIconButton
               label={t('assetCopyImage')}
-              onClick={() => {
-                void run(async () => {
-                  await api.copyImage(asset.path);
-                  setToast({ kind: 'interface', key: 'copied' });
-                });
+              action={async () => {
+                await api.copyImage(asset.path);
+                setToast({ kind: 'interface', key: 'copied' });
               }}
             >
               <Copy size={14} />
-            </IconButton>
+            </PendingIconButton>
           )}
           <IconButton
             label={t('reveal')}

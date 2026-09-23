@@ -48,6 +48,7 @@
   padding: 2px;
 }
 .chat-tab:hover .close-tab,
+.close-tab[aria-busy='true'],
 .close-tab:focus-visible {
   opacity: 1;
 }

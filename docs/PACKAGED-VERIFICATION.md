@@ -89,8 +89,8 @@ verified red title pixels and export metadata, and confirmed server cleanup.
 Git came from `/usr/bin` and the child PATH contained OS directories, with explicit
 FFmpeg, FFprobe and pinned browser paths. No host Node/npm path was supplied.
 This establishes the macOS English checkpoint, not the later translated release.
-Windows/Linux native execution and the full matrix remain unverified until their
-actual jobs run. The Windows process-tree regression also awaits its Windows runner.
+Windows/Linux execution was not yet verified at that checkpoint. The later cross-platform
+checkpoint below records the completed native and packaged matrix.
 
 Workflow syntax and environment-file behavior follow
 [GitHub's current documentation](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands#environment-files).
@@ -116,3 +116,18 @@ Results are `/tmp/vandashi-localized-package/smoke-results.json` and
 existing-project walkthroughs followed. These observations verify this checkpoint;
 the subsequent clipboard correction and any final audit changes require fresh
 package verification before final release acceptance.
+
+## Cross-platform checkpoint before final audit fixes
+
+[Desktop CI 35904172451](https://github.com/igormidev/Vandashi/actions/runs/35904172451)
+succeeded at `e5548d46` on macOS, Windows and Linux. Linux and macOS each passed
+556 unit/integration tests with 13 existing opt-in skips; Windows passed 555 with
+14 existing opt-in/platform skips. Each platform passed 112 native-renderer cases
+and two actual packaged Studio/render/local-speech integration cases. The native-source
+job and installer artifact uploads also succeeded: macOS ARM64 DMG/ZIP, Windows NSIS,
+and Linux AppImage/Debian.
+
+These jobs establish real execution on all three platforms at that identified commit.
+They do not validate subsequent final-audit changes or replace manual installation and
+resizing checks of the eventual delivered artifacts. Current-state package verification
+remains part of final delivery.

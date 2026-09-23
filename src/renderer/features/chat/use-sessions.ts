@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { SetStateAction } from 'react';
 import type { ChatSession, Scope } from '../../../domain/models';
 import { useApp } from '../../app/store';
 import { applyMessage, mergeSession, selectedSession } from './session-state';
@@ -8,10 +9,26 @@ import { cachedSelection, cacheSelection } from './draft-cache';
 
 export function useSessions(scope: Scope) {
   const { api, run, chatTarget, busy } = useApp();
-  const [sessions, setSessions] = useState<ChatSession[]>([]);
-  const [selected, setSelected] = useState<string | null>(() => cachedSelection(scopeKey(scope)));
+  const [conversation, setConversation] = useState(() => ({
+    sessions: [] as ChatSession[],
+    selected: cachedSelection(scopeKey(scope)),
+  }));
+  const { sessions, selected } = conversation;
+  const setSessions = useCallback((update: (value: ChatSession[]) => ChatSession[]) => {
+    setConversation((current) => ({ ...current, sessions: update(current.sessions) }));
+  }, []);
+  const setSelected = useCallback((value: SetStateAction<string | null>) => {
+    setConversation((current) => ({
+      ...current,
+      selected: typeof value === 'function' ? value(current.selected) : value,
+    }));
+  }, []);
   const [loading, setLoading] = useState(true);
   const [opening, setOpening] = useState(false);
+  const [retrying, setRetrying] = useState(false);
+  const retryOwner = useRef<object | null>(null);
+  const closeOwners = useRef(new Map<string, { topic: string | undefined; promise: Promise<void> }>());
+  const [closing, setClosing] = useState<string[]>([]);
   const [failed, setFailed] = useState(false);
   const [mediaGeneration, setMediaGeneration] = useState<Record<string, number>>({});
   const mediaHydrated = useCallback((id: string) => {
@@ -62,14 +79,29 @@ export function useSessions(scope: Scope) {
         );
         setFailed(false);
       } catch (error) {
-        if (ticket === generation.current) setFailed(true);
+        if (ticket !== generation.current || !mounted.current) return;
+        setFailed(true);
         throw error;
       } finally {
         if (ticket === generation.current) setLoading(false);
       }
     },
-    [api, scope],
+    [api, scope, setSessions, setSelected],
   );
+  const retry = async () => {
+    if (retryOwner.current) return;
+    const owner = {};
+    retryOwner.current = owner;
+    setRetrying(true);
+    try {
+      await refresh();
+    } finally {
+      if (retryOwner.current === owner) {
+        retryOwner.current = null;
+        if (mounted.current) setRetrying(false);
+      }
+    }
+  };
   useEffect(() => {
     void run(() => refresh());
     return () => {
@@ -82,15 +114,22 @@ export function useSessions(scope: Scope) {
       return;
     }
     let disposed = false;
+    const current = () => !disposed;
     setOpening(true);
     void run(async () => {
       try {
+        // Reopening a closing tab is a later user intent. Read it after its persistence settles.
+        const closingTarget = [...closeOwners.current.values()].find(
+          (entry) => entry.topic === chatTarget.topic,
+        );
+        await closingTarget?.promise.catch(() => undefined);
+        if (!current()) return;
         const result = await openConversation(api, {
           scope,
           topic: chatTarget.topic,
           title: chatTarget.title,
         });
-        if (disposed) return;
+        if (!current()) return;
         targetOpened.current = chatTarget;
         setSessions((current) => {
           const existing = current.find((entry) => entry.id === result.id);
@@ -122,7 +161,7 @@ export function useSessions(scope: Scope) {
     return () => {
       disposed = true;
     };
-  }, [api, chatTarget, mediaHydrated, run, scope]);
+  }, [api, chatTarget, mediaHydrated, run, scope, setSessions, setSelected]);
   useEffect(() => {
     if (
       (chatTarget && targetOpened.current !== chatTarget) ||
@@ -163,7 +202,7 @@ export function useSessions(scope: Scope) {
         throw error;
       }
     });
-  }, [api, busy, chatTarget, hydrationRetry, mediaHydrated, run, scope, selected, sessions]);
+  }, [api, busy, chatTarget, hydrationRetry, mediaHydrated, run, scope, selected, sessions, setSessions]);
   useEffect(
     () =>
       api.onEvent((event) => {
@@ -185,7 +224,7 @@ export function useSessions(scope: Scope) {
           void run(() => refresh(true));
         }
       }),
-    [api, refresh, run],
+    [api, refresh, run, setSessions],
   );
   const replace = (result: ChatSession) => {
     generation.current++;
@@ -193,16 +232,28 @@ export function useSessions(scope: Scope) {
     setSessions((current) => current.map((session) => (session.id === result.id ? result : session)));
   };
   const close = async (id: string) => {
-    await api.closeChat(id);
-    opened.current.delete(id);
-    generation.current++;
-    pending.current.delete(id);
-    setSessions((current) =>
-      current.map((session) => (session.id === id ? { ...session, open: false } : session)),
-    );
-    setSelected((current) =>
-      current === id ? (sessions.find((session) => session.id !== id && session.open)?.id ?? null) : current,
-    );
+    if (closeOwners.current.has(id)) return;
+    const promise = api.closeChat(id);
+    closeOwners.current.set(id, { topic: sessions.find((entry) => entry.id === id)?.topic, promise });
+    setClosing([...closeOwners.current.keys()]);
+    try {
+      await promise;
+      if (!mounted.current) return;
+      opened.current.delete(id);
+      generation.current++;
+      pending.current.delete(id);
+      setConversation((current) => {
+        const remaining = current.sessions.map((session) =>
+          session.id === id ? { ...session, open: false } : session,
+        );
+        return { sessions: remaining, selected: selectedSession(remaining, current.selected) };
+      });
+    } catch (error) {
+      if (mounted.current) throw error;
+    } finally {
+      closeOwners.current.delete(id);
+      if (mounted.current) setClosing([...closeOwners.current.keys()]);
+    }
   };
   return {
     sessions,
@@ -210,8 +261,11 @@ export function useSessions(scope: Scope) {
     setSelected,
     loading,
     opening,
+    retrying,
+    closing,
     failed,
     refresh,
+    retry,
     replace,
     close,
     mediaGeneration,

@@ -264,6 +264,7 @@
   "mediaBridgePending": "O Studio ainda está salvando. Aguarde as edições pendentes serem salvas antes de sair.",
   "mediaBridgeUnavailable": "A conexão para salvar no Studio está indisponível. Mantenha o editor aberto e tente novamente.",
   "scriptHandoff": "Atualize o vídeo de acordo com o roteiro.",
+  "clipHandoff": "Crie o primeiro corte em {{ratio}}, de {{start}}s a {{end}}s.",
   "storageAssetDeleteConflict": "Este recurso foi alterado fora do editor. Feche esta confirmação e confira a versão mais recente antes de excluí-lo.",
   "appPublishUndoUnavailable": "A publicação pode ter alterado uma plataforma externa. Não é possível reverter; confira a publicação no navegador e atualize o status aqui.",
   "appHyperframesSkillMissing": "O Codex não encontrou a skill principal hyperframes habilitada. Abra o guia de instalação para instalá-la ou habilitá-la fora do Vandashi e verifique novamente.",

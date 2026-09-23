@@ -1,4 +1,4 @@
-import { MessageSquare, RotateCcw, Sparkles, Undo2, X } from 'lucide-react';
+import { LoaderCircle, MessageSquare, RotateCcw, Sparkles, Undo2, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ChatMessage, Scope } from '../../../domain/models';
@@ -30,6 +30,11 @@ function Message({
     return (
       <article className={`message ${message.role === 'user' ? 'user' : 'receipt'}`}>
         <p>{messageText(message.appMessage)}</p>
+        {message.userText && (
+          <div className="message-body">
+            <ChatMarkdown text={message.userText} root={root} mediaGeneration={mediaGeneration} />
+          </div>
+        )}
         {message.files.length > 0 && <DiffFiles files={message.files} />}
       </article>
     );
@@ -82,8 +87,10 @@ function Conversation({ scope }: { scope: Scope }) {
     setSelected,
     loading,
     opening,
+    retrying,
+    closing,
     failed,
-    refresh,
+    retry,
     replace,
     close,
     mediaGeneration,
@@ -125,20 +132,23 @@ function Conversation({ scope }: { scope: Scope }) {
                 className="close-tab"
                 type="button"
                 aria-label={t('close')}
-                disabled={busy || dirty}
+                aria-busy={closing.includes(entry.id)}
+                disabled={busy || dirty || closing.includes(entry.id)}
                 onClick={() => {
-                  void run(async () => {
-                    await close(entry.id);
-                    if (selected === entry.id) setChatTarget(null);
-                  });
+                  if (selected === entry.id) setChatTarget(null);
+                  void run(() => close(entry.id));
                 }}
               >
-                <X size={12} />
+                {closing.includes(entry.id) ? (
+                  <LoaderCircle className="spin" size={12} aria-hidden="true" />
+                ) : (
+                  <X size={12} />
+                )}
               </button>
             </div>
           ))}
       </div>
-      {opening && session && (
+      {(opening || (retrying && !failed)) && session && (
         <div className="chat-toolbar" role="status">
           <PendingLabel label={t('loading')} />
         </div>
@@ -213,12 +223,12 @@ function Conversation({ scope }: { scope: Scope }) {
                 <Composer
                   key={`${entry.id}:${String(resetVersion[entry.id] ?? 0)}`}
                   session={entry}
-                  disabled={opening}
+                  disabled={opening || closing.includes(entry.id)}
                 />
               </div>
             ))}
         </>
-      ) : loading || opening ? (
+      ) : loading || opening || retrying ? (
         <Loading />
       ) : (
         <Empty
@@ -233,14 +243,14 @@ function Conversation({ scope }: { scope: Scope }) {
           <button
             className="button small"
             type="button"
-            disabled={busy || opening}
-            aria-busy={opening}
+            disabled={busy || opening || retrying}
+            aria-busy={opening || retrying}
             onClick={() => {
               if (chatTarget) setChatTarget({ ...chatTarget });
-              else void run(() => refresh());
+              else void run(retry);
             }}
           >
-            {opening ? <PendingLabel label={t('loading')} /> : t('retry')}
+            {opening || retrying ? <PendingLabel label={t('loading')} /> : t('retry')}
           </button>
         </div>
       )}

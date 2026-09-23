@@ -157,6 +157,7 @@ export interface ChatMessage {
   files: FileChange[];
   createdAt: string;
   appMessage?: AppMessage;
+  userText?: string;
   diagnostic?: Diagnostic;
   generatedImages?: string[];
 }
@@ -185,6 +186,14 @@ export interface ChatRequest {
   mode: 'read' | 'edit';
   selection: ModelSelection;
   attachments: string[];
+  handoff?: ClipHandoff;
+}
+export interface ClipHandoff {
+  message: {
+    id: 'clipHandoff';
+    params: { ratio: '9:16' | '1:1'; start: number; end: number };
+  };
+  guidance: string;
 }
 export interface ChatActivity {
   sessionId: string;

@@ -318,6 +318,12 @@ figcaption a {
   font-size: 14px;
   color: var(--green);
 }
+.setup-actions button[aria-busy='true'] {
+  cursor: progress;
+}
+.copy-spinner {
+  flex-shrink: 0;
+}
 .copy-status:not(:empty) {
   margin-top: 16px;
 }
@@ -612,6 +618,14 @@ figcaption a {
   letter-spacing: -0.025em;
 }
 @media (prefers-reduced-motion: no-preference) {
+  .copy-spinner {
+    animation: copy-spin 900ms linear infinite;
+  }
+  @keyframes copy-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
   html {
     scroll-behavior: smooth;
   }

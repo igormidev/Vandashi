@@ -4,6 +4,7 @@ import { promisify } from 'node:util';
 import type { ElectronApplication } from '@playwright/test';
 import type { DesktopApi } from '../../src/domain/api';
 import type { AppEvent, ChatSession, SaveInput, Scope, Workspace } from '../../src/domain/models';
+import { appMessagesEn } from '../../src/domain/messages';
 import { chatFixtureData } from './chat-fixture-data';
 
 export async function installClipsFixture(
@@ -44,6 +45,7 @@ export async function installClipsFixture(
   await desktop.evaluate(
     ({ ipcMain, BrowserWindow, protocol, net }, fixture) => {
       const parent = fixture.workspace;
+      let state = fixture.state;
       const workspaces = new Map<string, Workspace>();
       const sessions: ChatSession[] = [];
       const requests: { method: string; input: unknown }[] = [];
@@ -104,8 +106,11 @@ export async function installClipsFixture(
       ipcMain.handle('vandashi:invoke', (_event, method: string, args: unknown[]) => {
         const input = args[0];
         requests.push({ method, input });
-        if (method === 'getState') return fixture.state;
-        if (method === 'settings') return;
+        if (method === 'getState') return state;
+        if (method === 'settings') {
+          state = { ...state, settings: input as Parameters<DesktopApi['settings']>[0] };
+          return;
+        }
         if (method === 'models') return fixture.models;
         if (method === 'checks')
           return [{ id: 'Ready', status: 'ready', detail: '', repairPrompt: null, helpUrl: null }];
@@ -158,7 +163,25 @@ export async function installClipsFixture(
           if (session) session.open = false;
           return;
         }
-        if (method === 'sendChat') return;
+        if (method === 'sendChat') {
+          const request = input as Parameters<DesktopApi['sendChat']>[0];
+          const session = sessions.find((entry) => entry.id === request.sessionId);
+          if (!session) throw new Error('Missing clip session');
+          const message = {
+            id: `retry-${String(session.messages.length)}`,
+            role: 'user' as const,
+            text: request.text,
+            ...(request.handoff
+              ? { appMessage: request.handoff.message, userText: request.handoff.guidance }
+              : {}),
+            turnId: 'retry-turn',
+            files: [],
+            createdAt: '',
+          };
+          session.messages.push(message);
+          emit({ type: 'chat', sessionId: session.id, message, delta: false });
+          return;
+        }
         if (method === 'cancelChat') {
           finish(true);
           return;
@@ -211,7 +234,13 @@ export async function installClipsFixture(
               generation: {
                 status: 'failed',
                 diagnostic: { kind: 'external', text: 'Codex could not start.' },
-                prompt: `Create the first ${request.ratio} clip from ${String(request.start)}s to ${String(request.end)}s. ${request.prompt}`,
+                handoff: {
+                  message: {
+                    id: 'clipHandoff',
+                    params: { ratio: request.ratio, start: request.start, end: request.end },
+                  },
+                  guidance: request.prompt,
+                },
               },
             };
           }
@@ -226,7 +255,15 @@ export async function installClipsFixture(
               {
                 id: 'clip-request',
                 role: 'user',
-                text: `Initial clip direction: ${request.prompt}`,
+                text: fixture.handoffTemplate
+                  .replace('{{ratio}}', request.ratio)
+                  .replace('{{start}}', String(request.start))
+                  .replace('{{end}}', String(request.end)),
+                appMessage: {
+                  id: 'clipHandoff',
+                  params: { ratio: request.ratio, start: request.start, end: request.end },
+                },
+                userText: request.prompt,
                 turnId: 'clip-turn',
                 files: [],
                 createdAt: '',
@@ -254,6 +291,7 @@ export async function installClipsFixture(
       mediaPaths,
       failCreation,
       imported,
+      handoffTemplate: appMessagesEn.clipHandoff,
     },
   );
 }

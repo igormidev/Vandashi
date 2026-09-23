@@ -22,13 +22,13 @@ the next cross-platform run is in progress.
 
 | #   | Genesis heading                 | Lines   | Reviewer context                   | Current status  |
 | --- | ------------------------------- | ------- | ---------------------------------- | --------------- |
-| 1   | The idea.                       | 1–18    | Pending                            | not-started     |
-| 2   | General structure               | 19–22   | /root/final_general_review         | reviewing       |
+| 1   | The idea.                       | 1–18    | /root/final_idea_review            | source-accepted |
+| 2   | General structure               | 19–22   | /root/final_general_review         | source-accepted |
 | 3   | Git structure                   | 23–105  | /root/final_git_review             | needs-evidence  |
 | 4   | Tech stack and architecture     | 106–122 | /root/final_architecture_review    | source-accepted |
 | 5   | Linter and architecture         | 123–130 | /root/final_linter_review          | source-accepted |
 | 6   | Agent markdown file             | 131–137 | /root/final_agent_docs_review      | source-accepted |
-| 7   | Tests                           | 138–141 | Pending                            | not-started     |
+| 7   | Tests                           | 138–141 | /root/final_tests_review           | source-accepted |
 | 8   | Pre-installs                    | 142–148 | /root/final_preinstalls_review     | needs-evidence  |
 | 9   | Organization Listage ( UI )     | 149–156 | /root/final_brand_list_review      | accepted-macos  |
 | 10  | Organization Page ( UI )        | 157–166 | /root/final_brand_workspace_review | needs-evidence  |
@@ -43,15 +43,15 @@ the next cross-platform run is in progress.
 | 19  | Video Pre-page: Onboarding Form | 426–435 | /root/final_onboarding_review      | source-accepted |
 | 20  | Packaging Page                  | 436–457 | /root/final_packaging_review       | needs-evidence  |
 | 21  | Creation workspace              | 458–522 | /root/final_creation_review        | needs-evidence  |
-| 22  | Manual video editing            | 523–533 | /root/final_manual_edit_review     | needs-fix       |
+| 22  | Manual video editing            | 523–533 | /root/final_manual_edit_review     | source-accepted |
 | 23  | Asset creation                  | 534–553 | /root/final_assets_review          | needs-evidence  |
-| 24  | Clips creation                  | 554–578 | /root/final_clips_review           | needs-fix       |
+| 24  | Clips creation                  | 554–578 | /root/final_clips_review           | source-accepted |
 | 25  | Launch Suite (Video Release)    | 579–605 | /root/final_launch_review          | needs-evidence  |
-| 26  | UI                              | 606–623 | /root/final_ui_review              | reviewing       |
+| 26  | UI                              | 606–623 | /root/final_ui_review              | source-accepted |
 | 27  | Translation                     | 624–651 | /root/final_translation_review     | source-accepted |
-| 28  | Landing page                    | 652–670 | Pending                            | not-started     |
-| 29  | Responsibility                  | 671–677 | Pending                            | not-started     |
-| 30  | Final guidelines                | 678–714 | Pending                            | not-started     |
+| 28  | Landing page                    | 652–670 | /root/final_landing_review         | source-accepted |
+| 29  | Responsibility                  | 671–677 | /root/final_responsiveness_review  | source-accepted |
+| 30  | Final guidelines                | 678–714 | /root/final_guidelines_review      | source-accepted |
 
 ## Findings and fix acceptance
 
@@ -273,3 +273,70 @@ are underway.
 The Clips reviewer identified a lease gap between saved clip creation and AI startup,
 and English-only framing in the automatic clip request. Both require source fixes and
 same-reviewer acceptance. General structure and UI have fresh read-only reviewers.
+
+The consolidated checkpoint `87b919b` passed the actual staged-snapshot pre-commit gate:
+809 tests passed with 13 existing opt-in skips; format, types, lint, 268-module architecture,
+desktop build and landing build all passed. The full native run passed 185 cases and exposed
+two ambiguous clip-test status selectors after Loading gained its own status role. Both
+assertions now target the error toast; all five clip cases passed on rerun. This is
+187 distinct native cases across the full run and targeted correction, not a single green run.
+
+Manual editing's same reviewer accepted all four source fixes after inspecting the final
+source and focused evidence (86 cases plus an overlapping updated nine-case Git suite).
+The General structure reviewer found partial manual writer failure outside recovery;
+its ownership-aware correction is underway. The UI reviewer accepted the shared commit
+dialog design but found remaining silent waits in session retry, tab closing, model
+preferences, both clipboard consumers, and navigation at minimum width. Those corrections
+are now assigned with held-response and duplicate-action coverage.
+
+General structure's same reviewer accepted writer recovery after inspecting the correction
+and its 12 new real-Git/fault regressions. Seven focused suites passed 53 cases. The actual
+Brand walkthrough independently caught a narrowed-save-payload regression; path/content
+projection is restored and a real desktop-API case now saves/reloads all 13 guide controls.
+The Brand revision suite passes all three cases. Tests has its own fresh read-only reviewer.
+
+The Tests reviewer accepted the meaningful coverage strategy, including actual Git
+index/HEAD/byte recovery, uncertain-start cleanup, read-only shared preflight, production
+media grants/ranges, StrictMode replay and staged-snapshot negative cases. This does not
+replace the final current-state gate or external integration acceptance. Desktop
+responsiveness now has its fresh dedicated reviewer.
+
+Responsiveness's dedicated reviewer accepted the common native minimum and responsive
+source, and independently verified all three completed CI platforms at `e5548d46`.
+Stale package/requirement wording now distinguishes that verified matrix from the
+pending final artifacts. The central product idea has its own fresh reviewer.
+
+The idea's dedicated reviewer accepted the local AI-driven product architecture, genuine
+Codex harness integration and Vandashi/open-source identity. Final guidelines accepted
+README/setup/Settings/quality enforcement, but found a settled per-composer model override
+that ignores later global selections. Its correction is underway with two-chat/Settings
+coverage. Clip lease and typed handoff fixes passed 85 focused tests and are in the original
+reviewer's recheck; three native handoff cases await the coordinated build.
+
+The Clips reviewer accepted the continuous operation lease and typed, localized handoff
+corrections. Translation's original reviewer accepted all eight clip catalogs after a
+Portuguese terminology correction; 29 focused catalog/handoff tests passed. UI's original
+reviewer accepted all five residual loading fixes after inspecting the 42-case native
+loading evidence, eight chat cases and three model-adoption cases. These sets overlap
+with the consolidated suite and must not be summed as distinct coverage. Final guidelines
+is rechecking the global model-preference fix; a current production build has passed
+and a fresh combined native run is in progress. Landing has its fresh final reviewer.
+
+Landing's same reviewer accepted the guarded pending-copy correction, current product
+claims and real screenshot consistency. Six new held clipboard cases cover success,
+denial, retry and reduced motion in all three browsers. The complete production-site
+suite passed 312/312 at the /Vandashi/ base path. Screenshot provenance now accurately
+records the provider's original JPEG encoding beneath its .png filenames; the four WebP
+assets preserve the source pixels exactly. No images were changed for this correction.
+
+Final guidelines' same reviewer accepted both model-preference corrections, including
+Settings retaining its dialog after failed state/model adoption. All five held native
+model cases pass; source/types/lint/format checks pass. Agent-document review likewise
+accepted the updated clip, recovery, loading and preference contracts.
+
+The next full native run passed 203/207 and exposed four test-assertion defects in the
+new clip coverage: three compared flattened paragraph text with newline-delimited drafts,
+and one selected the nonexistent “Reasoning” label instead of the visible “Thinking”.
+Assertions now inspect paragraph boundaries and keep exact outgoing-text checks. All
+eight clip cases pass after correction. Together with the two new Settings cases this
+covers 209 distinct native cases across runs, not a single green combined run.
