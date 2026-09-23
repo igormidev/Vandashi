@@ -1,5 +1,5 @@
 import { readFile, rm, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join, normalize } from 'node:path';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { stringify } from 'yaml';
 import { diagnosticFromError } from '../src/domain/diagnostics';
@@ -57,7 +57,10 @@ it.each(['completed', 'interrupted', 'legacy'] as const)(
     app.agent.run.mockImplementationOnce(async (input, emit) => {
       expect(input.cwd).toBe(clip.path);
       expect(input.writableRoots).toEqual(await app.store.repositories(scope));
-      expect(input.prompt).toContain(`PRIMARY TARGET: ${JSON.stringify(ledger)}`);
+      const quotedTarget = /PRIMARY TARGET: ("(?:\\.|[^"\\])*")\./u.exec(input.prompt)?.[1];
+      const target: unknown = JSON.parse(quotedTarget ?? 'null');
+      if (typeof target !== 'string') throw new Error('Missing primary publication target');
+      expect(normalize(target)).toBe(normalize(ledger));
       expect(input.prompt).toContain(JSON.stringify(clip.path));
       expect(input.prompt).toContain(JSON.stringify(fixture.renderedPath));
       emit({ type: 'thread', threadId: 'publication-thread' });

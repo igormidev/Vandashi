@@ -75,9 +75,13 @@ it('holds one lease from publication through hydration, accepted startup and fin
     // The renderer can immediately open the accepted clip from the gated snapshot cache.
     expect((await app.api.openWorkspace(clipScope)).video?.id).toBe(result.clip.id);
     completion.resolve();
-    await vi.waitFor(() => {
-      expect(finalWrite).toBe(true);
-    });
+    // Reconciliation performs real Git work in every repository before reaching the held final write.
+    await vi.waitFor(
+      () => {
+        expect(finalWrite).toBe(true);
+      },
+      { timeout: 10_000, interval: 25 },
+    );
     await expectLocked();
     persistence.resolve();
     await app.idle();
