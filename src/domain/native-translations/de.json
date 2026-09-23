@@ -1,0 +1,9 @@
+{
+  "closeTitle": "Ungespeicherte Arbeit",
+  "closeMessage": "Vandashi schließen und ungespeicherte Arbeit verwerfen?",
+  "closeDetail": "Eine Bearbeitung oder ein Hintergrundvorgang läuft noch.",
+  "closeKeep": "Weiterarbeiten",
+  "closeDiscard": "Trotzdem schließen",
+  "imagesFilter": "Bilder",
+  "videoFilter": "Video"
+}

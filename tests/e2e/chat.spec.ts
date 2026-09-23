@@ -16,7 +16,7 @@ test('keeps the selected chat and both drafts through workspace and helper updat
   const composer = page.getByRole('textbox', { name: 'AI chat', exact: true });
   await expect(page.getByText('Saved conversation one', { exact: true })).toBeVisible();
   await composer.fill('Draft for the first chat');
-  await page.getByRole('button', { name: 'Second chat', exact: true }).click();
+  await page.locator('.chat-tabs').getByRole('button', { name: 'Titles · long form', exact: true }).click();
   await composer.fill('Keep this second draft');
   const sessionsBefore = (await chatCalls(desktopApp)).filter((call) => call === 'sessions').length;
   await chatControl(desktopApp, { reload: true });
@@ -46,7 +46,7 @@ test('keeps the selected chat and both drafts through workspace and helper updat
   await chatControl(desktopApp, {
     event: { type: 'activity', activity: { sessionId: 'chat-two', phase: 'done', detail: '' } },
   });
-  await page.getByRole('button', { name: 'First chat', exact: true }).click();
+  await page.getByRole('button', { name: 'Brand attributes', exact: true }).click();
   await expect(composer).toHaveText('Draft for the first chat');
   expect((await chatCalls(desktopApp)).filter((call) => call === 'sessions').length).toBeGreaterThanOrEqual(
     sessionsBefore,

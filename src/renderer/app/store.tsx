@@ -4,10 +4,10 @@ import type { DesktopApi } from '../../domain/api';
 import type { AppState, ChatActivity, ModelInfo, Scope, Workspace } from '../../domain/models';
 import i18n from '../i18n';
 import { scopeKey } from '../../domain/defaults';
-import { diagnosticText, errorText, messageText } from './diagnostics';
-import { diagnosticFromError } from '../../domain/diagnostics';
+import { diagnosticFromBridge, diagnosticFromError, parseDiagnostic } from '../../domain/diagnostics';
 import { rememberBrand } from './brand-summary';
 import { ReceiptToasts } from './receipt-toasts';
+import type { Toast } from './toast';
 
 interface ChatTarget {
   topic: string;
@@ -22,10 +22,10 @@ interface Store {
   activity: ChatActivity | null;
   dirty: boolean;
   busy: boolean;
-  toast: string | null;
+  toast: Toast | null;
   chatTarget: ChatTarget | null;
   setDirty: (value: boolean) => void;
-  setToast: (value: string | null) => void;
+  setToast: (value: Toast | null) => void;
   setWorkspace: (value: Workspace | null) => void;
   setChatTarget: (value: ChatTarget | null) => void;
   refresh: () => Promise<void>;
@@ -58,14 +58,14 @@ export function AppProvider({ api, children }: { api: DesktopApi; children: Reac
   }, []);
   const [models, setModels] = useState<ModelInfo[]>([]);
   const [activity, setActivity] = useState<ChatActivity | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<Toast | null>(null);
   const receiptToasts = useRef(new ReceiptToasts());
   const [chatTarget, setChatTarget] = useState<ChatTarget | null>(null);
   const run = useCallback(async <T,>(task: () => Promise<T>): Promise<T | undefined> => {
     try {
       return await task();
     } catch (error) {
-      setToast(errorText(error));
+      setToast(diagnosticFromBridge(error));
       return undefined;
     }
   }, []);
@@ -79,13 +79,13 @@ export function AppProvider({ api, children }: { api: DesktopApi; children: Reac
             await i18n.changeLanguage(value.settings.locale);
           })
           .catch((error: unknown) => {
-            setToast(errorText(error));
+            setToast(diagnosticFromBridge(error));
           }),
         api
           .models()
           .then(setModels)
           .catch((error: unknown) => {
-            setToast(errorText(error));
+            setToast(diagnosticFromBridge(error));
           }),
       ]).then(() => undefined),
     [api],
@@ -130,14 +130,14 @@ export function AppProvider({ api, children }: { api: DesktopApi; children: Reac
   }, [dirty]);
   useEffect(() => {
     void refresh().catch((error: unknown) => {
-      setToast(errorText(error));
+      setToast(diagnosticFromBridge(error));
     });
   }, [refresh]);
   useEffect(
     () =>
       api.onEvent((event) => {
         const receipt = receiptToasts.current.consume(event);
-        if (receipt) setToast(messageText(receipt));
+        if (receipt) setToast({ kind: 'app', message: receipt });
         if (event.type === 'activity')
           setActivity((current) =>
             ['done', 'error'].includes(event.activity.phase)
@@ -149,8 +149,8 @@ export function AppProvider({ api, children }: { api: DesktopApi; children: Reac
         if (event.type === 'notice')
           setToast(
             event.diagnostic !== undefined
-              ? diagnosticText(event.diagnostic)
-              : diagnosticText(diagnosticFromError(event.detail)),
+              ? (parseDiagnostic(event.diagnostic) ?? { kind: 'app', message: { id: 'invalidDiagnostic' } })
+              : diagnosticFromError(event.detail),
           );
         if (
           event.type === 'workspace-changed' &&

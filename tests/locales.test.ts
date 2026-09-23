@@ -10,6 +10,7 @@ import {
 import { desktopMessages, nativeMessages, nativeMessagesEn } from '../src/desktop/messages';
 import { parseInvocation } from '../src/desktop/validation';
 import { settingsSchema } from '../src/infrastructure/storage/schemas';
+import { nativeMessageCatalogs } from '../src/domain/native-translations/catalogs';
 
 describe('shared locale policy', () => {
   it.each([
@@ -49,14 +50,13 @@ describe('shared locale policy', () => {
   });
 });
 
-describe('synchronous native English fallback', () => {
-  it('resolves a saved locale without enabling unfinished language resources', () => {
-    expect(availableLocales).toEqual(['en']);
-    for (const locale of supportedLocales) expect(nativeMessages(locale)).toEqual(nativeMessagesEn);
+describe('synchronous native language selection', () => {
+  it('resolves reviewed catalogs from the cached saved locale with an English fallback', () => {
+    for (const locale of availableLocales)
+      expect(nativeMessages(locale)).toEqual(nativeMessageCatalogs[locale]);
     expect(nativeMessages(undefined)).toEqual(nativeMessagesEn);
     expect(nativeMessages('unsupported')).toEqual(nativeMessagesEn);
-    expect(nativeMessages('ja-JP').closeKeep).toBe('Keep working');
-    expect(nativeMessages('pt_BR').imagesFilter).toBe('Images');
+    expect(nativeMessages('ja-JP').closeKeep).toBe(nativeMessageCatalogs.ja.closeKeep);
   });
 
   it('uses the canonical app recovery text without interpreting paths or names as templates', () => {

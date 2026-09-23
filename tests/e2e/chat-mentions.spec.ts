@@ -23,8 +23,8 @@ test('selects rich file references by keyboard, preserves drafts, and submits ac
   await editor.press('Shift+Enter');
   await editor.pressSequentially('Explain before changing.');
   await page.getByRole('combobox', { name: 'Read only', exact: true }).selectOption('read');
-  await page.getByRole('button', { name: 'Second chat', exact: true }).click();
-  await page.getByRole('button', { name: 'First chat', exact: true }).click();
+  await page.locator('.chat-tabs').getByRole('button', { name: 'Titles · long form', exact: true }).click();
+  await page.getByRole('button', { name: 'Brand attributes', exact: true }).click();
   await expect(editor.locator('.file-mention')).toHaveCount(2);
   await editor.press('Enter');
   await expect.poll(() => chatRequests(desktopApp)).toHaveLength(1);

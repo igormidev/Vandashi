@@ -46,7 +46,7 @@ export function History() {
               onClick={() => {
                 void run(async () => {
                   await navigator.clipboard.writeText(commit.sha);
-                  setToast(t('copied'));
+                  setToast({ kind: 'interface', key: 'copied' });
                 });
               }}
             >

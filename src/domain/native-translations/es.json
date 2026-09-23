@@ -1,0 +1,9 @@
+{
+  "closeTitle": "Trabajo sin guardar",
+  "closeMessage": "¿Cerrar Vandashi y descartar el trabajo sin guardar?",
+  "closeDetail": "Aún hay una edición o una operación en segundo plano en curso.",
+  "closeKeep": "Seguir trabajando",
+  "closeDiscard": "Cerrar de todos modos",
+  "imagesFilter": "Imágenes",
+  "videoFilter": "Video"
+}

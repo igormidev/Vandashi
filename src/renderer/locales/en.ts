@@ -1,6 +1,13 @@
 export const en = {
   appName: 'Vandashi',
   languageEnglish: 'English',
+  languageJapanese: '日本語',
+  languageFrench: 'Français',
+  languageSpanish: 'Español',
+  languageGerman: 'Deutsch',
+  languageKorean: '한국어',
+  languagePortuguese: 'Português (Brasil)',
+  languageItalian: 'Italiano',
   studio: 'Video studio',
   brands: 'Brands',
   brand: 'Brand',

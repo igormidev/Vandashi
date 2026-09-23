@@ -1,0 +1,9 @@
+{
+  "closeTitle": "Travail non enregistré",
+  "closeMessage": "Fermer Vandashi et abandonner le travail non enregistré ?",
+  "closeDetail": "Une modification ou une opération en arrière-plan est encore en cours.",
+  "closeKeep": "Continuer à travailler",
+  "closeDiscard": "Fermer quand même",
+  "imagesFilter": "Images",
+  "videoFilter": "Vidéo"
+}

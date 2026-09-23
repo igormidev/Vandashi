@@ -10,7 +10,7 @@ Read `genesis_prompt.md` and `docs/REQUIREMENTS.md` before changing a feature. T
 - COMMIT after each verified feature or meaningful increment. Ask before every commit: does this meet the brief, handle failure and edge cases, preserve architecture, avoid unnecessary UI text, and require updated documentation?
 - Check ALL consumers of a shared component before editing it. Test it on EVERY affected page, especially brand and video assets and chat.
 - Never claim a feature works from compilation alone. Exercise real integrations and inspect the actual app. Record unavailable external prerequisites honestly.
-- NEVER hardcode user-facing text in UI components. Add English locale keys; translations come only after the app is complete.
+- NEVER hardcode user-facing text in UI components. The English implementation checkpoint is complete and translation is active. Keep English source keys and every supported UI/diagnostic/native catalog in sync; preserve named interpolation and review natural language in context. Follow `docs/TRANSLATION.md` and its catalog/layout checks.
 - Keep app-owned message descriptors separate from raw provider output and user content. Use `AppFault` with a typed ID from `src/domain/messages.ts` for app-owned errors and retain external diagnostics separately. IPC uses a validated failure envelope, then a versioned marker through Electron's copied Error.message; decode only at the renderer boundary. Never infer a translation key by matching English prose. Keep native dialog text in its typed source catalog and preserve raw user/provider content.
 
 ## Design contract
@@ -61,3 +61,7 @@ owns the draft that opened it; passive workspace snapshots must not regenerate o
 overwrite its reviewed title and description. Verify replay with development React.
 
 Structural changes require a separate read-only agent to check whether the landing page and screenshots are still accurate. Do not add claims for unfinished features. Every agent reads the original brief. Final audits must be independent and section-specific.
+
+Resolve app-owned chat labels from stable topics at render time. Preserve user clip/asset
+names, unknown historical titles, and all raw content. Persistent failures retain typed
+diagnostics so a language change updates the explanation without restarting the request.

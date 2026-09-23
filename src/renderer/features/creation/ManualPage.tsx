@@ -2,7 +2,8 @@ import { Clapperboard } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useApp } from '../../app/store';
-import { errorText } from '../../app/diagnostics';
+import { diagnosticText } from '../../app/diagnostics';
+import { diagnosticFromBridge, type Diagnostic } from '../../../domain/diagnostics';
 import { Empty, Loading } from '../../shared/ui';
 import { OwnedRequest } from '../../shared/owned-request';
 import type { StudioInfo } from '../../../domain/models';
@@ -12,7 +13,11 @@ export function ManualPage() {
   const { workspace, api, setToast, busy } = useApp();
   const pending = useRef(new OwnedRequest<StudioInfo>());
   const reported = useRef('');
-  const [studio, setStudio] = useState({ key: '', url: '', error: '' });
+  const [studio, setStudio] = useState<{ key: string; url: string; error: Diagnostic | null }>({
+    key: '',
+    url: '',
+    error: null,
+  });
   const [attempt, setAttempt] = useState(0);
   const brandId = workspace?.scope.brandId;
   const videoId = workspace?.scope.videoId;
@@ -24,11 +29,11 @@ export function ManualPage() {
     void pending.current
       .get(api, key, () => api.startStudio({ brandId, videoId, clipId: clipId ?? null }))
       .then((opened) => {
-        if (!disposed) setStudio({ key, url: opened.url, error: '' });
+        if (!disposed) setStudio({ key, url: opened.url, error: null });
       })
       .catch((failure: unknown) => {
         if (disposed) return;
-        const error = errorText(failure);
+        const error = diagnosticFromBridge(failure);
         setStudio({ key, url: '', error });
         if (reported.current !== key) {
           reported.current = key;
@@ -51,7 +56,7 @@ export function ManualPage() {
     );
   if (studio.key === key && studio.error)
     return (
-      <Empty icon={<Clapperboard size={30} />} title={t('error')} description={studio.error}>
+      <Empty icon={<Clapperboard size={30} />} title={t('error')} description={diagnosticText(studio.error)}>
         <button
           className="button"
           type="button"

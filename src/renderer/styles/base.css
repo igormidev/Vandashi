@@ -13,12 +13,20 @@
   --accent: #3ce6ac;
   --accent-soft: #123329;
   --danger: #ff8989;
-  font-family: Geist, system-ui, sans-serif;
+  --ui-font: Geist, 'Noto Sans JP Variable', 'Noto Sans KR Variable', system-ui, sans-serif;
+  --code-font: 'Geist Mono', 'Noto Sans JP Variable', 'Noto Sans KR Variable', monospace;
+  font-family: var(--ui-font);
   font-size: 13px;
   color: var(--text);
   background: var(--bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
+}
+:root:lang(ko) {
+  --ui-font: Geist, 'Noto Sans KR Variable', 'Noto Sans JP Variable', system-ui, sans-serif;
+  --code-font: 'Geist Mono', 'Noto Sans KR Variable', 'Noto Sans JP Variable', monospace;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 * {
   box-sizing: border-box;
@@ -273,7 +281,7 @@ svg {
   font-size: 25px;
 }
 .eyebrow {
-  font-family: 'Geist Mono', monospace;
+  font-family: var(--code-font);
   font-size: 10px;
   letter-spacing: 1.5px;
   text-transform: uppercase;
@@ -285,7 +293,7 @@ svg {
   line-height: 1.7;
 }
 .mono {
-  font-family: 'Geist Mono', monospace;
+  font-family: var(--code-font);
 }
 .button {
   display: inline-flex;
@@ -486,7 +494,7 @@ svg {
 .brand-row .path {
   font-size: 11px;
   color: var(--faint);
-  font-family: 'Geist Mono', monospace;
+  font-family: var(--code-font);
 }
 .brand-row .last {
   margin-left: auto;
@@ -718,7 +726,7 @@ svg {
   color: var(--muted);
 }
 .markdown-editor {
-  font-family: 'Geist Mono', monospace;
+  font-family: var(--code-font);
   line-height: 1.9;
   min-height: 300px;
   resize: none;
@@ -766,7 +774,7 @@ svg {
 }
 .ratio-label small {
   color: var(--muted);
-  font-family: 'Geist Mono', monospace;
+  font-family: var(--code-font);
   font-size: 10px;
 }
 .video-grid {
@@ -820,7 +828,7 @@ svg {
   margin-top: 10px;
   font-size: 10px;
   color: var(--faint);
-  font-family: 'Geist Mono', monospace;
+  font-family: var(--code-font);
 }
 .clamp {
   display: -webkit-box;
@@ -1057,6 +1065,7 @@ svg {
 }
 .brand-image-field {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 12px;
 }
@@ -1067,4 +1076,21 @@ svg {
   border-radius: 6px;
   background: var(--input);
   border: 1px solid var(--line);
+}
+.brand-panel {
+  container: brand-panel / inline-size;
+}
+.brand-panel .field-row {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@container brand-panel (max-width: 520px) {
+  .brand-panel .field-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .platform-field {
+    grid-template-columns: 24px minmax(0, 1fr);
+  }
+  .platform-field input:last-child {
+    grid-column: 2;
+  }
 }

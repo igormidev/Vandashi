@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next';
 import type { Workspace } from '../../domain/models';
 import { scopeKey } from '../../domain/defaults';
 import { useApp } from './store';
+import { toastText } from './toast';
 import { IconButton, Loading, Logo } from '../shared/ui';
 import { Split } from '../shared/Split';
 import { Home } from '../features/brands/Home';
@@ -103,11 +104,11 @@ export function App() {
   }, [dirty, busy, page]);
   const navigate = async (next: Destination, skipStudio = false) => {
     if (busy) {
-      setToast(t('runningHelp'));
+      setToast({ kind: 'interface', key: 'runningHelp' });
       return;
     }
     if (dirty) {
-      setToast(t('dirtyHelp'));
+      setToast({ kind: 'interface', key: 'dirtyHelp' });
       return;
     }
     if (checking && next !== 'home' && !(next === 'videos' && workspace?.video)) return;
@@ -294,7 +295,7 @@ export function App() {
       <div role="status" aria-live="polite" aria-atomic="true">
         {toast && (
           <div className="toast">
-            <span>{toast}</span>
+            <span>{toastText(toast)}</span>
             <IconButton
               label={t('dismiss')}
               onClick={() => {

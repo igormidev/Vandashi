@@ -111,7 +111,7 @@ export function chatFixtureData(video: boolean, options: ChatFixtureOptions) {
       id: 'chat-one',
       scope,
       topic: 'brand',
-      title: 'First chat',
+      title: 'Brand attributes',
       threadId: 'thread-one',
       messages: [
         {
@@ -130,7 +130,7 @@ export function chatFixtureData(video: boolean, options: ChatFixtureOptions) {
       id: 'chat-two',
       scope,
       topic: 'taste:TITLE_LONG_FORM_VIDEOS_TASTE.md',
-      title: 'Second chat',
+      title: 'Titles · long form',
       threadId: 'thread-two',
       messages: [
         {

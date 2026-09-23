@@ -6,6 +6,8 @@ import '@fontsource/geist/400.css';
 import '@fontsource/geist/500.css';
 import '@fontsource/geist/600.css';
 import '@fontsource/geist-mono/400.css';
+import '@fontsource-variable/noto-sans-jp';
+import '@fontsource-variable/noto-sans-kr';
 import './i18n';
 import './styles/base.css';
 import { AppProvider } from './app/store';

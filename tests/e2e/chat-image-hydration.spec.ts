@@ -51,7 +51,7 @@ for (const initiallyOffline of [false, true]) {
     await expect(page.getByText('Image unavailable', { exact: true })).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Retry image', exact: true })).toHaveCount(0);
     await expect(draft).toHaveText('Keep this unsent thumbnail request');
-    await expect(page.locator('.chat-tab.active')).toContainText('First chat');
+    await expect(page.locator('.chat-tab.active')).toContainText('Brand attributes');
     await page.getByRole('button', { name: 'Inspect Generated image', exact: true }).click();
     await expect(page.getByRole('dialog', { name: 'Generated image', exact: true })).toBeVisible();
   });
@@ -73,7 +73,7 @@ test('a chat opened during Studio startup hydrates its cached history when idle 
   });
   await installImageHydrationFixture(desktopApp, path, url, 'studio');
   await page.reload();
-  await expect(page.locator('.chat-tab.active')).toContainText('Second chat');
+  await expect(page.locator('.chat-tab.active')).toContainText('Titles · long form');
   await page.getByRole('navigation').getByRole('button', { name: 'Creation workspace', exact: true }).click();
   await expect.poll(async () => (await imageHydrationStatus(desktopApp)).studioPending).toBe(true);
   await page.getByRole('button', { name: 'AI chat', exact: true }).click();

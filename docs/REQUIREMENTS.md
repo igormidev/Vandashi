@@ -63,7 +63,7 @@ Source: `genesis_prompt.md:L149–L262`.
 - [x] BRAND-10 — Taste-guide chips have distinct icons; configuration fields and guide editing are visibly separate sections. [E03](#e03).
 - [x] BRAND-11 — Provide separate guides for long/short titles, descriptions, tags, scripts, and editing; plus thumbnail design, visual identity, and YouTube chapters. This is **13 guides** in total, combining the early global list and later UI list. [E03](#e03).
 - [x] BRAND-12 — Guide filenames are descriptive and end in `_TASTE.md`; corresponding guide selection opens the correct document. [E03](#e03).
-- [ ] BRAND-13 — Guide editor supports manual edits, save, Ctrl/Cmd+Z, font increase/decrease buttons, and keyboard shortcuts.
+- [x] BRAND-13 — Guide editor supports manual edits, save, Ctrl/Cmd+Z, font increase/decrease buttons, and keyboard shortcuts. [E03](#e03); packaged keyboard follow-up in [MANUAL-VERIFICATION.md](MANUAL-VERIFICATION.md).
 - [x] BRAND-14 — Every guide has a useful deterministic initial text. All defaults are exported static strings in one discoverable file so Igor can edit them easily. [E03](#e03).
 - [x] BRAND-15 — A dedicated specialist studies current guidance/skills and authors the defaults with the complete genesis context; research provenance is retained. Defaults are not generated during brand creation. [E03](#e03).
 - [x] BRAND-16 — Dirty manual changes enable Save and block AI work. Saving requests an AI commit title/body, shows an editable confirmation, and rejects empty title/body. [E03](#e03).
@@ -219,7 +219,7 @@ Source: `genesis_prompt.md:L579–L605`.
 - [x] LAUNCH-03 — Each destination shows not posted/uploading/posted state; user can edit status and URL. Post action is available for eligible unpublished media. [E12](#e12).
 - [x] LAUNCH-04 — Destination selection opens an inner-tab review page populated from packaging; temporary per-release changes remain in memory until the release flow saves its manifest. [E12](#e12).
 - [x] LAUNCH-05 — Release review has no chat pane, supports manual metadata edits, and requires the logged-in browser if not configured at brand level. [E12](#e12).
-- [ ] LAUNCH-06 — YouTube review offers AI chapter generation using complete video/script context and the YouTube-sections taste guide, with loading feedback.
+- [x] LAUNCH-06 — YouTube review offers AI chapter generation using complete video/script context and the YouTube-sections taste guide, with loading feedback. [E12](#e12).
 - [x] LAUNCH-07 — Chapter results are inspectable/editable in a dedicated dialog with full video preview and timestamp controls; invalid, unordered, or out-of-duration points are rejected. [E12](#e12).
 - [x] LAUNCH-08 — Final publish action opens a prepared but unsent editable user message; the user explicitly sends it. App guidance remains separate and cannot be replaced by editing the visible message. [E12](#e12).
 - [x] LAUNCH-09 — Publish prompt requires brand config, correct destination URL, requested browser, desired account identity, selected media, final packaging/chapters, and launch-manifest path. [E12](#e12).
@@ -448,8 +448,9 @@ duplicate delivery and reload do not replay it. No-change receipts, read-only an
 helpers and failed turns do not show a saved-changes toast. E05's real-Git tests establish
 that the receipt follows clean-repository verification and history persistence. Together
 with the earlier real script synchronization and native lock/refresh evidence, this covers
-CREATE-11. The new toast was verified in a controlled Electron fixture, not observed during
-a new manual live-Codex script turn. Real all-assets-in-script coverage remains below.
+CREATE-11. A subsequent real packaged Codex script turn also displayed both the persisted
+receipt and completion toast after commit `0fb9fb0`, with the preview updated to 40 seconds.
+Real all-assets-in-script coverage remains below.
 
 <a id="e09"></a>
 **E09 — Actual Studio, save flushing, synchronization, and export.**
@@ -514,20 +515,34 @@ commit in its own clean repository. The imported-clip native regression passed a
 latest focused run. F10 naming has 51 focused tests plus an actual repeated native-picker
 import: `Final city` and `Final city (2)` have independent clean commits, and both copies match
 the original SHA-256. A real Codex inventory call proved browser tools exist, **not** account
-selection, login, upload or monitoring. Those remain LAUNCH-10–13/16. Real chapter generation
-against a suitable complete video remains unverified.
+selection, login, upload or monitoring. Those remain LAUNCH-10–13/16. In the fresh packaged
+app, real chapter generation read the new 40-second composition/script and returned
+`00:00 A circle begins`, `00:15 A line connects`, and `00:30 A frame holds the story`.
+The native UI showed loading and locks, opened the chapter editor with the actual rendered
+movie, sought to 15 seconds, and saved the three chapters into the local upload draft.
 
 <a id="e13"></a>
-**E13 — English localization boundaries and independent model preferences.**
-The [localization readiness update](LOCALIZATION-READINESS.md) and architecture describe literal
-English keys, canonical locale IDs, typed diagnostics, native source strings, count/date/percent
-formatting and versioned main/preload/contextBridge transport. Catalog/type/locale/diagnostic
-tests and native diagnostic/helper-failure cases verify provenance, exact parameters, raw
-external text, fallback and unchanged success IPC. No target-language resources are claimed.
+**E13 — Reviewed desktop languages, typed localization boundaries, and model preferences.**
+[TRANSLATION.md](TRANSLATION.md) links seven fresh-context editorial reviews. All eight
+languages have complete interface, diagnostic, and native catalogs, selected through
+persisted Settings autonyms with English fallback. Tests check exact keys/tokens, duplicates,
+empty values, plural categories (including Romance `many` and Portuguese numeric zero),
+regional IDs, raw user/provider preservation, and local Japanese/Korean font loading.
+App-owned chat headings resolve from topics while user clip/asset names stay intact.
+Persistent failures and toasts retranslate without restarting requests or dismissal timers.
+
+The coordinated 29-case localization native run passed, including eight actual Settings,
+persistence, native filter/close-dialog checks; 16 minimum-window split/layout cases; three
+StrictMode preview/Studio error-switching cases; and two toast/receipt/timer cases. The
+subsequent full native suite passed all 110 cases. Independent visual reviewers inspected
+every language's Brand, Packaging, Creation, Assets, and Launch screenshots. A clipped
+Spanish asset filter was corrected and the incomplete preview fixture repaired before
+clean recapture; that follow-up acceptance is recorded in the translation journal.
+
 Native workspace-editor tests persist five separate model/effort preferences; chat tests retain
 its own selection. Live discovery/validation allow supported combinations. Defaults remain
 Luna-class medium, script reconciliation high and chat Astra-class medium when supported.
-Only English is selectable, leaving the full language-setting requirement partial.
+The landing page language requirement remains pending its separate final implementation.
 
 <a id="e14"></a>
 **E14 — Current setup and integration documentation.**
@@ -548,16 +563,16 @@ from a demonstrated defect; they do not ask to rewrite verified behavior or star
 | Unchecked IDs              | Exact remaining acceptance                                                                                                                                                                                                                                                                                                                                              |
 | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | ENG-07, ENG-13             | The fresh macOS checkpoint passes speech and Studio/render/Codex package smoke tests. Observe the actual CI gate and native matrix, especially Windows/Linux execution. Verify final distributed artifacts, native resources, notices and source materials; repeat relevant checks after release changes. This checkpoint does not accept the final translated release. |
-| BRAND-13, BRAND-19         | Guide editing/save/font increase and list navigation exist. Complete guide keyboard undo/redo and font-shortcut verification, plus video-row thumbnail/identification/theme expansion.                                                                                                                                                                                  |
+| BRAND-19                   | Complete video-row thumbnail/identification/theme expansion.                                                                                                                                                                                                                                                                                                            |
 | CHAT-03, CHAT-15           | Verify tab ordering/hover close/close-all empty state together and picker plus drag/drop attachments across contexts, including explicit local/shared choice. Existing drafts/mentions/grant tests cover only parts.                                                                                                                                                    |
 | VIDEO-06–08                | Complete native missing-dependency retry/failure feedback and prepared repair-chat send/retry/close, including official Codex setup/login/quota routes. First-brand missing-Git recovery is separately verified.                                                                                                                                                        |
 | VIDEO-10                   | Schema, backup and typed notices pass; perform malformed-packaging entry and inspect the actual feedback/backup without discarding invalid content.                                                                                                                                                                                                                     |
 | PACK-04/05                 | Generation, import and reorder work. Verify content-driven filename/reference updates and actual leading candidate limits with platform/account capability, rather than prompt instructions alone.                                                                                                                                                                      |
 | CREATE-04/08, CREATE-14/15 | Locks, refresh, saved-file receipt, history diff display and Unicode script diff work. Verify the history copy-SHA action and line-ending-specific diff behavior. Verify a real visual/audio asset edit records every used asset with the common mention representation, plus attachment import from Creation.                                                          |
 | ASSET-03/04/11/12/16       | Complete animated GIF, image clipboard, picker/drop interaction and an actual folder create/import/delete AI turn. Reference-aware deletion and unavailable-asset scope rejection pass; filename rename/reference repair still lacks a complete exercised scenario. Verify supported media rather than assuming every format.                                           |
-| LAUNCH-06, LAUNCH-10–13/16 | Run real chapter generation, then authorized test-account publication: browser/account verification, login/account recovery, destination fields/candidate limits, upload/processing monitoring, verified URL/manifest, cancellation/error recovery and lock release. No external upload has occurred.                                                                   |
+| LAUNCH-10–13/16            | Complete authorized test-account publication: browser/account verification, login/account recovery, destination fields/candidate limits, upload/processing monitoring, verified URL/manifest, cancellation/error recovery and lock release. No external upload has occurred.                                                                                            |
 | UX-01–03, UX-05/06         | Complete independent visual/style, installed icon/identity, concise-copy and all-consumer layout/accessibility review. Minimum/split and several modal/keyboard/tooltip states pass; this is not exhaustive all-screen/size acceptance.                                                                                                                                 |
-| I18N-02–04, SET-02         | After English functionality is accepted, add/contextually review all seven languages, fonts/wrapping/interpolation/plurals, language preferences and native text. English scaffold/model preferences are complete; normalized locale IDs alone are not translations.                                                                                                    |
+| I18N-02–04, SET-02         | All desktop languages are implemented and pass native/catalog checks. Finish cleaned visual recapture and direct packaged-language walkthrough; the combined landing-language requirement remains pending site implementation.                                                                                                                                          |
 | SITE-01–05, DOC-02         | Build/localize and responsively test the final site, deploy Pages, add accurate screenshots and verified site URL to README. The installation prompt already exists.                                                                                                                                                                                                    |
 | QA-01–06                   | Maintain per-commit checks, then run final-state static/tests and real integration/manual acceptance. Conduct the requested strongest-model/highest-effort independent section review/fix/re-review loops. Verify final artifacts, GitHub push and deployment. Interim audits and historical green checkpoints do not satisfy the final loop.                           |
 

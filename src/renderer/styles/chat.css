@@ -97,11 +97,11 @@
   background: #151518;
   padding: 12px;
   border-radius: 5px;
-  font-family: 'Geist Mono', monospace;
+  font-family: var(--code-font);
   font-size: 10px;
 }
 .message code {
-  font-family: 'Geist Mono', monospace;
+  font-family: var(--code-font);
   font-size: 11px;
   background: #202023;
   padding: 2px 4px;
@@ -203,7 +203,8 @@
   flex: 1;
 }
 .composer-actions .mode-select {
-  width: 105px;
+  width: auto;
+  max-width: calc(100% - 70px);
   padding: 6px;
   border: 0;
   background: transparent;

@@ -1,0 +1,9 @@
+{
+  "closeTitle": "Trabalho não salvo",
+  "closeMessage": "Fechar o Vandashi e descartar o trabalho não salvo?",
+  "closeDetail": "Uma edição ou operação em segundo plano ainda está em andamento.",
+  "closeKeep": "Continuar trabalhando",
+  "closeDiscard": "Fechar mesmo assim",
+  "imagesFilter": "Imagens",
+  "videoFilter": "Vídeo"
+}

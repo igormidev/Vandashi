@@ -3,7 +3,8 @@ import { Clapperboard, Download, FolderOpen, LoaderCircle } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useApp } from '../../app/store';
-import { errorText } from '../../app/diagnostics';
+import { diagnosticText } from '../../app/diagnostics';
+import { diagnosticFromBridge, type Diagnostic } from '../../../domain/diagnostics';
 import { Empty, IconButton } from '../../shared/ui';
 import { formatPercent } from '../../shared/format';
 import { OwnedRequest } from '../../shared/owned-request';
@@ -15,7 +16,11 @@ export function Preview({ compact = false }: { compact?: boolean }) {
   const pending = useRef(new OwnedRequest<StudioInfo>());
   const reported = useRef('');
   const mount = useRef<HTMLDivElement>(null);
-  const [preview, setPreview] = useState({ key: '', url: '', error: '' });
+  const [preview, setPreview] = useState<{ key: string; url: string; error: Diagnostic | null }>({
+    key: '',
+    url: '',
+    error: null,
+  });
   const [attempt, setAttempt] = useState(0);
   const [rendering, setRendering] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -26,7 +31,7 @@ export function Preview({ compact = false }: { compact?: boolean }) {
   const key = `${brandId ?? ''}/${videoId ?? ''}/${clipId ?? ''}/${revision ?? ''}`;
   const requestKey = JSON.stringify([key, attempt]);
   const url = preview.key === requestKey ? preview.url : '';
-  const error = preview.key === requestKey ? preview.error : '';
+  const error = preview.key === requestKey ? preview.error : null;
   useEffect(() => {
     if (!brandId || !videoId) return;
     let disposed = false;
@@ -37,12 +42,12 @@ export function Preview({ compact = false }: { compact?: boolean }) {
           setPreview({
             key: requestKey,
             url: `${studio.previewUrl}${studio.previewUrl.includes('?') ? '&' : '?'}v=${encodeURIComponent(revision ?? '')}`,
-            error: '',
+            error: null,
           });
       })
       .catch((failure: unknown) => {
         if (disposed) return;
-        const error = errorText(failure);
+        const error = diagnosticFromBridge(failure);
         setPreview({ key: requestKey, url: '', error });
         if (reported.current !== requestKey) {
           reported.current = requestKey;
@@ -136,7 +141,7 @@ export function Preview({ compact = false }: { compact?: boolean }) {
               error ? <Clapperboard size={35} strokeWidth={1} /> : <LoaderCircle size={28} className="spin" />
             }
             title={t(error ? 'noPreview' : 'studioStarting')}
-            description={error || t('noPreviewHelp')}
+            description={error ? diagnosticText(error) : t('noPreviewHelp')}
           >
             {error && (
               <button

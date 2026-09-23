@@ -5,7 +5,7 @@ import type { CreatedClip } from '../../../domain/api';
 import type { ModelSelection, Scope, VideoSummary } from '../../../domain/models';
 import { defaultSettings } from '../../../domain/defaults';
 import { useApp } from '../../app/store';
-import { errorText } from '../../app/diagnostics';
+import { diagnosticFromBridge } from '../../../domain/diagnostics';
 import { Empty, InfoTip, Loading } from '../../shared/ui';
 import { ModelPicker } from '../chat/ModelPicker';
 import { constrainClipRange, timecode, validClipName, validClipRange } from './clip-range';
@@ -65,11 +65,11 @@ export function ClipCreation({
   };
   const create = async () => {
     if (!validClipName(name)) {
-      setToast(t('clipInvalidName'));
+      setToast({ kind: 'interface', key: 'clipInvalidName' });
       return;
     }
     if (!validClipRange(range, duration)) {
-      setToast(t('clipRangeBounds'));
+      setToast({ kind: 'interface', key: 'clipRangeBounds' });
       return;
     }
     setCreating(true);
@@ -78,7 +78,7 @@ export function ClipCreation({
       setCreated(result);
       await onCreated(result);
     } catch (error) {
-      setToast(errorText(error));
+      setToast(diagnosticFromBridge(error));
     } finally {
       setCreating(false);
     }

@@ -1,0 +1,9 @@
+{
+  "closeTitle": "未保存の作業",
+  "closeMessage": "未保存の作業を破棄してVandashiを終了しますか？",
+  "closeDetail": "編集またはバックグラウンド処理が進行中です。",
+  "closeKeep": "作業を続ける",
+  "closeDiscard": "終了する",
+  "imagesFilter": "画像",
+  "videoFilter": "動画"
+}

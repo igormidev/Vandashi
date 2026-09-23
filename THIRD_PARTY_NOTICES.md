@@ -42,7 +42,13 @@ Versions below come from the installed packages and lockfile, rather than the ve
 | [Lucide React](https://github.com/lucide-icons/lucide)                                                    | 0.468.0                | ISC, with upstream Feather attribution                           | UI icons. Original notice credits Cole Bemis 2013–2022 for Feather-derived portions, and Lucide Contributors 2022 for other portions.                                                      |
 | [Simple Icons](https://github.com/simple-icons/simple-icons)                                              | 15.22.0                | CC0-1.0 for the project; individual brand rights remain separate | Platform destination icons. The original disclaimer is included.                                                                                                                           |
 
-Geist fonts are bundled as provided by Fontsource. The OFL's font notice, redistribution and reserved-name provisions continue to apply to the font software; Vandashi does not relicense those fonts under MIT.
+Geist fonts are bundled as provided by Fontsource. Japanese and Korean additionally use
+`@fontsource-variable/noto-sans-jp` and `@fontsource-variable/noto-sans-kr`, both pinned at
+5.3.0. Their original notices credit Google Inc. and license the bundled font software
+under SIL Open Font License 1.1; both package records and the full shared license text
+are included in the generated notice bundle. The OFL's font notice, redistribution and
+reserved-name provisions continue to apply to all these fonts; Vandashi does not
+relicense those fonts under MIT.
 
 Simple Icons supplies the YouTube, YouTube Shorts, Odysee, Rumble, TikTok, Instagram, Facebook and X marks used by the destination selector. Its installed metadata does not provide a separate `license` value for any of these eight marks. A missing value is not a grant of permission. The original source/guideline links are retained below; the marks identify destinations and do not imply a partnership.
 

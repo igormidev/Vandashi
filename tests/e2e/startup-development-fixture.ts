@@ -1,5 +1,6 @@
 import type { ElectronApplication, Page } from '@playwright/test';
 import type { DesktopApi } from '../../src/domain/api';
+import type { Diagnostic } from '../../src/domain/diagnostics';
 import type { AppEvent, SaveInput, Scope, StudioInfo, Workspace } from '../../src/domain/models';
 import { chatFixtureData } from './chat-fixture-data';
 import { expect, probeUrl } from './development-fixtures';
@@ -12,6 +13,7 @@ export interface StartupCall {
 interface Control {
   release?: Gated;
   fail?: boolean;
+  diagnostic?: Diagnostic;
   refresh?: boolean;
   studioDirty?: boolean;
 }
@@ -30,7 +32,7 @@ export async function installStartupFixture(
       };
       const sessions = fixture.data.sessions;
       const calls: StartupCall[] = [];
-      const pending = new Map<Gated, (failed: boolean) => void>();
+      const pending = new Map<Gated, (action: Control) => void>();
       let active: Gated | null = null;
       let studioDirty = false;
       const emit = (event: AppEvent) =>
@@ -50,7 +52,7 @@ export async function installStartupFixture(
           workspace = { ...workspace, revision: workspace.revision + '-refreshed' };
           emit({ type: 'workspace-changed', scope: workspace.scope });
         }
-        if (action.release) pending.get(action.release)?.(action.fail ?? false);
+        if (action.release) pending.get(action.release)?.(action);
       });
       ipcMain.removeHandler('vandashi:invoke');
       ipcMain.handle('vandashi:invoke', (_event, method: string, args: unknown[]) => {
@@ -83,7 +85,10 @@ export async function installStartupFixture(
           return { ...session, ...(active ? { historyDeferred: true } : {}) };
         }
         if (method === 'history') return { commits: [], hasMore: false };
-        if (method === 'settings') return;
+        if (method === 'settings') {
+          fixture.data.state.settings = input as Parameters<DesktopApi['settings']>[0];
+          return;
+        }
         if (method === 'studioChanges')
           return {
             dirty: studioDirty,
@@ -141,14 +146,14 @@ export async function installStartupFixture(
           if (method === 'checks')
             emit({ type: 'checks', scope, video: true, checks: ready, progress: 1, current: 'Ready' });
           return new Promise((resolve) => {
-            pending.set(method, (failed) => {
+            pending.set(method, (action) => {
               pending.delete(method);
               active = null;
               emit({ type: 'activity', activity: { sessionId: method, phase: 'done', detail: '' } });
-              if (failed) {
+              if (action.fail || action.diagnostic) {
                 resolve({
                   __vandashiFailure: 'v1',
-                  diagnostic: { kind: 'external', text: 'Fixture startup failed' },
+                  diagnostic: action.diagnostic ?? { kind: 'external', text: 'Fixture startup failed' },
                 });
                 return;
               }

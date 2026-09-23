@@ -1,5 +1,10 @@
 # Localization readiness audit
 
+**Later implementation:** after English checkpoint `f4cb2f7`, desktop translation and
+language verification began. See [TRANSLATION.md](TRANSLATION.md) for current catalogs,
+contextual reviews, fonts, runtime behavior, and acceptance. The audit and initial
+scaffolding observations below are retained as historical evidence.
+
 Audit date: **2026-09-23**. This is a read-only production-code audit; only this document
 was added. No translations, locale migration, dependency installation, or native UI
 interaction were performed. The original brief permits scaffolding now and requires

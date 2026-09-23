@@ -313,7 +313,7 @@ export async function installChatFixture(
             hasMore: history.length > (request.page + 1) * 12,
           };
         }
-        if (method === 'startStudio') return { url: 'about:blank' };
+        if (method === 'startStudio') return { url: 'about:blank', previewUrl: 'about:blank' };
         if (method === 'studioChanges')
           return {
             dirty: studioDirty,

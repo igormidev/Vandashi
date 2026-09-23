@@ -1,0 +1,9 @@
+{
+  "closeTitle": "저장하지 않은 작업",
+  "closeMessage": "저장하지 않은 작업을 버리고 Vandashi를 종료할까요?",
+  "closeDetail": "편집 또는 백그라운드 작업이 아직 진행 중입니다.",
+  "closeKeep": "계속 작업",
+  "closeDiscard": "그래도 종료",
+  "imagesFilter": "이미지",
+  "videoFilter": "영상"
+}

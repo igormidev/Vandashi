@@ -199,11 +199,43 @@ This records observed behavior, including defects still being worked on. It is n
   owned server on exit. This was the production packaged runtime with real
   integrations, exercised by the integration harness rather than a manual UI claim.
 
+## 2026-09-23 — Packaged keyboard editing, live receipt, render, and chapters
+
+- The fresh packaged app opened Northstar Stories and its long-form title guide.
+  An inserted sentence changed the draft and locked navigation. Cmd+Z removed the
+  latest edit, Cmd+Shift+Z restored it, and Cmd+= / Cmd+- visibly resized only the
+  guide text. Discard restored the original text and clean controls.
+- In Recovery Studio / Fresh canvas, pasted a complete 40-second, three-scene
+  silent script and used Save & create with the real GPT-6-Astra. The app blocked
+  editing/navigation, streamed progress, then showed both the durable Changes
+  saved receipt and completion toast. Its host completed the clean Git commit
+  `0fb9fb0` after the provider reported its own sandbox could not write `.git`.
+- Render video produced `renders/Fresh canvas_2026-09-23_12-41-30.mp4`; FFprobe
+  confirms H.264, 1920×1080, 30 fps, 1,200 frames, exactly 40 seconds, 1,522,093
+  bytes. Render metadata is committed as `616999f`; the repository is clean.
+- YouTube review's Generate chapters used the real configured Codex helper and
+  displayed its loading/locked state. It opened the actual movie with chapter
+  starts 0, 15, and 30 seconds and the three corresponding script titles. Preview
+  from chapter two sought the decoded native video to 00:15. Save changes kept
+  all three timed titles in the local upload draft.
+- No external upload occurred. The test brand has no destination channel; Open
+  upload chat remains correctly disabled. Provider-generated composition lint
+  reported three structural warnings, distinct from Vandashi's strict source
+  gate; the actual app preview and native media render were verified afterward.
+
 ## Automated integration evidence
+
+- The localized source gate passes 490 tests with zero static warnings, and the full
+  native suite passes all 110 cases. Eight-language settings/persistence/native dialogs,
+  glyph loading, plural counts, raw-content preservation, narrow-pane layouts, retained
+  startup errors, and live toast/receipt/timer switching have explicit coverage.
+- Independent locale visual review and clean recapture are recorded in
+  [TRANSLATION.md](TRANSLATION.md). Those screenshots use controlled renderer fixtures;
+  the real packaged media/AI workflows above remain the separate integration evidence.
 
 - Real Codex live tests cover sandboxed read-only execution, conversation persistence/resume/fork, and final-answer structured output after a read tool.
 - Real media tests start the vendor Studio, render a composition, probe the MP4, and render a trimmed clip containing audio.
 - Electron tests cover the native preload boundary, native picker grants, real asset import and media decode, contextual-chat draft preservation, and prepared upload conversations.
 - Application tests exercise real Git and local storage with controlled agent failures, interrupted script edits, recovery commits, and compensating undo.
 
-The current test suite is the executable source of exact scenarios and counts. No Windows/Linux runtime, real public upload, translation, or deployed landing-page acceptance is implied by this journal.
+The current test suite is the executable source of exact scenarios and counts. No Windows/Linux runtime, real public upload, or deployed landing-page acceptance is implied by this journal.

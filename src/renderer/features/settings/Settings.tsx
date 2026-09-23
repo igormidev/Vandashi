@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { useApp } from '../../app/store';
 import { Modal, InfoTip } from '../../shared/ui';
 import { ModelPicker } from '../chat/ModelPicker';
-import { normalizeLocale } from '../../../domain/locales';
+import { availableLocales, normalizeLocale } from '../../../domain/locales';
+import { languageLabels } from '../../locales/catalogs';
 
 export function Settings({ onClose, onChecks }: { onClose: () => void; onChecks: () => void }) {
   const { t } = useTranslation();
@@ -22,7 +23,11 @@ export function Settings({ onClose, onChecks }: { onClose: () => void; onChecks:
               setSettings({ ...settings, locale: normalizeLocale(event.target.value) });
             }}
           >
-            <option value="en">{t('languageEnglish')}</option>
+            {availableLocales.map((locale) => (
+              <option key={locale} value={locale}>
+                {t(languageLabels[locale])}
+              </option>
+            ))}
           </select>
         </label>
         <div className="field">

@@ -7,23 +7,8 @@ import { AiButton, IconButton } from '../../shared/ui';
 import { PlatformIcon } from '../../shared/PlatformIcon';
 import { CommitDialog } from '../history/CommitDialog';
 import { TasteIcon } from './TasteIcon';
-import type { englishResources } from '../../locales/resources';
+import { tasteLabelKey } from '../../locales/taste-labels';
 
-const tasteLabels: Record<string, keyof typeof englishResources.translation> = {
-  TITLE_LONG_FORM_VIDEOS_TASTE: 'titleLong',
-  TITLE_SHORT_FORM_VIDEOS_TASTE: 'titleShort',
-  DESCRIPTION_LONG_FORM_VIDEOS_TASTE: 'descriptionLong',
-  DESCRIPTION_SHORT_FORM_VIDEOS_TASTE: 'descriptionShort',
-  THUMBNAIL_TASTE: 'thumbnail',
-  VISUAL_IDENTITY_TASTE: 'visualIdentity',
-  TAGS_LONG_FORM_VIDEOS_TASTE: 'tagsLong',
-  TAGS_SHORT_FORM_VIDEOS_TASTE: 'tagsShort',
-  YOUTUBE_SECTIONS_TASTE: 'sections',
-  SCRIPT_LONG_FORM_VIDEOS_TASTE: 'scriptLong',
-  SCRIPT_SHORT_FORM_VIDEOS_TASTE: 'scriptShort',
-  EDITS_LONG_FORM_VIDEOS_TASTE: 'editingLong',
-  EDITS_SHORT_FORM_VIDEOS_TASTE: 'editingShort',
-};
 export function BrandPage() {
   const { t } = useTranslation();
   const { workspace, api, run, busy, setDirty, setWorkspace, setChatTarget } = useApp();
@@ -65,7 +50,7 @@ export function BrandPage() {
   const tastes = documents.filter((document) => document.kind === 'taste');
   const selected = tastes[active];
   const tasteLabel = (name: string) => {
-    const key = tasteLabels[name.replace('.md', '')];
+    const key = tasteLabelKey(name);
     return key ? t(key) : name;
   };
   const label = selected ? tasteLabel(selected.name) : '';
@@ -74,7 +59,7 @@ export function BrandPage() {
   };
   return (
     <>
-      <div className="panel-scroll">
+      <div className="panel-scroll brand-panel">
         <fieldset disabled={busy}>
           <section className="form-section">
             <div className="section-title">

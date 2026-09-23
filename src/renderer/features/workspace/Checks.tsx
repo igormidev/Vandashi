@@ -81,7 +81,8 @@ export function Checks({ video, onReady }: { video: boolean; onReady: () => void
         delivered.current = requestKey;
         setFeedback({ key: requestKey, checks: value, progress: 1, current: '' });
         setValidated(requestKey);
-        if (attempt > 0 && value.some((check) => check.status !== 'ready')) setToast(t('checkStillMissing'));
+        if (attempt > 0 && value.some((check) => check.status !== 'ready'))
+          setToast({ kind: 'interface', key: 'checkStillMissing' });
       })
       .catch((error: unknown) => {
         if (!cancelled && delivered.current !== requestKey) {
@@ -95,7 +96,7 @@ export function Checks({ video, onReady }: { video: boolean; onReady: () => void
     return () => {
       cancelled = true;
     };
-  }, [api, scope, video, attempt, requestKey, reload, run, setToast, t]);
+  }, [api, scope, video, attempt, requestKey, reload, run, setToast]);
   const ready =
     !loading &&
     validated === requestKey &&

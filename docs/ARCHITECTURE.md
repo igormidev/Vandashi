@@ -136,12 +136,25 @@ prove StrictMode replay, and hold gated responses so duplicate requests would fa
 
 ## Localization
 
-English UI resources live in `src/renderer/locales/*.ts` and merge through `resources.ts`.
-Their literal types augment i18next to reject unknown keys and incorrect interpolation
-parameters. Catalog tests reject duplicate keys and exercise count plurals and English
-fallback. Planned locale IDs and normalization live in `src/domain/locales.ts`; only
-English is currently registered and selectable. Native dialog text uses a separate pure
-typed catalog and the main process's cached saved locale.
+English UI resources live in `src/renderer/locales/*-en.ts` and `en.ts`, merged through
+`resources.ts`. Their literal types augment i18next to reject unknown keys and incorrect
+interpolation parameters. Flat, reviewed `<locale>.json` files live beside the source;
+diagnostic translations live in `domain/messages/translations`, and native translations
+in `domain/native-translations`. Typed catalog indexes connect these independent layers.
+Canonical locale IDs and region normalization live in `domain/locales.ts`. Settings list
+available languages using autonyms, persist the canonical locale, and update the HTML
+language. Native dialogs use the main process's cached saved locale synchronously.
+
+Catalog tests reject duplicate/missing/extra/empty keys and changed interpolation tokens,
+exercise every count category, and preserve user/provider text. Reviewed Romance-language
+counter forms explicitly handle `many`; Brazilian Portuguese also uses plural numeric-zero
+forms. Local Noto Sans JP/KR variable subsets supply CJK glyphs, with a Korean-first fallback
+and word wrapping for Hangul. Language changes do not rewrite stored project content.
+
+Known app-owned chat headings resolve from stable topics at render time, sharing the exact
+13-guide label map with the Brand editor. Clip names, asset titles, and unknown historical
+topics remain content. Preview/Studio failures retain typed diagnostics in component state,
+so persistent errors translate without restarting their gated startup requests.
 
 `src/domain/messages.ts` combines framework-free source catalogs into a discriminated
 `AppMessage` union with required named parameters. `AppFault` and `DiagnosticError`
@@ -154,8 +167,9 @@ The main IPC handler returns a validated failure envelope without changing succe
 return values. The preload encodes its diagnostic in a versioned Error.message because
 Electron contextBridge discards custom Error fields. The renderer decodes once; an
 external diagnostic resembling that marker is never recursively interpreted. Payload
-lengths, keys, IDs, and parameters are validated. Actual target-language resources and
-contextual translation review begin only after functional implementation is complete.
+lengths, keys, IDs, and parameters are validated. Translation began after the English
+implementation checkpoint; language-specific reviews and actual layout acceptance are
+recorded in [TRANSLATION.md](TRANSLATION.md).
 
 ## References
 

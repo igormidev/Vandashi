@@ -1,25 +1,13 @@
-import { defaultLocale, normalizeLocale } from '../domain/locales';
-import type { Locale } from '../domain/locales';
+import { normalizeLocale } from '../domain/locales';
 import { appMessageEnglish } from '../domain/messages';
-
-/** Native UI source catalog. Translations are added after feature verification. */
-export const nativeMessagesEn = {
-  closeTitle: 'Unsaved work',
-  closeMessage: 'Close Vandashi and discard unsaved work?',
-  closeDetail: 'An edit or background operation is still in progress.',
-  closeKeep: 'Keep working',
-  closeDiscard: 'Close anyway',
-  imagesFilter: 'Images',
-  videoFilter: 'Video',
-} as const;
-export type NativeMessageId = keyof typeof nativeMessagesEn;
-export type NativeMessages = Readonly<Record<NativeMessageId, string>>;
-
-const resources: Partial<Record<Locale, NativeMessages>> = { [defaultLocale]: nativeMessagesEn };
+import { nativeMessagesEn, type NativeMessages } from '../domain/native-messages';
+import { nativeMessageCatalogs } from '../domain/native-translations/catalogs';
+export { nativeMessagesEn } from '../domain/native-messages';
+export type { NativeMessageId, NativeMessages } from '../domain/native-messages';
 
 /** Pure and synchronous: callers pass their cached saved locale, never a renderer translation instance. */
 export function nativeMessages(locale: unknown): NativeMessages {
-  return resources[normalizeLocale(locale)] ?? nativeMessagesEn;
+  return nativeMessageCatalogs[normalizeLocale(locale)];
 }
 
 /** English compatibility fallback for persisted recovery notices and older host call sites. */

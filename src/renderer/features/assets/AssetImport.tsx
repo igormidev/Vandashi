@@ -116,7 +116,8 @@ export function AssetImport({ paths, onClose }: { paths: string[]; onClose: () =
           tags: parseAssetTags(tags),
         },
       });
-      if (workspace?.assets.some((asset) => asset.id === imported.id)) setToast(t('assetDuplicate'));
+      if (workspace?.assets.some((asset) => asset.id === imported.id))
+        setToast({ kind: 'interface', key: 'assetDuplicate' });
       await reload();
       advance();
     });

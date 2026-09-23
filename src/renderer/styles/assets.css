@@ -109,7 +109,7 @@
 .asset-filters select {
   margin-left: auto;
   width: auto;
-  max-width: 125px;
+  max-width: 100%;
   padding: 6px 22px 6px 8px;
   font-size: 10px;
 }

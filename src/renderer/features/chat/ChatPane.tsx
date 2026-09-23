@@ -12,6 +12,7 @@ import { useSessions } from './use-sessions';
 import { DiffFiles } from '../history/DiffFiles';
 import { ChatMarkdown } from './ChatMarkdown';
 import { ChatImage } from './ChatImage';
+import { sessionTitle } from './session-title';
 import '../../styles/chat.css';
 
 function Message({
@@ -106,7 +107,7 @@ function Conversation({ scope }: { scope: Scope }) {
                 }}
               >
                 <MessageSquare size={12} />
-                <span>{entry.title}</span>
+                <span>{sessionTitle(entry, t)}</span>
               </button>
               <button
                 className="close-tab"
@@ -130,7 +131,7 @@ function Conversation({ scope }: { scope: Scope }) {
           <div className="chat-toolbar">
             <span className="chat-scope">
               <Sparkles size={13} />
-              {session.title}
+              {sessionTitle(session, t)}
             </span>
             <IconButton
               label={t('undoTurn')}
@@ -170,7 +171,7 @@ function Conversation({ scope }: { scope: Scope }) {
             {!session.messages.length && (
               <div className="chat-start">
                 <Sparkles size={25} />
-                <h2>{session.title}</h2>
+                <h2>{sessionTitle(session, t)}</h2>
               </div>
             )}
             {activity?.sessionId === session.id && (

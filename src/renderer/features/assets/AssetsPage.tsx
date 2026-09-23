@@ -43,7 +43,7 @@ export function AssetsPage() {
   const beginImport = (paths: string[]): void => {
     if (locked || dirty) return;
     const unique = [...new Set(paths)].filter((path) => !assets?.some((asset) => asset.path === path));
-    if (unique.length < paths.length) setToast(t('assetDuplicate'));
+    if (unique.length < paths.length) setToast({ kind: 'interface', key: 'assetDuplicate' });
     if (unique.length > 0) setImports(unique);
   };
   const library = (

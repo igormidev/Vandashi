@@ -68,7 +68,7 @@ export function AssetInspector({
       setDirty(false);
       setConfirming(false);
       await reload();
-      setToast(t('saved'));
+      setToast({ kind: 'interface', key: 'saved' });
     } catch (error) {
       // The store defers this snapshot until Reset so a conflict never erases the inspector draft.
       await reload().catch(() => undefined);
@@ -103,7 +103,7 @@ export function AssetInspector({
               onClick={() => {
                 void run(async () => {
                   await api.copyImage(asset.path);
-                  setToast(t('copied'));
+                  setToast({ kind: 'interface', key: 'copied' });
                 });
               }}
             >
