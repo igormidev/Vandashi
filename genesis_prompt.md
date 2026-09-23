@@ -14,6 +14,8 @@ And it will use my subscription of chat gpt for this with the usage of codex cli
 This app is especially useful for people that want to create dark channels, that are channels were you don't show your face.
 Since those are more edit-heavy because the footage is basically the unique thing the user sees in the video since there is not a person, so good motion graphs and those kind of things are fundamental.
 
+The name of the app will be: "Vandashi"
+
 # General structure
 The app will be heavily based in 2 things: Git and Ai chat.
 The idea is that there will be multiple markdown files that have the "taste & creative judgment" of the user for all kind of things: How he likes tumbnails (and his style), how he likes scripts, how he likes the titles to be, how/when to use certain effects and those kind of things. Each one of those "taste" will be markdown or config yml files that will be able to he enhanced during the time so everything the proccess is better each iteration of the user and each time he needs to do less back and forth with the AI. Those markdowns are changed and then commited. The user can change them mannually but, mainly, it will be done by AI in the chat part.
