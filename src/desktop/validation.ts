@@ -1,6 +1,9 @@
+import { AppFault } from '../domain/diagnostics';
 import { extname } from 'node:path';
 import { z } from 'zod';
 import type { ApiMethod } from '../domain/api';
+import { desktopUrl } from './request-errors';
+import { supportedLocales } from '../domain/locales';
 
 const text = z.string().max(2_000_000);
 const id = z.string().min(1).max(500);
@@ -45,6 +48,10 @@ const brandConfig = z
 const draft = z
   .object({
     sourcePath: path,
+    sourceHash: z
+      .string()
+      .regex(/^[a-f0-9]{64}$/u)
+      .optional(),
     title: text,
     description: text,
     tags: texts,
@@ -82,7 +89,7 @@ export const validators: Readonly<Record<ApiMethod, z.ZodType>> = Object.freeze(
   settings: z.tuple([
     z
       .object({
-        locale: z.enum(['en', 'ja', 'fr', 'es', 'de', 'ko', 'pt-BR', 'it']),
+        locale: z.enum(supportedLocales),
         chat: selection,
         automation: selection,
         scriptSync: selection,
@@ -109,13 +116,15 @@ export const validators: Readonly<Record<ApiMethod, z.ZodType>> = Object.freeze(
   ]),
   cancelChat: noArgs,
   undoChat: z.tuple([id]),
-  describeAsset: z.tuple([z.object({ scope, path }).strict()]),
+  describeAsset: z.tuple([z.object({ scope, path, requestId: id }).strict()]),
+  cancelAssetInspection: z.tuple([id]),
   importAsset: z.tuple([z.object({ scope, draft }).strict()]),
   updateAsset: z.tuple([
     z
       .object({
         scope,
         assetId: id,
+        expectedRevision: z.string().regex(/^[a-f0-9]{64}$/u),
         title: text,
         description: text,
         tags: texts,
@@ -206,22 +215,23 @@ function validateEnvelope(input: unknown): void {
   let characters = 0;
   const inspect = (value: unknown, depth: number): void => {
     nodes += 1;
-    if (nodes > 20_000 || depth > 20) throw new Error('The request is too large.');
+    if (nodes > 20_000 || depth > 20) throw new AppFault({ id: 'desktopRequestTooLarge' });
     if (typeof value === 'string') {
       characters += value.length;
-      if (characters > 8_000_000) throw new Error('The request is too large.');
+      if (characters > 8_000_000) throw new AppFault({ id: 'desktopRequestTooLarge' });
       return;
     }
     if (value === null || typeof value === 'boolean' || typeof value === 'number') return;
-    if (!value || typeof value !== 'object') throw new Error('Unsupported request value.');
+    if (!value || typeof value !== 'object') throw new AppFault({ id: 'desktopRequestValueUnsupported' });
     if (
       !Array.isArray(value) &&
       Object.getPrototypeOf(value) !== Object.prototype &&
       Object.getPrototypeOf(value) !== null
     )
-      throw new Error('Unsupported request object.');
+      throw new AppFault({ id: 'desktopRequestObjectUnsupported' });
     for (const [key, nested] of Object.entries(value)) {
-      if (['__proto__', 'constructor', 'prototype'].includes(key)) throw new Error('Unsafe request key.');
+      if (['__proto__', 'constructor', 'prototype'].includes(key))
+        throw new AppFault({ id: 'desktopRequestKeyUnsafe' });
       inspect(nested, depth + 1);
     }
   };
@@ -229,18 +239,20 @@ function validateEnvelope(input: unknown): void {
 }
 
 export function parseInvocation(method: unknown, args: unknown): { method: ApiMethod; args: unknown[] } {
-  if (typeof method !== 'string' || !Object.hasOwn(validators, method)) throw new Error('Unknown operation.');
+  if (typeof method !== 'string' || !Object.hasOwn(validators, method))
+    throw new AppFault({ id: 'unknownOperation' });
   validateEnvelope(args);
   const name = method as ApiMethod;
-  const parsed: unknown = validators[name].parse(args);
-  if (!Array.isArray(parsed)) throw new Error('Invalid operation arguments.');
-  return { method: name, args: parsed };
+  const parsed = validators[name].safeParse(args);
+  if (!parsed.success) throw new AppFault({ id: 'desktopArgumentsInvalid' }, parsed.error.message);
+  if (!Array.isArray(parsed.data)) throw new AppFault({ id: 'desktopArgumentsInvalid' });
+  return { method: name, args: parsed.data };
 }
 
 export function externalUrl(value: string): string {
-  const url = new URL(value);
+  const url = desktopUrl(value, { id: 'desktopExternalUrlInvalid' });
   if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password)
-    throw new Error('Only web links without embedded credentials can be opened.');
+    throw new AppFault({ id: 'desktopExternalUrlInvalid' });
   return url.toString();
 }
 
@@ -250,14 +262,14 @@ export function rendererLocation(
   fileUrl: string,
 ): string {
   if (packaged || !developmentUrl) return fileUrl;
-  const url = new URL(developmentUrl);
+  const url = desktopUrl(developmentUrl, { id: 'desktopRendererNotLoopback' });
   if (
     !['http:', 'https:'].includes(url.protocol) ||
     !['localhost', '127.0.0.1', '[::1]'].includes(url.hostname) ||
     url.username ||
     url.password
   ) {
-    throw new Error('The development renderer must run on loopback.');
+    throw new AppFault({ id: 'desktopRendererNotLoopback' });
   }
   return url.toString();
 }
@@ -306,7 +318,7 @@ const mediaExtensions = new Set([
   '.aiff',
 ]);
 export function mediaRequestPath(value: string, method: string): string {
-  const url = new URL(value);
+  const url = desktopUrl(value, { id: 'desktopMediaRequestUnsupported' });
   const requested = url.searchParams.get('path');
   if (
     !['GET', 'HEAD'].includes(method) ||
@@ -320,9 +332,11 @@ export function mediaRequestPath(value: string, method: string): string {
     !requested ||
     !mediaExtensions.has(extname(requested).toLowerCase())
   ) {
-    throw new Error('Unsupported media request.');
+    throw new AppFault({ id: 'desktopMediaRequestUnsupported' });
   }
-  return path.parse(requested);
+  const parsed = path.safeParse(requested);
+  if (!parsed.success) throw new AppFault({ id: 'desktopMediaRequestUnsupported' }, parsed.error.message);
+  return parsed.data;
 }
 
 export { PathPermissions } from './path-permissions';

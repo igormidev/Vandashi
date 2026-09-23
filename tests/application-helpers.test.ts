@@ -45,17 +45,20 @@ describe('automatic helper contracts', () => {
     helperOutput(
       '```json\n{"title":" Earth ","description":"A globe","tags":["#planet","planet"," "],"kind":"image"}\n```',
     );
-    expect(await app.api.describeAsset({ scope: app.scope, path: '/tmp/globe.png' })).toEqual({
+    expect(
+      await app.api.describeAsset({ requestId: 'inspection', scope: app.scope, path: '/tmp/globe.png' }),
+    ).toEqual({
       sourcePath: '/tmp/globe.png',
+      sourceHash: 'a'.repeat(64),
       title: 'Earth',
       description: 'A globe',
       tags: ['planet'],
       kind: 'image',
     });
     helperOutput('{"title":" ","description":"A globe","tags":[],"kind":"image"}');
-    await expect(app.api.describeAsset({ scope: app.scope, path: '/tmp/globe.png' })).rejects.toThrow(
-      'Invalid asset',
-    );
+    await expect(
+      app.api.describeAsset({ requestId: 'inspection', scope: app.scope, path: '/tmp/globe.png' }),
+    ).rejects.toThrow('Invalid asset');
   });
 
   it('explicit entry checks recover dirty repositories even when the cheap helper cannot run', async () => {

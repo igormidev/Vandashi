@@ -60,6 +60,7 @@ describe('asset persistence and metadata', () => {
     const updated = await storage.updateAsset({
       scope,
       assetId: asset.id,
+      expectedRevision: asset.revision,
       title: 'Earth',
       description: 'New metadata',
       tags: ['planet'],
@@ -105,6 +106,7 @@ describe('asset persistence and metadata', () => {
       storage.updateAsset({
         scope: video.scope,
         assetId: copied.id,
+        expectedRevision: copied.revision,
         title: 'Wrong place',
         description: '',
         tags: [],
@@ -136,7 +138,7 @@ describe('asset persistence and metadata', () => {
     await assets.update(
       root,
       item.id,
-      { title: 'Gentle tone', description: 'A transition', tags: ['sound'] },
+      { title: 'Gentle tone', description: 'A transition', tags: ['sound'], expectedRevision: item.revision },
       true,
     );
     expect(await hashFile(audio)).toBe(before);
@@ -173,6 +175,7 @@ describe('asset persistence and metadata', () => {
     await storage.updateAsset({
       scope,
       assetId: asset.id,
+      expectedRevision: asset.revision,
       title: 'Updated shared mark',
       description: 'Reviewed description',
       tags: ['##identity', 'identity'],

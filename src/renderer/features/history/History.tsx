@@ -7,7 +7,7 @@ import { DiffFiles } from './DiffFiles';
 import { useHistory } from './use-history';
 
 export function History() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { run, setToast } = useApp();
   const { page, setPage, commits, hasMore } = useHistory();
   return (
@@ -55,7 +55,7 @@ export function History() {
           </div>
           <div className="commit-meta">
             <span>{commit.sha.slice(0, 7)}</span>
-            <time>{new Date(commit.date).toLocaleString()}</time>
+            <time>{new Date(commit.date).toLocaleString(i18n.language)}</time>
           </div>
           {commit.body && <ExpandableText text={commit.body} />}
           <DiffFiles files={commit.files} />

@@ -1,3 +1,4 @@
+import { AppFault, diagnosticFromError } from '../domain/diagnostics';
 import type { DesktopApi } from '../domain/api';
 import type { AgentPort } from '../domain/agent';
 import type { MediaPort } from '../domain/media';
@@ -92,22 +93,10 @@ export function createBackend(
     host.prepareStudio,
     host.flushStudio,
   );
-  const automation = new Automation(store, agent, gate);
-  const publishing = new Publishing(store, agent, media, gate, commits);
+  const automation = new Automation(store, agent, gate, media, notify);
+  const publishing = new Publishing(store, agent, media, gate);
   const dependencies = new Dependencies(store, agent, media, commits, notify);
   const mutation = <T>(task: () => Promise<T>): Promise<T> => gate.run('manual', task);
-  const seedVideo = async (scope: Scope) => {
-    const workspace = await store.openWorkspace(scope);
-    if (workspace.video) {
-      await media.seedProject(workspace.video.path, workspace.video.ratio, workspace.video.name);
-      await git.commit(
-        workspace.video.path,
-        'Initialize video canvas',
-        'Create a local Hyperframes project and asset workspace.',
-      );
-    }
-    return remember(await store.openWorkspace(scope));
-  };
   return {
     chooseDirectory: host.chooseDirectory,
     chooseFiles: host.chooseFiles,
@@ -117,7 +106,11 @@ export function createBackend(
     mediaUrl: host.mediaUrl,
     getState: () => store.getState(),
     settings: (settings: Settings) => store.settings(settings),
-    createBrand: (input) => mutation(() => store.createBrand(input)),
+    createBrand: (input) =>
+      mutation(async () => {
+        await git.checkAvailable();
+        return store.createBrand(input);
+      }),
     openBrand: (id) =>
       gate.run('open-brand', async () => {
         const workspace = await store.openBrand(id);
@@ -127,8 +120,10 @@ export function createBackend(
     listVideos: (id) => store.listVideos(id),
     createVideo: (input) =>
       mutation(async () => {
-        const workspace = await store.createVideo(input);
-        return seedVideo(workspace.scope);
+        const workspace = await store.createVideo(input, ({ path, ratio, name }) =>
+          media.seedProject(path, ratio, name),
+        );
+        return remember(workspace);
       }),
     importFinishedVideo: (input) =>
       mutation(async () => remember(await importFinishedVideo(input, store, media))),
@@ -140,7 +135,7 @@ export function createBackend(
     assetWaveform: async ({ scope, assetId }) => {
       const workspace = await readWorkspace(scope);
       const asset = workspace.assets.find((entry) => entry.id === assetId);
-      if (asset?.kind !== 'audio') throw new Error('Choose an audio asset in this workspace.');
+      if (asset?.kind !== 'audio') throw new AppFault({ id: 'appChooseAudio' });
       return media.audioWaveform(await store.allowedPath(asset.path));
     },
     checks: ({ scope, video }) =>
@@ -160,13 +155,14 @@ export function createBackend(
     cancelChat: () => agent.stop(),
     undoChat: (id) => chats.undo(id),
     describeAsset: (input) => automation.describeAsset(input),
+    cancelAssetInspection: (requestId) => automation.cancelAssetInspection(requestId),
     importAsset: (input) => mutation(() => store.importAsset(input)),
     updateAsset: (input) => mutation(() => store.updateAsset(input)),
     deleteAsset: (input) => mutation(() => store.deleteAsset(input)),
     importThumbnail: (input) => mutation(async () => remember(await store.importThumbnail(input))),
     startStudio: async (scope) => {
       if ((await store.openWorkspace(scope)).video?.origin === 'imported')
-        throw new Error('This imported video has no editable composition. Use Packaging or Launch.');
+        throw new AppFault({ id: 'appImportedNoComposition' });
       return studio.start(scope);
     },
     studioChanges: (scope) => studio.changes(scope),
@@ -174,7 +170,7 @@ export function createBackend(
     saveStudio: async (input) => remember(await studio.save(input)),
     renderVideo: async (scope) => {
       if ((await store.openWorkspace(scope)).video?.origin === 'imported')
-        throw new Error('This finished video is already ready to upload and has no composition to render.');
+        throw new AppFault({ id: 'appFinishedNoRender' });
       return studio.render(scope);
     },
     saveScript: (input) => chats.saveScript(input),
@@ -183,35 +179,36 @@ export function createBackend(
     createClip: async (input) => {
       const clip = await mutation(async () => {
         const workspace = await store.openWorkspace(input.scope);
-        if (!workspace.video?.renderedPath)
-          throw new Error('Render the source video before creating a clip.');
-        const result = await store.createClip(input);
-        await media.createClip({
-          projectPath: result.path,
-          sourceVideoPath: workspace.video.renderedPath,
-          ratio: input.ratio,
-          start: input.start,
-          end: input.end,
-          title: input.name,
-        });
-        await git.commit(
-          result.path,
-          'Create clip source',
-          `Extract ${String(input.start)}s–${String(input.end)}s from the original video.`,
+        if (!workspace.video?.renderedPath) throw new AppFault({ id: 'appRenderBeforeClip' });
+        const sourceVideoPath = workspace.video.renderedPath;
+        const result = await store.createClip(input, ({ path, name }) =>
+          media.createClip({
+            projectPath: path,
+            sourceVideoPath,
+            ratio: input.ratio,
+            start: input.start,
+            end: input.end,
+            title: name,
+          }),
         );
-        remember(await store.openWorkspace({ ...input.scope, clipId: result.id }));
         return result;
       });
       const scope = { ...input.scope, clipId: clip.id };
-      const session = await chats.open({ scope, topic: 'clip', title: input.name });
-      await chats.start({
-        sessionId: session.id,
-        text: `Create the first ${input.ratio} clip from ${String(input.start)}s to ${String(input.end)}s. ${input.prompt}`,
-        mode: 'edit',
-        selection: input.selection,
-        attachments: [],
-      });
-      return clip;
+      const prompt = `Create the first ${input.ratio} clip from ${String(input.start)}s to ${String(input.end)}s. ${input.prompt}`;
+      try {
+        remember(await store.openWorkspace(scope));
+        const session = await chats.open({ scope, topic: 'clip', title: input.name });
+        await chats.start({
+          sessionId: session.id,
+          text: prompt,
+          mode: 'edit',
+          selection: input.selection,
+          attachments: [],
+        });
+        return { clip, generation: { status: 'started' } };
+      } catch (error) {
+        return { clip, generation: { status: 'failed', diagnostic: diagnosticFromError(error), prompt } };
+      }
     },
     updateLaunch: (input) => publishing.updateLaunch(input),
     preparePublish: (input) => publishing.prepare(input, chats),

@@ -13,10 +13,12 @@ Install Node.js 24, Git, and [Codex CLI](https://developers.openai.com/codex/cli
 ```sh
 git clone https://github.com/igormidev/Vandashi.git
 cd Vandashi
-npm ci
+ONNXRUNTIME_NODE_INSTALL=skip npm ci
 node node_modules/hyperframes/bin/hyperframes.mjs skills update --json
 npm run dev
 ```
+
+In Windows PowerShell, run `$env:ONNXRUNTIME_NODE_INSTALL='skip'` before `npm ci` instead. This keeps the included CPU inference runtime and skips an unnecessary CUDA download. Local speech inspection downloads a pinned 80 MB model on first use and can temporarily use about 2.3 GB of memory; its worker exits afterward.
 
 The pinned Hyperframes CLI, Studio, and player are included in npm dependencies. Its first render also needs FFmpeg, FFprobe, and a supported Chrome runtime. The workspace preparation screen checks these tools and offers installation guidance or a prepared repair conversation. Existing Codex settings and conversations are preserved.
 
@@ -66,7 +68,7 @@ npm run package        # Verify and create native installers
 
 Copy this prompt into a coding agent with local terminal access:
 
-> Install and open Vandashi from https://github.com/igormidev/Vandashi. Inspect its README and AGENTS.md first. Use the latest repository state, Node.js 24, and npm ci. Check Git and Codex CLI; install missing prerequisites from their official sources without replacing my existing configurations. Ask me to sign in directly if Codex needs authentication. Install the bundled Hyperframes skill with `node node_modules/hyperframes/bin/hyperframes.mjs skills update --json`, verify the media prerequisites, run the checks, then start `npm run dev` and open the desktop app. Keep my existing projects and credentials intact. Report any failed dependency check with the exact error.
+> Install and open Vandashi from https://github.com/igormidev/Vandashi. Inspect its README and AGENTS.md first. Use the latest repository state and Node.js 24. Set ONNXRUNTIME_NODE_INSTALL=skip in the installation environment, then run npm ci to use the included CPU inference runtime without downloading CUDA. Check Git and Codex CLI; install missing prerequisites from their official sources without replacing my existing configurations. Ask me to sign in directly if Codex needs authentication. Install the bundled Hyperframes skill with `node node_modules/hyperframes/bin/hyperframes.mjs skills update --json`, verify the media prerequisites, run the checks, then start `npm run dev` and open the desktop app. Keep my existing projects and credentials intact. Report any failed dependency check with the exact error.
 
 ## References and license
 

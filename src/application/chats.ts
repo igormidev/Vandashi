@@ -1,3 +1,4 @@
+import { AppFault, diagnosticFromError } from '../domain/diagnostics';
 import { undoChat } from './chat-undo';
 import { openChatSession } from './chat-history';
 import { repositoryHeads, turnReceipt } from './turn-receipt';
@@ -81,7 +82,7 @@ export class Chats {
     });
   }
   async start(request: ChatRequest): Promise<void> {
-    if (!request.text.trim()) throw new Error('Enter a message first.');
+    if (!request.text.trim()) throw new AppFault({ id: 'appMessageEmpty' });
     const release = this.gate.acquire(request.sessionId);
     let scope: Scope | undefined;
     try {
@@ -121,15 +122,14 @@ export class Chats {
     const repositories = await this.store.repositories(session.scope);
     if (request.mode === 'edit' && session.scope.videoId) await this.media?.stopStudio();
     for (const repository of repositories)
-      if ((await this.git.status(repository)).dirty)
-        throw new Error('Save pending file changes before starting AI.');
+      if ((await this.git.status(repository)).dirty) throw new AppFault({ id: 'appSaveBeforeAi' });
     const heads = await repositoryHeads(this.git, repositories);
     const cwd = await this.store.projectPath(session.scope);
     const capabilities = await this.agent.capabilities(cwd);
     const skill = capabilities.skills.find((entry) => entry.name === 'hyperframes');
     const original = structuredClone(session);
     const scriptHead = heads[cwd];
-    if (script && !scriptHead) throw new Error('The script checkpoint is missing.');
+    if (script && !scriptHead) throw new AppFault({ id: 'appScriptCheckpointMissing' });
     const originalScript = script && scriptHead ? await this.git.readAt(cwd, scriptHead, 'script.md') : null;
     let staged = false;
     const rollback = async () => {
@@ -137,11 +137,9 @@ export class Chats {
       const workspace = await this.store.openWorkspace(session.scope);
       const current = workspace.documents.find((document) => document.kind === 'script');
       if (current?.content !== script.content && current?.content !== originalScript)
-        throw new Error(
-          'The script changed while AI was starting. The current file was preserved; review it before retrying.',
-        );
+        throw new AppFault({ id: 'appScriptChangedDuringStart' });
       const head = heads[cwd];
-      if (!head) throw new Error('The script checkpoint is missing. Your staged script was preserved.');
+      if (!head) throw new AppFault({ id: 'appScriptCheckpointPreserved' });
       await this.git.restoreFiles(cwd, head, ['script.md']);
     };
     try {
@@ -199,7 +197,12 @@ export class Chats {
       void this.execute(prepared, resolve, reject)
         .catch((error: unknown) => {
           reject(error instanceof Error ? error : new Error(String(error)));
-          this.notify({ type: 'notice', code: 'save-failed', detail: String(error) });
+          this.notify({
+            type: 'notice',
+            code: 'save-failed',
+            detail: String(error),
+            diagnostic: diagnosticFromError(error),
+          });
         })
         .finally(release);
     });
@@ -256,15 +259,23 @@ export class Chats {
           this.notify({ type: 'chat', sessionId: session.id, message: event.message, delta: event.delta });
         }
         if (event.type === 'warning')
-          this.notify({ type: 'notice', code: 'agent-warning', detail: event.detail });
+          this.notify({
+            type: 'notice',
+            code: 'agent-warning',
+            detail: event.detail,
+            ...(event.diagnostic ? { diagnostic: event.diagnostic } : {}),
+          });
         persist();
       });
-      if (!lifecycle.started) throw new Error('Codex did not accept a conversation turn.');
+      if (!lifecycle.started) throw new AppFault({ id: 'appTurnNotAccepted' });
       session.threadId = result.threadId;
       const latest = session.checkpoints?.at(-1);
       if (latest) latest.threadId = result.threadId;
       if (result.status !== 'completed')
-        throw new Error(result.error ?? 'The operation was interrupted. Your work will be preserved.');
+        throw new AppFault(
+          { id: result.status === 'interrupted' ? 'appOperationInterrupted' : 'appOperationFailed' },
+          result.error ?? undefined,
+        );
     } catch (error) {
       failed = true;
       startError = error;
@@ -274,6 +285,7 @@ export class Chats {
           id: crypto.randomUUID(),
           role: 'error',
           text: error instanceof Error ? error.message : String(error),
+          diagnostic: diagnosticFromError(error),
           turnId: null,
           files: [],
           createdAt: new Date().toISOString(),
@@ -308,20 +320,28 @@ export class Chats {
     } catch (error) {
       failed = true;
       startError = error;
-      this.notify({ type: 'notice', code: 'save-failed', detail: String(error) });
+      this.notify({
+        type: 'notice',
+        code: 'save-failed',
+        detail: String(error),
+        diagnostic: diagnosticFromError(error),
+      });
     }
-    if (persistenceError && finalSaved)
+    if (persistenceError && finalSaved) {
+      const fault = new AppFault({ id: 'appHistorySavedAgain' });
       this.notify({
         type: 'notice',
         code: 'history-recovered',
-        detail: 'An earlier conversation save failed. The final state was saved again.',
+        detail: fault.message,
+        diagnostic: fault.diagnostic,
       });
+    }
     this.notify({
       type: 'activity',
       activity: { sessionId: session.id, phase: failed ? 'error' : 'done', detail: '' },
     });
     this.notify({ type: 'workspace-changed', scope: session.scope });
-    if (!lifecycle.started) rejected(startError ?? new Error('Could not start the conversation.'));
+    if (!lifecycle.started) rejected(startError ?? new AppFault({ id: 'appConversationStartFailed' }));
   }
   undo(id: string): Promise<ChatSession> {
     return this.gate.run('undo', () =>

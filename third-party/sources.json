@@ -20,6 +20,16 @@
       "file": "third-party/Simple-Icons-DISCLAIMER.md",
       "source": "npm:simple-icons@15.22.0/DISCLAIMER.md",
       "sha256": "351f58ed7756a1e87ec0565dbd94531fdaa41e59279d990a6a17253923d37512"
+    },
+    {
+      "file": "third-party/whisper-base-model-card.md",
+      "source": "https://huggingface.co/Xenova/whisper-base/resolve/64da57285918e20ea79ea5c88eed7197933abaa8/README.md",
+      "sha256": "dc362c71002d21febf5cd5256713cd9406d0eb5c32631f73a39791af6029ce9d"
+    },
+    {
+      "file": "third-party/whisper-LICENSE.txt",
+      "source": "https://raw.githubusercontent.com/openai/whisper/v20250625/LICENSE",
+      "sha256": "b5d65a59060e68c4ff940e1eddfa6f94b2d68fdf58ed7f4dd57721c997e35e9d"
     }
   ],
   "packages": {
@@ -240,6 +250,86 @@
           "file": "third-party/sharp-wasm32-README.md",
           "source": "npm:@img/sharp-wasm32@0.35.4/README.md",
           "sha256": "9d7a84ade91e8e50f5dfc303fb53e580e806f6f89bde804e84a01c1b8853fff5"
+        }
+      ]
+    },
+    "guid-typescript@1.0.9": {
+      "reason": "The exact published package declares ISC but omits license text; retain its original metadata/README and an unchanged SPDX ISC template without inventing missing attribution.",
+      "files": [
+        {
+          "file": "third-party/guid-typescript-1.0.9-package.json",
+          "source": "npm:guid-typescript@1.0.9/package.json",
+          "sha256": "ed86856ee95fe87eadd8552b6803a85b7fb4f6cce08603bf9c8385972b5badb6"
+        },
+        {
+          "file": "third-party/guid-typescript-1.0.9-README.md",
+          "source": "npm:guid-typescript@1.0.9/README.md",
+          "sha256": "6d9ba5789364c666984b657f56dc2343ad9ab8c93d0894b66be7a8ba4f51b8d8"
+        },
+        {
+          "file": "third-party/ISC-template.txt",
+          "source": "https://raw.githubusercontent.com/spdx/license-list-data/v3.27.0/text/ISC.txt",
+          "sha256": "f2ec607f67bb0dd3053b49835b02110d5cd0f8eb6da3aac4dc0b142a6b299be9"
+        }
+      ]
+    },
+    "onnxruntime-common@1.30.0": {
+      "reason": "Published package omits the root license and native third-party notices; preserve matching upstream revision MIT license and complete third-party notice file.",
+      "files": [
+        {
+          "file": "third-party/onnxruntime-1.30.0-LICENSE.txt",
+          "source": "https://raw.githubusercontent.com/microsoft/onnxruntime/v1.30.0/LICENSE",
+          "sha256": "2f07c72751aed99790b8a4869cf2311df85a860b22ded05fa22803587a48922c"
+        },
+        {
+          "file": "third-party/onnxruntime-1.30.0-ThirdPartyNotices.txt.txt",
+          "source": "https://raw.githubusercontent.com/microsoft/onnxruntime/v1.30.0/ThirdPartyNotices.txt",
+          "sha256": "143764b952fdb1a7c69ce653bfba74a7744d6a8a573bfb73e235fba356c83de3"
+        }
+      ]
+    },
+    "onnxruntime-node@1.30.0": {
+      "reason": "Published package omits the root license and native third-party notices; preserve matching upstream revision MIT license and complete third-party notice file.",
+      "files": [
+        {
+          "file": "third-party/onnxruntime-1.30.0-LICENSE.txt",
+          "source": "https://raw.githubusercontent.com/microsoft/onnxruntime/v1.30.0/LICENSE",
+          "sha256": "2f07c72751aed99790b8a4869cf2311df85a860b22ded05fa22803587a48922c"
+        },
+        {
+          "file": "third-party/onnxruntime-1.30.0-ThirdPartyNotices.txt.txt",
+          "source": "https://raw.githubusercontent.com/microsoft/onnxruntime/v1.30.0/ThirdPartyNotices.txt",
+          "sha256": "143764b952fdb1a7c69ce653bfba74a7744d6a8a573bfb73e235fba356c83de3"
+        }
+      ]
+    },
+    "onnxruntime-web@1.31.0-dev.20260914-8d85527a0": {
+      "reason": "Published package omits the root license and native third-party notices; preserve matching upstream revision MIT license and complete third-party notice file.",
+      "files": [
+        {
+          "file": "third-party/onnxruntime-1.31.0-dev.20260914-8d85527a0-LICENSE.txt",
+          "source": "https://raw.githubusercontent.com/microsoft/onnxruntime/8d85527a0/LICENSE",
+          "sha256": "2f07c72751aed99790b8a4869cf2311df85a860b22ded05fa22803587a48922c"
+        },
+        {
+          "file": "third-party/onnxruntime-1.31.0-dev.20260914-8d85527a0-ThirdPartyNotices.txt.txt",
+          "source": "https://raw.githubusercontent.com/microsoft/onnxruntime/8d85527a0/ThirdPartyNotices.txt",
+          "sha256": "143764b952fdb1a7c69ce653bfba74a7744d6a8a573bfb73e235fba356c83de3"
+        }
+      ]
+    },
+    "onnxruntime-common@1.31.0-dev.20260911-2a43ec07e": {
+      "reason": "Published package omits the root license and native third-party notices; preserve matching upstream revision MIT license and complete third-party notice file.",
+      "files": [
+        {
+          "file": "third-party/onnxruntime-1.31.0-dev.20260911-2a43ec07e-LICENSE.txt",
+          "source": "https://raw.githubusercontent.com/microsoft/onnxruntime/2a43ec07e/LICENSE",
+          "sha256": "2f07c72751aed99790b8a4869cf2311df85a860b22ded05fa22803587a48922c"
+        },
+        {
+          "file": "third-party/onnxruntime-1.31.0-dev.20260911-2a43ec07e-ThirdPartyNotices.txt.txt",
+          "source": "https://raw.githubusercontent.com/microsoft/onnxruntime/2a43ec07e/ThirdPartyNotices.txt",
+          "sha256": "143764b952fdb1a7c69ce653bfba74a7744d6a8a573bfb73e235fba356c83de3"
         }
       ]
     }

@@ -12,6 +12,37 @@ Vandashi is an Electron desktop application. There is no hosted backend. The ren
 
 An application registry in the OS user-data directory stores selected brand, brand folders, settings, chat-to-Codex-thread mappings, and layout preferences. Each brand owns `brand_identity/` as a Git repository; each video and each clip is an independent Git repository. Markdown and validated YAML are authoritative. Shared assets have their own tracked metadata and are synchronized into the selected video's asset tree without overwriting local assets. Media binaries remain local. Writes use atomic replacement and revision guards where manual editing could race with external edits.
 
+Brand creation preflights the Git executable, then prepares both initial repositories and commits in
+a private hidden sibling directory. Initialization or commit failure removes only that owned staging
+tree and leaves the requested name available for retry. Publication reserves a new directory with
+exclusive creation, then copies each prepared directory/file exclusively and the manifest last.
+The shared publication helper refuses existing entries, symlinks, and replaced destination roots;
+it does not depend on directory-replacement semantics that differ between host operating systems.
+Existing folders are never recursively deleted. Leading-dot names are rejected because workspace
+indexing hides them.
+
+A small versioned `.vandashi-brand.json` records the new brand ID and its initial commit hashes.
+If registry persistence fails after publication, the completed files remain. Retrying the exact same
+path/name can register them after validating the manifest, required regular files, empty video
+directory, clean unchanged initial repository heads, and absence from the registry. This is structural
+recovery evidence, not authentication; recovery never rewrites those files. Publication plus registry
+storage is not an atomic transaction: a process crash during publication can leave a partial brand,
+which is preserved and rejected on retry. Only a still-owned empty final reservation can be removed.
+
+Composition video/clip creation uses the same publication boundary. Storage initializes a private
+hidden sibling repository, invokes an injected media-preparation callback, commits the completed
+seed, and validates its receipt before publication. Preparation callbacks must not reenter the
+storage write queue. The application always supplies the real media initializer; persistence-only
+callers may omit it. Failed initialization, seeding, or commits remove only the owned staging tree
+and leave the requested name reusable. Published or externally replaced files are preserved.
+
+Clip creation returns a saved clip separately from its generation outcome. After publication, a
+workspace-refresh, conversation-open, or unaccepted-turn failure returns the saved clip with a typed
+diagnostic and the exact retry prompt. The renderer opens that existing clip and offers editable chat
+retry, or an Open clip recovery action if hydration fails; it never repeats the creation request.
+If final video hydration fails after publication, its diagnostic explicitly identifies the saved path
+and directs the user back to the video list. It does not suggest repeating creation with that name.
+
 Renderer-local preferences retain the selected conversation and unsent text/read-mode drafts across view changes and restarts. External-file selection grants are owned by the desktop process, not persisted as arbitrary trusted paths. Pane sizing saves merge the latest settings so resizing one workspace cannot erase another workspace's saved width. Settings for chat, commit messages, asset descriptions, chapters, and script synchronization are separate.
 
 The renderer keeps editing locked until the current workspace reload finishes. Request
@@ -68,22 +99,44 @@ uses actual native selection grants and the production handler, verifies a full 
 H.264 export decodes, seeks to two seconds, advances playback, and serves exact bytes.
 It does not replace the protocol with a fixture implementation.
 
+## Asset inspection
+
+`MediaPort.inspectAsset` owns temporary visual samples, local speech recognition,
+and a source SHA-256 token. The application passes only bounded evidence to its
+configured Codex metadata model and disposes the lease after the turn. Confirmed
+import revalidates the source token before applying automatic metadata to a copy.
+The pinned speech model lives in app data; its CPU worker runs in a separate process
+and exits after inspection. See `ASSET-INSPECTION.md` for sampling, model provenance,
+resource limits, and verification.
+
+Inspection progress and cancellation carry a unique request ID. The renderer
+reattaches to one pending promise when development StrictMode replays an effect.
+Cancellation aborts only that request, interrupts Codex only during its description
+turn, and waits for worker/evidence cleanup before releasing the global operation
+lease. Late events and cancellation IDs cannot target the next asset in a queue.
+
 ## Localization
 
-English UI resources live in `src/renderer/locales/*.ts` and are merged by
-`src/renderer/i18n.ts`. UI reads through `react-i18next`. The shell persists a supported
-locale and falls back to English; only English is currently registered and selectable.
-The resource objects are not yet augmented into i18next's key/interpolation types, so
-strict TypeScript does not currently reject unknown translation keys or parameters.
+English UI resources live in `src/renderer/locales/*.ts` and merge through `resources.ts`.
+Their literal types augment i18next to reject unknown keys and incorrect interpolation
+parameters. Catalog tests reject duplicate keys and exercise count plurals and English
+fallback. Planned locale IDs and normalization live in `src/domain/locales.ts`; only
+English is currently registered and selectable. Native dialog text uses a separate pure
+typed catalog and the main process's cached saved locale.
 
-`src/domain/messages.ts` is a small, framework-free English catalog and typed descriptor
-contract for app-owned turn receipts. Optional `ChatMessage.appMessage` metadata persists
-that identity; the renderer resolves it through a separate `messages` namespace. Raw
-agent prose, provider model names, and user-authored content remain separate and are not
-translated. Broader backend errors, native dialogs, and diagnostics still need the typed
-message/IPC boundary documented in `docs/LOCALIZATION-READINESS.md`; their English prose
-must not become a runtime lookup key. Actual target-language resources and contextual
-translation review begin only after functional implementation is complete.
+`src/domain/messages.ts` combines framework-free source catalogs into a discriminated
+`AppMessage` union with required named parameters. `AppFault` and `DiagnosticError`
+preserve that identity separately from optional external details. Application errors,
+recovery notices, checks, metadata warnings, and persisted chat errors use descriptors;
+raw agent prose, model names, paths, user content, and vendor diagnostics remain verbatim.
+The renderer resolves descriptors in its `messages` namespace at presentation time.
+
+The main IPC handler returns a validated failure envelope without changing successful
+return values. The preload encodes its diagnostic in a versioned Error.message because
+Electron contextBridge discards custom Error fields. The renderer decodes once; an
+external diagnostic resembling that marker is never recursively interpreted. Payload
+lengths, keys, IDs, and parameters are validated. Actual target-language resources and
+contextual translation review begin only after functional implementation is complete.
 
 ## References
 

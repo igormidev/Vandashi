@@ -22,9 +22,7 @@ export function indexAssets(assets: Asset[]): AssetIndex {
   const tags = new Set<string>();
   const entries = assets.map((asset) => {
     asset.tags.forEach((tag) => tags.add(tag));
-    const path = asset.relativePath
-      .replaceAll('\\', '/')
-      .replace(/^(?:video_assets|shared_assets|assets)\//, '');
+    const path = asset.relativePath.replaceAll('\\', '/');
     const separator = path.lastIndexOf('/');
     return {
       asset,

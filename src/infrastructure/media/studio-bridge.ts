@@ -1,10 +1,15 @@
+import type { Diagnostic } from '../../domain/diagnostics';
+export type StudioFlushResult = { ok: true } | { ok: false; diagnostic: Diagnostic };
+
 /** Runs in the isolated Studio iframe's main world; it exposes no Electron capabilities. */
 function installStudioBridge(): void {
-  type BridgeWindow = Window & { __vandashiStudioBridge?: { version: number; flush: () => Promise<void> } };
+  type BridgeWindow = Window & {
+    __vandashiStudioBridge?: { version: number; flush: () => Promise<StudioFlushResult> };
+  };
   const target = window as BridgeWindow;
-  if (target.__vandashiStudioBridge?.version === 1) return;
+  if (target.__vandashiStudioBridge?.version === 2) return;
   const pending = new Set<Promise<void>>();
-  const failures = new Map<string, string>();
+  const failures = new Map<string, Diagnostic>();
   const originalFetch = window.fetch.bind(window);
   window.fetch = (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const request = originalFetch(input, init);
@@ -20,16 +25,13 @@ function installStudioBridge(): void {
         (response) => {
           if (response.ok) failures.delete(key);
           else
-            failures.set(
-              key,
-              `Studio could not save an edit (HTTP ${String(response.status)}). Resolve the save error in the editor before leaving.`,
-            );
+            failures.set(key, {
+              kind: 'app',
+              message: { id: 'mediaBridgeSaveHttp', params: { status: response.status } },
+            });
         },
         () => {
-          failures.set(
-            key,
-            'Studio could not save an edit. Check the local Studio connection before leaving.',
-          );
+          failures.set(key, { kind: 'app', message: { id: 'mediaBridgeSaveConnection' } });
         },
       );
       pending.add(tracked);
@@ -43,7 +45,7 @@ function installStudioBridge(): void {
     new Promise<void>((resolve) => {
       setTimeout(resolve, 0);
     });
-  const drain = async () => {
+  const drain = async (): Promise<Diagnostic | null> => {
     const active = document.activeElement;
     if (
       active instanceof HTMLElement &&
@@ -65,37 +67,45 @@ function installStudioBridge(): void {
       } else quiet += 1;
       await tick();
     }
-    const failure = failures.values().next().value;
-    if (failure) throw new Error(failure);
+    return failures.values().next().value ?? null;
   };
-  const flush = async () => {
+  const flush = async (): Promise<StudioFlushResult> => {
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {
-      await Promise.race([
+      const diagnostic = await Promise.race([
         drain(),
-        new Promise<never>((_resolve, reject) => {
+        new Promise<Diagnostic>((resolve) => {
           timer = setTimeout(() => {
-            reject(new Error('Studio is still saving. Wait for its pending edits before leaving.'));
+            resolve({ kind: 'app', message: { id: 'mediaBridgePending' } });
           }, 20_000);
         }),
       ]);
+      return diagnostic ? { ok: false, diagnostic } : { ok: true };
+    } catch (error) {
+      const text =
+        error && typeof error === 'object' && 'message' in error && typeof error.message === 'string'
+          ? error.message
+          : String(error);
+      return { ok: false, diagnostic: { kind: 'external', text: text.slice(0, 32_768) } };
     } finally {
       clearTimeout(timer);
     }
   };
   Object.defineProperty(target, '__vandashiStudioBridge', {
-    value: { version: 1, flush },
+    value: { version: 2, flush },
     configurable: false,
     writable: false,
   });
 }
 
-function flushStudioBridge(): Promise<void> {
-  const target = window as Window & { __vandashiStudioBridge?: { flush: () => Promise<void> } };
+function flushStudioBridge(): Promise<StudioFlushResult> {
+  const target = window as Window & { __vandashiStudioBridge?: { flush: () => Promise<StudioFlushResult> } };
   if (!target.__vandashiStudioBridge)
-    throw new Error('The Studio save connection is unavailable. Keep the editor open and retry.');
+    return Promise.resolve({
+      ok: false,
+      diagnostic: { kind: 'app', message: { id: 'mediaBridgeUnavailable' } },
+    });
   return target.__vandashiStudioBridge.flush();
 }
-
 export const STUDIO_BRIDGE_INSTALL = `(${installStudioBridge.toString()})()`;
 export const STUDIO_BRIDGE_FLUSH = `(${flushStudioBridge.toString()})()`;

@@ -1,23 +1,24 @@
+import { AppFault } from '../domain/diagnostics';
 import { parseAgentJson } from './agent-json';
 import type { AgentPort } from '../domain/agent';
 import type { Chapter, Clip, Scope } from '../domain/models';
 import type { MediaPort } from '../domain/media';
 import type { StoragePort } from '../domain/storage';
-import type { Commits } from './commits';
 import type { OperationGate } from './operation-gate';
 import type { Chats } from './chats';
 import type { DesktopApi } from '../domain/api';
 import { platforms } from '../domain/defaults';
 import { appendChapters, chapterIssue, horizontalPlatforms } from '../domain/launch';
+import { importFinishedClip } from './finished-clip';
 
-const chapterErrors = {
-  chapterCountError: 'YouTube chapters need at least three timestamps.',
-  chapterStartError: 'The first chapter must start at 00:00.',
-  chapterTitleError: 'Every chapter needs a nonempty single-line title.',
-  chapterTimeError: 'Chapter timestamps must be nonnegative whole seconds.',
-  chapterSpacingError: 'Chapter timestamps must be ordered with at least ten seconds between them.',
-  chapterDurationError: 'Every chapter must include at least ten seconds of the actual video.',
-};
+function webUrl(value: string): URL | null {
+  try {
+    const url = new URL(value);
+    return ['http:', 'https:'].includes(url.protocol) && !url.username && !url.password ? url : null;
+  } catch {
+    return null;
+  }
+}
 
 export class Publishing {
   constructor(
@@ -25,7 +26,6 @@ export class Publishing {
     private readonly agent: AgentPort,
     private readonly media: MediaPort,
     private readonly gate: OperationGate,
-    private readonly commits: Commits,
   ) {}
   updateLaunch(input: Parameters<DesktopApi['updateLaunch']>[0]): Promise<void> {
     return this.gate.run('release-status', async () => {
@@ -34,15 +34,11 @@ export class Publishing {
       const target = input.launch.clipId
         ? workspace.clips.find((clip) => clip.id === input.launch.clipId)
         : workspace.video;
-      if (!target) throw new Error('The selected video or clip no longer exists.');
+      if (!target) throw new AppFault({ id: 'appPublishTargetMissing' });
       if (horizontalPlatforms.includes(input.launch.platform) !== (target.ratio === '16:9'))
-        throw new Error('This destination does not match the selected video format.');
+        throw new AppFault({ id: 'appPublishFormatMismatch' });
       const url = input.launch.url.trim();
-      if (url) {
-        const parsed = new URL(url);
-        if (!['http:', 'https:'].includes(parsed.protocol) || parsed.username || parsed.password)
-          throw new Error('Use a valid published video web URL.');
-      }
+      if (url && !webUrl(url)) throw new AppFault({ id: 'appPublishedUrlInvalid' });
       await this.store.updateLaunch({ scope, launch: { ...input.launch, url } });
     });
   }
@@ -50,10 +46,9 @@ export class Publishing {
     return this.gate.run('chapters', async () => {
       const workspace = await this.store.openWorkspace(scope);
       const cwd = await this.store.projectPath(scope);
-      if (!workspace.video?.renderedPath) throw new Error('Render the video before generating chapters.');
+      if (!workspace.video?.renderedPath) throw new AppFault({ id: 'appChaptersNeedRender' });
       const duration = (await this.media.probeMedia(workspace.video.renderedPath)).duration;
-      if (!Number.isFinite(duration) || duration < 30)
-        throw new Error('YouTube chapters require at least thirty seconds of video.');
+      if (!Number.isFinite(duration) || duration < 30) throw new AppFault({ id: 'appChaptersVideoShort' });
       const guidance = workspace.documents.find((document) => document.name === 'YOUTUBE_SECTIONS_TASTE.md');
       const script = workspace.documents.find((document) => document.kind === 'script');
       const result = await this.agent.run(
@@ -84,10 +79,11 @@ export class Publishing {
         },
         () => undefined,
       );
-      if (result.status !== 'completed') throw new Error(result.error ?? 'Could not create chapters.');
+      if (result.status !== 'completed')
+        throw new AppFault({ id: 'appChaptersFailed' }, result.error ?? undefined);
       const parsed: unknown = parseAgentJson(result.output);
       if (!parsed || typeof parsed !== 'object' || !('chapters' in parsed) || !Array.isArray(parsed.chapters))
-        throw new Error('Invalid chapter response.');
+        throw new AppFault({ id: 'appChaptersInvalidResponse' });
       const chapters = parsed.chapters.map((entry: unknown): Chapter => {
         if (
           !entry ||
@@ -100,11 +96,11 @@ export class Publishing {
           typeof entry.title !== 'string' ||
           !entry.title.trim()
         )
-          throw new Error('Invalid chapter.');
+          throw new AppFault({ id: 'appChapterInvalid' });
         return { seconds: entry.seconds, title: entry.title.trim() };
       });
       const issue = chapterIssue(chapters, duration);
-      if (issue) throw new Error(chapterErrors[issue]);
+      if (issue) throw new AppFault({ id: issue });
       return chapters;
     });
   }
@@ -113,7 +109,7 @@ export class Publishing {
     chats: Chats,
   ): ReturnType<DesktopApi['preparePublish']> {
     const platform = platforms.find((entry) => entry === input.platform);
-    if (!platform) return Promise.reject(new Error('Choose a supported publishing platform.'));
+    if (!platform) return Promise.reject(new AppFault({ id: 'appPublishPlatformUnsupported' }));
     const scope = { ...input.scope, clipId: null };
     const clipId = input.clipId ?? input.scope.clipId;
     const topic = `publish:${platform}${clipId ? `:${clipId}` : ''}`;
@@ -121,34 +117,29 @@ export class Publishing {
       const workspace = await this.store.openWorkspace(scope);
       const target = clipId ? await this.store.openWorkspace({ ...scope, clipId }) : workspace;
       const video = target.video;
-      if (target.dirty)
-        throw new Error('Save or discard pending workspace changes before preparing an upload.');
-      if (!video?.renderedPath)
-        throw new Error('Render the selected video or clip before preparing an upload.');
-      if (!input.browser.trim()) throw new Error('Choose the browser where your channel is signed in.');
+      if (target.dirty) throw new AppFault({ id: 'appSaveBeforePublish' });
+      if (!video?.renderedPath) throw new AppFault({ id: 'appPublishNeedRender' });
+      if (!input.browser.trim()) throw new AppFault({ id: 'appPublishBrowserRequired' });
       const channel = workspace.brand.config.platforms[platform === 'youtubeShorts' ? 'youtube' : platform];
-      if (!channel?.url.trim())
-        throw new Error('Set the destination channel URL in the brand workspace first.');
-      const channelUrl = new URL(channel.url);
-      if (!['http:', 'https:'].includes(channelUrl.protocol) || channelUrl.username || channelUrl.password)
-        throw new Error('Use a valid destination channel web URL.');
+      if (!channel?.url.trim()) throw new AppFault({ id: 'appPublishChannelRequired' });
+      const channelUrl = webUrl(channel.url);
+      if (!channelUrl) throw new AppFault({ id: 'appPublishChannelInvalid' });
       const probe = await this.media.probeMedia(video.renderedPath);
       if (!Number.isFinite(probe.duration) || probe.duration <= 0 || !probe.width || !probe.height)
-        throw new Error('The selected rendered file is not a valid video.');
+        throw new AppFault({ id: 'appRenderedVideoInvalid' });
       const horizontal = horizontalPlatforms.includes(platform);
       if (horizontal && (clipId || video.ratio !== '16:9' || probe.width <= probe.height))
-        throw new Error('Choose the main landscape video for this destination.');
+        throw new AppFault({ id: 'appPublishLandscapeRequired' });
       if (!horizontal && (video.ratio === '16:9' || probe.width > probe.height))
-        throw new Error('Choose a rendered vertical or square clip for this destination.');
+        throw new AppFault({ id: 'appPublishPortraitRequired' });
       const packaging = structuredClone(input.packaging);
       const format = horizontal ? 'long' : 'short';
       if (!packaging.titles[format].some((title) => title.trim()))
-        throw new Error('Enter at least one title for this upload.');
+        throw new AppFault({ id: 'appPublishTitleRequired' });
       if (input.chapters?.length) {
-        if (platform !== 'youtube')
-          throw new Error('Manual chapters are supported for the main YouTube video.');
+        if (platform !== 'youtube') throw new AppFault({ id: 'appManualChaptersUnsupported' });
         const issue = chapterIssue(input.chapters, probe.duration);
-        if (issue) throw new Error(chapterErrors[issue]);
+        if (issue) throw new AppFault({ id: issue });
         packaging.descriptions.long = appendChapters(packaging.descriptions.long, input.chapters);
       }
       const thumbnails = await Promise.all(
@@ -157,10 +148,7 @@ export class Publishing {
         ),
       );
       const capabilities = await this.agent.capabilities(video.path);
-      if (!capabilities.browserTools?.length)
-        throw new Error(
-          'Browser controls are unavailable to Codex. Enable the browser or unified-computer-use Codex plugin, then retry preparing the upload.',
-        );
+      if (!capabilities.browserTools?.length) throw new AppFault({ id: 'appBrowserControlsUnavailable' });
       return {
         session,
         prompt: `Upload ${JSON.stringify(video.name)} using this verified local video file: ${JSON.stringify(video.renderedPath)}. Destination: ${platform}. Browser: ${JSON.stringify(input.browser.trim())}. Exact channel: ${JSON.stringify(channelUrl.toString())}.\nUse this reviewed packaging (use the ${format}-form fields):\n${JSON.stringify(packaging, null, 2)}\nOrdered thumbnail files: ${JSON.stringify(thumbnails)}. The first is the main thumbnail; use additional title/thumbnail candidates only when this account and platform currently support testing, and report unsupported options.\nLaunch file: ${JSON.stringify(`${workspace.video?.path ?? video.path}/launch.yml`)}. Update only the record {platform:${JSON.stringify(platform)},clipId:${JSON.stringify(clipId)}}; preserve other releases.\nVerify the exact channel before taking any upload action. If the account differs, switch only when the matching account can be positively identified; otherwise stop and notify me. If signed out, pause so I can sign in directly in the browser. Never request passwords or codes in chat. Monitor actual upload and processing through completion, then set uploaded and the verified public URL. If it fails, set failed and explain the remaining work. Do not invent successful results.`,
@@ -168,33 +156,6 @@ export class Publishing {
     });
   }
   async importClip(input: { scope: Scope; sourcePath: string }): Promise<Clip> {
-    return this.gate.run('import-clip', async () => {
-      const probe = await this.media.probeMedia(input.sourcePath);
-      if (!probe.width || !probe.height || probe.duration <= 0) throw new Error('Choose a valid video file.');
-      if (probe.width > probe.height) throw new Error('Choose a vertical or square finished clip.');
-      const name = `imported-${String(Date.now())}`;
-      const ratio = probe.width === probe.height ? '1:1' : '9:16';
-      const clip = await this.store.createClip({
-        scope: input.scope,
-        name,
-        ratio,
-        start: 0,
-        end: probe.duration,
-      });
-      const scope = { ...input.scope, clipId: clip.id };
-      const asset = await this.store.importAsset({
-        scope,
-        draft: {
-          sourcePath: input.sourcePath,
-          title: name,
-          description: 'Imported finished clip.',
-          tags: [],
-          kind: 'video',
-        },
-      });
-      await this.store.setRenderedPath(scope, asset.path);
-      await this.commits.reconcile(scope);
-      return { ...clip, renderedPath: asset.path };
-    });
+    return this.gate.run('import-clip', () => importFinishedClip(input, this.store, this.media));
   }
 }

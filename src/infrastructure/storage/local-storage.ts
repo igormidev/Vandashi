@@ -1,4 +1,5 @@
-import { basename, relative } from 'node:path';
+import { AppFault } from '../../domain/diagnostics';
+import { basename } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import type {
   AppState,
@@ -14,21 +15,23 @@ import type {
   VideoSummary,
   Workspace,
 } from '../../domain/models';
-import type { GitPort, ImportedVideo, NewClip, RecoveryListener, StoragePort } from '../../domain/storage';
+import type {
+  GitPort,
+  ImportedVideo,
+  NewClip,
+  ProjectPreparation,
+  RecoveryListener,
+  StoragePort,
+} from '../../domain/storage';
 import { AssetStore, assetKind } from './assets';
 import { saveBrandImage } from './brand-image';
 import { assetReferences } from './asset-references';
-import { atomicWrite, containedPath, exists, hashText, isWithin, SerialQueue } from './files';
+import { atomicWrite, containedPath, hashText, isWithin, SerialQueue } from './files';
 import { ProjectStore } from './projects';
 import { Registry } from './registry';
-import {
-  brandConfigSchema,
-  launchesSchema,
-  launchSchema,
-  packagingSchema,
-  videoRecordSchema,
-} from './schemas';
+import { brandConfigSchema, launchesSchema, launchSchema, packagingSchema } from './schemas';
 import { readYaml, writeYaml } from './yaml-files';
+import { parseStorage } from './validation';
 
 export class LocalStorage implements StoragePort {
   private readonly registry: Registry;
@@ -60,16 +63,35 @@ export class LocalStorage implements StoragePort {
   listVideos(brandId: string): Promise<VideoSummary[]> {
     return this.projects.listVideos(brandId);
   }
-  async createVideo(input: { brandId: string; name: string; ratio: '16:9' | '9:16' }): Promise<Workspace> {
-    return this.writes.run(async () => this.openWorkspace(await this.projects.createVideo(input)));
+  async createVideo(
+    input: { brandId: string; name: string; ratio: '16:9' | '9:16' },
+    prepare?: ProjectPreparation,
+  ): Promise<Workspace> {
+    return this.writes.run(async () => {
+      const created = await this.projects.createVideo(input, prepare);
+      try {
+        return await this.openWorkspace(created.scope);
+      } catch (error) {
+        throw new AppFault(
+          { id: 'storageCreatedVideoUnavailable', params: { path: created.path } },
+          error instanceof Error ? error.message : String(error),
+        );
+      }
+    });
   }
   async importVideo(input: ImportedVideo, validateCopy: (path: string) => Promise<void>): Promise<Workspace> {
     return this.writes.run(async () =>
       this.openWorkspace(await this.projects.importVideo(input, validateCopy)),
     );
   }
-  createClip(input: NewClip): Promise<Clip> {
-    return this.writes.run(() => this.projects.createClip(input));
+  createClip(input: NewClip, prepare?: ProjectPreparation): Promise<Clip> {
+    return this.writes.run(() => this.projects.createClip(input, prepare));
+  }
+  importClip(
+    input: Parameters<StoragePort['importClip']>[0],
+    validateCopy: (path: string) => Promise<void>,
+  ): Promise<Clip> {
+    return this.writes.run(() => this.projects.importClip(input, validateCopy));
   }
 
   async openBrand(id: string): Promise<Workspace> {
@@ -97,25 +119,7 @@ export class LocalStorage implements StoragePort {
   }
 
   async setRenderedPath(scope: Scope, path: string): Promise<void> {
-    await this.writes.run(async () => {
-      const video = await this.projects.video(scope);
-      if (!video) throw new Error('Choose a video before saving a rendered output.');
-      const valid = await containedPath(video.path, path);
-      if (!(await exists(valid))) throw new Error('The rendered video file does not exist.');
-      const record = await readYaml(
-        video.path,
-        '.vandashi.yml',
-        videoRecordSchema,
-        this.git,
-        this.onRecovery,
-      );
-      await writeYaml(video.path, '.vandashi.yml', {
-        ...record,
-        renderedPath: relative(video.path, valid).split('\\').join('/'),
-        renderedRevision: await this.git.contentRevision(video.path),
-        updatedAt: new Date().toISOString(),
-      });
-    });
+    await this.writes.run(() => this.projects.setRenderedPath(scope, path));
   }
 
   async repositories(scope: Scope): Promise<string[]> {
@@ -132,6 +136,11 @@ export class LocalStorage implements StoragePort {
 
   async openWorkspace(scope: Scope): Promise<Workspace> {
     const brand = await this.projects.brand(scope.brandId);
+    if ((await this.registry.state()).brands.find((entry) => entry.id === brand.id)?.name !== brand.name)
+      await this.registry.update((state) => ({
+        ...state,
+        brands: state.brands.map((entry) => (entry.id === brand.id ? { ...entry, name: brand.name } : entry)),
+      }));
     const video = await this.projects.video(scope);
     const directory = await this.assetDirectory(scope);
     if (video) await this.assets.syncShared(await containedPath(brand.path, 'shared_assets'), directory);
@@ -168,24 +177,27 @@ export class LocalStorage implements StoragePort {
 
   private async assertRevision(scope: Scope, revision: string): Promise<Workspace> {
     const workspace = await this.openWorkspace(scope);
-    if (workspace.revision !== revision)
-      throw new Error('These files changed outside this editor. Reload before saving.');
+    if (workspace.revision !== revision) throw new AppFault({ id: 'storageWorkspaceConflict' });
     return workspace;
   }
 
   saveWorkspace(input: SaveInput): Promise<Workspace> {
     return this.writes.run(async () => {
       if (!input.commit.title.trim() || !input.commit.body.trim())
-        throw new Error('A commit title and description are required.');
+        throw new AppFault({ id: 'appCommitRequired' });
       const workspace = await this.assertRevision(input.scope, input.revision);
-      const config = input.brandConfig === null ? null : brandConfigSchema.parse(input.brandConfig);
-      const packaging = input.packaging === null ? null : packagingSchema.parse(input.packaging);
-      if (packaging !== null && !workspace.video)
-        throw new Error('Choose a video before changing its packaging.');
+      const config =
+        input.brandConfig === null
+          ? null
+          : parseStorage(brandConfigSchema, input.brandConfig, { id: 'storageBrandConfigInvalid' });
+      const packaging =
+        input.packaging === null
+          ? null
+          : parseStorage(packagingSchema, input.packaging, { id: 'storagePackagingInvalid' });
+      if (packaging !== null && !workspace.video) throw new AppFault({ id: 'storagePackagingVideoRequired' });
       const targets = new Set(workspace.documents.map((document) => document.path));
       const updates = input.documents.map((document) => {
-        if (!targets.has(document.path))
-          throw new Error('This document is not editable in the selected workspace.');
+        if (!targets.has(document.path)) throw new AppFault({ id: 'storageDocumentReadOnly' });
         return document;
       });
       for (const document of updates)
@@ -206,10 +218,10 @@ export class LocalStorage implements StoragePort {
   async writeScript(input: { scope: Scope; revision: string; content: string }): Promise<void> {
     await this.writes.run(async () => {
       const workspace = await this.assertRevision(input.scope, input.revision);
-      if (!workspace.video) throw new Error('Choose a video before editing its script.');
+      if (!workspace.video) throw new AppFault({ id: 'storageScriptVideoRequired' });
       for (const repository of await this.repositories(input.scope)) {
         if ((await this.git.status(repository)).dirty)
-          throw new Error('Commit other workspace changes before synchronizing the script.');
+          throw new AppFault({ id: 'storageScriptOtherChanges' });
       }
       await atomicWrite(await containedPath(workspace.video.path, 'script.md'), input.content);
       await this.git.stage(workspace.video.path, ['script.md']);
@@ -250,6 +262,7 @@ export class LocalStorage implements StoragePort {
   updateAsset(input: {
     scope: Scope;
     assetId: string;
+    expectedRevision: string;
     title: string;
     description: string;
     tags: string[];
@@ -257,7 +270,7 @@ export class LocalStorage implements StoragePort {
   }): Promise<Asset> {
     return this.writes.run(async () => {
       if (input.commit && (!input.commit.title.trim() || !input.commit.body.trim()))
-        throw new Error('A commit title and description are required.');
+        throw new AppFault({ id: 'appCommitRequired' });
       const asset = await this.assets.update(
         await this.assetDirectory(input.scope),
         input.assetId,
@@ -279,14 +292,12 @@ export class LocalStorage implements StoragePort {
       const asset = (await this.assets.list(root, input.scope.videoId === null)).find(
         (item) => item.id === input.assetId,
       );
-      if (!asset) throw new Error('The selected asset no longer exists.');
+      if (!asset) throw new AppFault({ id: 'storageAssetMissing' });
       if (input.scope.videoId !== null) {
         const project = await this.projectPath(input.scope);
         const references = await assetReferences(project, asset);
         if (references.length)
-          throw new Error(
-            `This asset is used by ${references.join(', ')}. Remove these references before deleting it.`,
-          );
+          throw new AppFault({ id: 'storageAssetReferenced', params: { paths: references.join(', ') } });
       }
       await this.assets.delete(root, input.assetId, input.scope.videoId === null);
       await this.assetCommit(
@@ -300,8 +311,9 @@ export class LocalStorage implements StoragePort {
   importThumbnail(input: { scope: Scope; sourcePath: string }): Promise<Workspace> {
     return this.writes.run(async () => {
       const video = await this.projects.video(input.scope);
-      if (!video) throw new Error('Choose a video before adding a thumbnail.');
-      if (assetKind(input.sourcePath) !== 'image') throw new Error('Choose an image for the thumbnail.');
+      if (!video) throw new AppFault({ id: 'storageThumbnailVideoRequired' });
+      if (assetKind(input.sourcePath) !== 'image')
+        throw new AppFault({ id: 'storageThumbnailImageRequired' });
       const asset = await this.assets.import(
         await containedPath(video.path, 'thumbnails'),
         {
@@ -328,8 +340,8 @@ export class LocalStorage implements StoragePort {
   async updateLaunch(input: { scope: Scope; launch: Launch }): Promise<void> {
     await this.writes.run(async () => {
       const video = await this.projects.video(input.scope);
-      if (!video) throw new Error('Choose a video before editing release status.');
-      const launch = launchSchema.parse(input.launch);
+      if (!video) throw new AppFault({ id: 'storageLaunchVideoRequired' });
+      const launch = parseStorage(launchSchema, input.launch, { id: 'storageLaunchInvalid' });
       const launches = await readYaml(video.path, 'launch.yml', launchesSchema, this.git, this.onRecovery);
       const updated = launches.filter(
         (item) => !(item.platform === launch.platform && item.clipId === launch.clipId),
@@ -348,6 +360,6 @@ export class LocalStorage implements StoragePort {
     for (const brand of (await this.registry.state()).brands) {
       if (isWithin(brand.path, path)) return containedPath(brand.path, path);
     }
-    throw new Error('This file is outside registered workspaces.');
+    throw new AppFault({ id: 'storageUnregisteredPath' });
   }
 }

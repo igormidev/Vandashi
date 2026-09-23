@@ -60,6 +60,57 @@ This records observed behavior, including defects still being worked on. It is n
 - The provider's original temporary image was correctly denied by the existing file-permission boundary. A narrowly scoped provider-artifact resolver is being added so this intermediate image can also display; this observation alone does not verify that fix.
 - Imported the original generated bitmap as a second candidate using the native picker. Moved it first, verified that navigation and AI were blocked by the dirty order, reviewed the real generated commit title/body, and saved. Commit `8668d3c` persisted the selected order; Git was clean afterward.
 
+## 2026-09-23 — Shared image inspection and finished-video import
+
+- Retested the native asset picker after fixing a focus-refresh race. The real metadata model described the generated city image accurately: white title, teal city, mist, tower, and mint underline. The editable title, description, and tags appeared before import. Import wrote embedded PNG metadata plus its sidecar and committed `96f1e6e` in the shared-assets repository.
+- Imported the existing six-second MP4 into a separate **finished-city** project through the native picker. Launch opened directly, with composition and manual editing unavailable for the imported movie. The new file and original render both have SHA-256 `c337d1e8c92bc503e90e0a81bce3992e0a45bdf0b70c2f31b3b0d0d57e926ce9`; commit `c3d8233` records the import.
+- The YouTube upload review showed the missing destination channel and disabled Open upload chat. No upload was sent.
+- Reopened the saved thumbnail chat. Its provider image initially failed to load because local history rendered before verified provider history granted the exact path. Retry then opened the full original bitmap correctly. A hydration-triggered retry is being implemented; this observation does not yet verify automatic recovery.
+
+## 2026-09-23 — First-use local audio inspection
+
+- Selected two synthetic speech recordings together with the actual native file
+  picker, one English and one Brazilian Portuguese. With no model cache present,
+  the import dialog displayed the first-use 80 MB model download and inspection
+  progress before showing editable metadata.
+- The English proposal described a blue bicycle beside a yellow house and three
+  children playing in a garden. The Portuguese proposal captured the same subject
+  matter, with an imperfect plural on “gardens.” Both reviews showed the sampled
+  duration (six and seven seconds respectively) and the speech-recognition caveat.
+- Accepted each proposal. Commits `a55450f` and `6958ec4` contain the respective
+  MP3 and metadata sidecar in the shared-assets repository. The source recordings
+  remain outside the library; embedded metadata is written to the imported copies.
+  The actual library accessibility state reported all three assets after import.
+- Native automation subsequently returned inconsistent/stale screen captures and
+  then reported no available window. This session does not verify audio playback
+  or the provider-image automatic hydration fix. Those require a reliable native
+  recheck; the earlier import/commit evidence does not establish them.
+- A separate packaged macOS ARM64 speech-worker integration passed English and
+  Portuguese recognition, timestamp, unchanged-source, timeout, and cancellation
+  checks with a minimal PATH. It used the actual bundled worker and ONNX binding,
+  not a replacement recognizer; see `ASSET-INSPECTION.md`.
+- Restarted the application and reconnected native automation. The two imported
+  recordings and metadata persisted. Selecting the Portuguese recording displayed
+  the real waveform and a six-second duration; after Play, its accessibility
+  playback clock advanced from zero to `6.04671` seconds. Screen captures continued
+  lagging accessibility state, so they were not used to claim exact playback frames.
+
+## 2026-09-23 — Recovery checkpoint, automated native verification
+
+- The complete native Electron run exercised 68 cases. Sixty-four passed initially;
+  four failed on stale test expectations (a modal hides background navigation from
+  accessibility, a macOS caret shortcut, typed IPC diagnostics, and a video fixture’s
+  pixel aspect ratio). Corrected assertions and fixtures passed in focused reruns.
+- Newly verified cases include first-use inspection cancellation held through cleanup,
+  exactly one inspection under real development React StrictMode, an inspected source
+  hash carried through multi-file review, real granted MP3 import/playback/seeking,
+  provider-image recovery after delayed or retried history grants, saved-clip startup
+  and reopen recovery, imported-clip direct playback/packaging, and Home rename refresh.
+- These are automated native tests. AI and external account responses are controlled
+  in renderer fixtures; the real media-protocol case uses production IPC, file grants,
+  imported MP3 metadata, waveform decoding and Chromium playback. This does not claim
+  a fresh manual walkthrough or successful publication to a platform account.
+
 ## Automated integration evidence
 
 - Real Codex live tests cover sandboxed read-only execution, conversation persistence/resume/fork, and final-answer structured output after a read tool.

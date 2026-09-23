@@ -1,3 +1,4 @@
+import { AppFault } from '../../domain/diagnostics';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -7,6 +8,8 @@ export const HYPERFRAMES_VERSION = '0.8.64';
 
 export interface MediaAdapterOptions {
   nodePath?: string;
+  cacheDirectory?: string;
+  speechWorkerPath?: string;
   cliPath?: string;
   environment?: NodeJS.ProcessEnv;
   startupTimeoutMs?: number;
@@ -107,11 +110,11 @@ export async function runProcess(
       reject(error);
     };
     const timer = setTimeout(() => {
-      fail(new Error('The media command timed out.'));
+      fail(new AppFault({ id: 'mediaCommandTimedOut' }));
     }, timeout);
     child.stdout.on('data', (chunk: Buffer) => {
       stdout += chunk.toString();
-      if (stdout.length > 4_000_000) fail(new Error('The media command returned too much output.'));
+      if (stdout.length > 4_000_000) fail(new AppFault({ id: 'mediaCommandOutputLimit' }));
     });
     child.stderr.on('data', (chunk: Buffer) => {
       stderr = (stderr + chunk.toString()).slice(-8_000);
@@ -122,7 +125,12 @@ export async function runProcess(
       if (settled) return;
       settled = true;
       if (code === 0) resolve(stdout);
-      else reject(new Error(stderr.trim() || `The media command exited with code ${String(code)}.`));
+      else
+        reject(
+          stderr.trim()
+            ? new Error(stderr.trim())
+            : new AppFault({ id: 'mediaCommandExited', params: { code: String(code) } }),
+        );
     });
   });
 }

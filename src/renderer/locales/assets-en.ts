@@ -1,4 +1,13 @@
 export const assetsEn = {
+  assetInspectionDownload: 'Downloading the local speech model (80 MB, first use only)…',
+  assetInspectionFrames: 'Inspecting sampled video frames…',
+  assetInspectionSpeech: 'Checking speech locally…',
+  assetInspectionCancelling: 'Stopping inspection…',
+  assetInspectionFrameNote: 'Description uses {{count}} sampled frames; unseen events may be missed.',
+  assetInspectionSpeechNote:
+    'Up to {{seconds}} seconds sampled. Speech recognition can make mistakes; review the details.',
+  assetInspectionNoSpeech:
+    'Up to {{seconds}} seconds checked. No reliable speech transcript was available; the description uses visuals only.',
   assetLibrary: 'Library',
   assetSelection: 'Selection',
   assetAllTypes: 'Asset types',
@@ -7,9 +16,12 @@ export const assetsEn = {
   assetAllTags: 'All tags',
   assetSearchEmpty: 'Try another search or filter.',
   assetFolderUp: 'Parent folder',
-  assetCount: '{{count}} assets',
-  assetFolderCount: '{{count}} folders',
-  assetImportRemaining: '{{count}} remaining',
+  assetCount_one: '{{count}} asset',
+  assetCount_other: '{{count}} assets',
+  assetFolderCount_one: '{{count}} folder',
+  assetFolderCount_other: '{{count}} folders',
+  assetImportRemaining_one: '{{count}} remaining',
+  assetImportRemaining_other: '{{count}} remaining',
   assetImportSkip: 'Skip this file',
   assetImportFailed: 'AI could not describe this file. Add its details below.',
   assetDuplicate: 'This file is already in the library.',
@@ -23,4 +35,4 @@ export const assetsEn = {
   assetCopyImage: 'Copy image',
   assetSharedHelp: 'Available to every video in this brand.',
   assetSharedEditHelp: 'Edit this asset in the brand’s shared library.',
-};
+} as const;

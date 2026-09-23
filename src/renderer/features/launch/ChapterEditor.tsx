@@ -79,14 +79,14 @@ export function ChapterEditor({
               min={0}
               max={duration ?? undefined}
               step={1}
-              aria-label={t('launchChapterTime', { index: index + 1 })}
+              aria-label={t('launchChapterTime', { index: String(index + 1) })}
               value={chapter.seconds}
               onChange={(event) => {
                 update(index, { seconds: Number(event.target.value) });
               }}
             />
             <input
-              aria-label={t('launchChapterTitle', { index: index + 1 })}
+              aria-label={t('launchChapterTitle', { index: String(index + 1) })}
               value={chapter.title}
               onChange={(event) => {
                 update(index, { title: event.target.value });
@@ -127,7 +127,7 @@ export function ChapterEditor({
               max={Math.floor(duration)}
               step={1}
               value={chapter.seconds}
-              aria-label={t('launchChapterPosition', { index: index + 1 })}
+              aria-label={t('launchChapterPosition', { index: String(index + 1) })}
               aria-valuetext={chapterTime(chapter.seconds)}
               onChange={(event) => {
                 update(index, { seconds: Number(event.target.value) });

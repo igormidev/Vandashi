@@ -5,6 +5,46 @@ was added. No translations, locale migration, dependency installation, or native
 interaction were performed. The original brief permits scaffolding now and requires
 actual translation work to wait until the application is complete.
 
+**Implementation update, 2026-09-23:** the original audit below is retained as a historical
+inventory. The typed boundary is now implemented in `domain/diagnostics.ts` and the
+English catalogs under `domain/messages/`. Application guards, publishing/chapter
+validation, prompt scope validation, Codex adapter failures and withheld-request notices,
+chat recovery notices, persisted chat errors, and application dependency diagnostics use
+explicit message IDs. Dependency checks can carry a display-label descriptor separately
+from their stable ID; progress events can carry the same label. Provider prose remains
+external, including when it happens to equal an English catalog sentence. Existing
+persisted messages without descriptors retain their raw fallback text. Storage, Git,
+desktop, and media producers now use the same typed boundary. Native filter/close
+text uses the cached saved locale and an English-only native catalog. These changes
+introduce no translations; the historical inventory counts below are not current totals.
+
+Renderer resources preserve literal keys and have an i18next type augmentation.
+Unknown keys and incorrect supplied interpolation names are compile-time failures;
+i18next's optional options overload still permits omitted UI interpolation options.
+The separate `AppMessage` contract requires all named parameters. Runtime validation
+checks known diagnostic IDs and exact parameter sets, while versioned IPC decoding
+happens only once at the renderer boundary. Wire-size tests include worst-case JSON
+escaping. Provider text that resembles a wire marker remains raw external content.
+Native Electron regressions exercise the actual main/preload/contextBridge failure
+envelope, including Electron's loss of custom Error fields and unchanged void success.
+
+English counts now use plural keys; dates and percentages use the selected locale.
+The document language follows i18next, known reasoning values have display labels,
+and launch accessible labels use complete parameterized phrases. Tests reject
+duplicate source keys and cover English fallback. Actual language resources and
+language-specific layout acceptance remain deliberately pending app completion.
+
+The native locale scaffold now centralizes `en`, `ja`, `fr`, `es`, `de`, `ko`, `pt-BR`,
+and `it` in `domain/locales.ts`. Both settings schemas use that canonical list, and
+`Settings.locale` is its union type. Normalization accepts language/region variants,
+maps Portuguese variants to Brazilian Portuguese, and falls back to English for
+unsupported or malformed values. Persistence and IPC still require canonical IDs.
+Only English is resource-available and selectable. `desktop/messages.ts` exposes a
+typed, pure, synchronous native resolver for close-dialog and file-filter labels;
+the main process can pass its cached saved locale without importing renderer i18next.
+Recovery fallbacks use the same domain source messages as their diagnostic descriptors.
+`tests/locales.test.ts` covers normalization, shared validation, and English fallback.
+
 ## Conclusion
 
 The renderer has a useful English-key scaffold, but translating its resource files

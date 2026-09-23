@@ -1,5 +1,6 @@
 import type { AppState, Asset, ChatSession, Commit, ModelInfo, Workspace } from '../../src/domain/models';
 import { defaultSettings, platforms } from '../../src/domain/defaults';
+import type { Diagnostic } from '../../src/domain/diagnostics';
 
 export interface ChatFixtureOptions {
   clips?: boolean;
@@ -8,9 +9,11 @@ export interface ChatFixtureOptions {
   assets?: Asset[];
   assetImportPath?: string;
   describeFails?: boolean;
+  describeFailure?: Diagnostic;
   references?: boolean;
   history?: Commit[];
   commitFails?: boolean;
+  commitFailure?: Diagnostic;
   checksFail?: boolean;
   studioDirty?: boolean;
   delayedDiscard?: boolean;

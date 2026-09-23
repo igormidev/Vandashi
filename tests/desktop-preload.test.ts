@@ -21,6 +21,7 @@ describe('isolated preload bridge', () => {
   beforeEach(async () => {
     vi.resetModules();
     vi.clearAllMocks();
+    mocks.invoke.mockResolvedValue(undefined);
     await import('../src/desktop/preload');
     const exposed = mocks.expose.mock.calls[0];
     if (!exposed) throw new Error('Preload did not expose its API');

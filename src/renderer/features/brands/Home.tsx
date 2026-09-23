@@ -6,7 +6,7 @@ import { useApp } from '../../app/store';
 import { Empty, InfoTip, Modal } from '../../shared/ui';
 
 export function Home({ onOpen }: { onOpen: (workspace: Workspace) => void }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { state, api, refresh, run } = useApp();
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState('');
@@ -65,7 +65,7 @@ export function Home({ onOpen }: { onOpen: (workspace: Workspace) => void }) {
                 <h2>{brand.name}</h2>
                 <div className="path">{brand.path}</div>
               </div>
-              <span className="last">{new Date(brand.lastOpened).toLocaleDateString()}</span>
+              <span className="last">{new Date(brand.lastOpened).toLocaleDateString(i18n.language)}</span>
               <ArrowRight size={17} />
             </button>
           ))}

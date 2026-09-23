@@ -1,3 +1,4 @@
+import { AppFault } from '../../domain/diagnostics';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { stat } from 'node:fs/promises';
 import { resolveMediaBinary } from './binaries';
@@ -16,13 +17,13 @@ export class AudioWaveforms {
   constructor(private readonly runtime: MediaRuntime) {}
 
   private assertAvailable(): void {
-    if (this.disposed) throw new Error('The media service is closed.');
+    if (this.disposed) throw new AppFault({ id: 'mediaServiceClosed' });
   }
 
   async get(path: string): Promise<number[]> {
     this.assertAvailable();
     const info = await stat(path);
-    if (!info.isFile()) throw new Error('Choose an audio file.');
+    if (!info.isFile()) throw new AppFault({ id: 'mediaChooseAudio' });
     const stamp = `${String(info.size)}:${String(info.mtimeMs)}:${String(info.ctimeMs)}`;
     const cached = this.cache.get(path);
     if (cached?.stamp === stamp) return cached.result;
@@ -31,7 +32,7 @@ export class AudioWaveforms {
       const probe = await probeMedia(this.runtime, path);
       this.assertAvailable();
       if (!probe.hasAudio || !Number.isFinite(probe.duration) || probe.duration <= 0)
-        throw new Error('This file has no decodable audio.');
+        throw new AppFault({ id: 'mediaAudioUndecodable' });
       return this.decode(path, probe.duration);
     });
     this.tail = result.then(
@@ -86,7 +87,7 @@ export class AudioWaveforms {
         reject(error);
       };
       const timer = setTimeout(() => {
-        fail(new Error('Audio waveform generation timed out.'));
+        fail(new AppFault({ id: 'mediaWaveformTimedOut' }));
       }, 120_000);
       child.stdout.on('data', (chunk: Buffer) => {
         const bytes = remainder.length ? Buffer.concat([remainder, chunk]) : chunk;
@@ -112,7 +113,7 @@ export class AudioWaveforms {
         if (settled) return;
         settled = true;
         if (code !== 0 || samples === 0) {
-          reject(new Error(errorText || 'The audio waveform could not be generated.'));
+          reject(errorText ? new Error(errorText) : new AppFault({ id: 'mediaWaveformFailed' }));
           return;
         }
         const maximum = Math.max(...peaks, 0.01);

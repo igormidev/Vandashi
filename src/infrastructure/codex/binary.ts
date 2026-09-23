@@ -43,11 +43,7 @@ export function resolveCodexBinary(): string {
     for (const directory of directories)
       for (const candidate of windowsNativeCandidates(directory, process.arch))
         if (executable(candidate)) return candidate;
-    if (configured)
-      throw new AgentError(
-        'unavailable',
-        'Set VANDASHI_CODEX_PATH to the native codex.exe executable, not a command shell wrapper.',
-      );
+    if (configured) throw new AgentError('unavailable', { id: 'codexNativeBinaryRequired' });
     return 'codex.exe';
   }
   const candidates = [

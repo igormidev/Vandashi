@@ -1,16 +1,27 @@
+import { AppFault } from '../../domain/diagnostics';
 import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, readdir, realpath } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join, relative } from 'node:path';
 import { emptyPackaging, tasteFiles } from '../../domain/defaults';
-import { initialScript, tasteTemplates } from '../../domain/templates';
+import { initialScript } from '../../domain/templates';
 import type { Brand, Clip, Scope, VideoSummary } from '../../domain/models';
-import type { GitPort, ImportedVideo, NewClip, RecoveryListener } from '../../domain/storage';
+import type {
+  GitPort,
+  ImportedClip,
+  ImportedVideo,
+  NewClip,
+  ProjectPreparation,
+  RecoveryListener,
+} from '../../domain/storage';
 import { ImportedMediaHashes, initializeImportedVideo } from './finished-video';
+import { initializeImportedClip } from './imported-clip';
 import type { AssetStore } from './assets';
 import { atomicWrite, containedPath, exists, safeName } from './files';
 import type { Registry } from './registry';
 import { brandConfigSchema, packagingSchema, videoRecordSchema, type VideoRecord } from './schemas';
 import { readYaml, writeYaml } from './yaml-files';
+import { createBrand } from './brand-creation';
+import { initializeComposition } from './project-creation';
 
 const ignore =
   '.vandashi-recovery/\n.vandashi-write-*\nnode_modules/\noutput/\n.thumbnails/\nrenders/\n.cache/\n.transcode-cache/\n.waveform-cache/\n.DS_Store\n';
@@ -26,7 +37,7 @@ export class ProjectStore {
 
   async brand(id: string): Promise<Brand> {
     const summary = (await this.registry.state()).brands.find((item) => item.id === id);
-    if (!summary) throw new Error('This brand is not registered.');
+    if (!summary) throw new AppFault({ id: 'storageBrandMissing' });
     const path = await realpath(summary.path);
     const identity = await containedPath(path, 'brand_identity');
     const config = await readYaml(identity, 'brand_config.yml', brandConfigSchema, this.git, this.onRecovery);
@@ -37,47 +48,7 @@ export class ProjectStore {
     const name = safeName(input.name, 3);
     const parent = await realpath(input.parentPath);
     const path = await containedPath(parent, name);
-    await mkdir(path); // Exclusive: an existing folder must never be adopted or overwritten.
-    const brand: Brand = {
-      id: randomUUID(),
-      name,
-      path,
-      lastOpened: new Date().toISOString(),
-      config: { name, description: '', image: '', platforms: {} },
-    };
-    const identity = join(path, 'brand_identity');
-    const shared = join(path, 'shared_assets');
-    await Promise.all([identity, shared, join(path, 'videos')].map(async (directory) => mkdir(directory)));
-    await writeYaml(identity, 'brand_config.yml', brand.config);
-    for (const file of tasteFiles) await atomicWrite(join(identity, file), tasteTemplates[file]);
-    await atomicWrite(join(identity, '.gitignore'), ignore);
-    await atomicWrite(join(shared, '.gitignore'), ignore);
-    await this.git.init(identity);
-    await this.git.commit(
-      identity,
-      'Create brand identity',
-      'Initialize brand configuration and editable creative taste guides.',
-    );
-    await this.git.init(shared);
-    await this.git.commit(
-      shared,
-      'Create shared asset library',
-      'Initialize the reusable asset library for this brand.',
-    );
-    await this.registry.update((state) => ({
-      ...state,
-      brands: [
-        ...state.brands,
-        {
-          id: brand.id,
-          name,
-          path,
-          lastOpened: brand.lastOpened,
-        },
-      ],
-      lastBrandId: brand.id,
-    }));
-    return brand;
+    return createBrand(this.registry, this.git, { parent, path, name, ignore });
   }
 
   private async records(directory: string): Promise<{ path: string; record: VideoRecord }[]> {
@@ -130,7 +101,7 @@ export class ProjectStore {
     const videos: VideoSummary[] = [];
     for (const { path, record } of records) {
       if (record.brandId !== brandId || record.parentVideoId !== undefined)
-        throw new Error('The video manifest has an invalid brand relationship.');
+        throw new AppFault({ id: 'storageVideoBrandInvalid' });
       videos.push(await this.summary(path, record));
     }
     return videos.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
@@ -138,14 +109,14 @@ export class ProjectStore {
 
   async video(scope: Scope): Promise<VideoSummary | null> {
     if (scope.videoId === null) {
-      if (scope.clipId !== null) throw new Error('A clip must belong to a video.');
+      if (scope.clipId !== null) throw new AppFault({ id: 'storageClipParentRequired' });
       return null;
     }
     const parent = (await this.listVideos(scope.brandId)).find((item) => item.id === scope.videoId);
-    if (!parent) throw new Error('This video no longer exists.');
+    if (!parent) throw new AppFault({ id: 'storageVideoMissing' });
     if (scope.clipId === null) return parent;
     const clip = (await this.clips(parent)).find((item) => item.id === scope.clipId);
-    if (!clip) throw new Error('This clip no longer exists.');
+    if (!clip) throw new AppFault({ id: 'storageClipMissing' });
     return clip;
   }
 
@@ -158,7 +129,7 @@ export class ProjectStore {
         record.start === undefined ||
         record.end === undefined
       ) {
-        throw new Error('The clip manifest has an invalid parent relationship.');
+        throw new AppFault({ id: 'storageClipParentInvalid' });
       }
       clips.push({
         ...(await this.summary(path, record)),
@@ -186,11 +157,12 @@ export class ProjectStore {
     );
   }
 
-  async createVideo(input: { brandId: string; name: string; ratio: '16:9' | '9:16' }): Promise<Scope> {
+  async createVideo(
+    input: { brandId: string; name: string; ratio: '16:9' | '9:16' },
+    prepare?: ProjectPreparation,
+  ): Promise<{ scope: Scope; path: string }> {
     const brand = await this.brand(input.brandId);
     const name = safeName(input.name);
-    const path = await containedPath(brand.path, join('videos', name));
-    await mkdir(path);
     const record: VideoRecord = {
       id: randomUUID(),
       brandId: brand.id,
@@ -200,14 +172,22 @@ export class ProjectStore {
       updatedAt: new Date().toISOString(),
       renderedPath: null,
     };
-    await this.initialize(path, record, await containedPath(brand.path, 'shared_assets'));
-    return { brandId: brand.id, videoId: record.id, clipId: null };
+    const shared = await containedPath(brand.path, 'shared_assets');
+    const { path, prepared } = await initializeComposition(
+      await containedPath(brand.path, 'videos'),
+      record,
+      this.git,
+      (path) => this.initialize(path, record, shared),
+      prepare,
+      () => Promise.resolve({ brandId: brand.id, videoId: record.id, clipId: null }),
+    );
+    return { scope: prepared, path };
   }
 
   async importVideo(input: ImportedVideo, validateCopy: (path: string) => Promise<void>): Promise<Scope> {
     const brand = await this.brand(input.brandId);
     const name = safeName(input.name, 3);
-    if (name.startsWith('.')) throw new Error('Choose a project name that does not start with a dot.');
+    if (name.startsWith('.')) throw new AppFault({ id: 'storageProjectNameHidden' });
     const record: VideoRecord = {
       id: randomUUID(),
       brandId: brand.id,
@@ -229,20 +209,18 @@ export class ProjectStore {
     return { brandId: brand.id, videoId: record.id, clipId: null };
   }
 
-  async createClip(input: NewClip): Promise<Clip> {
+  async createClip(input: NewClip, prepare?: ProjectPreparation): Promise<Clip> {
     const parent = await this.video({ ...input.scope, clipId: null });
-    if (parent?.ratio !== '16:9') throw new Error('Clips require a horizontal parent video.');
+    if (parent?.ratio !== '16:9') throw new AppFault({ id: 'storageClipLandscapeRequired' });
     if (
       !Number.isFinite(input.start) ||
       !Number.isFinite(input.end) ||
       input.start < 0 ||
       input.end <= input.start
     )
-      throw new Error('Choose a valid clip range.');
+      throw new AppFault({ id: 'storageClipRangeInvalid' });
     const brand = await this.brand(input.scope.brandId);
     const name = safeName(input.name);
-    const path = await containedPath(parent.path, join('clips', name));
-    await mkdir(path);
     const record: VideoRecord = {
       id: randomUUID(),
       brandId: brand.id,
@@ -255,13 +233,51 @@ export class ProjectStore {
       start: input.start,
       end: input.end,
     };
-    await this.initialize(path, record, await containedPath(brand.path, 'shared_assets'));
+    const shared = await containedPath(brand.path, 'shared_assets');
+    const { path, prepared } = await initializeComposition(
+      await containedPath(parent.path, 'clips'),
+      record,
+      this.git,
+      (staging) => this.initialize(staging, record, shared),
+      prepare,
+      (staging) => this.summary(staging, record),
+    );
     return {
-      ...(await this.summary(path, record)),
+      ...prepared,
+      path,
       parentVideoId: parent.id,
       start: input.start,
       end: input.end,
     };
+  }
+
+  async setRenderedPath(scope: Scope, path: string): Promise<void> {
+    const video = await this.video(scope);
+    if (!video) throw new AppFault({ id: 'storageRenderVideoRequired' });
+    const valid = await containedPath(video.path, path);
+    if (!(await exists(valid))) throw new AppFault({ id: 'storageRenderedFileMissing' });
+    const record = await readYaml(video.path, '.vandashi.yml', videoRecordSchema, this.git, this.onRecovery);
+    await writeYaml(video.path, '.vandashi.yml', {
+      ...record,
+      renderedPath: relative(video.path, valid).split('\\').join('/'),
+      renderedRevision: await this.git.contentRevision(video.path),
+      updatedAt: new Date().toISOString(),
+    });
+  }
+
+  async importClip(input: ImportedClip, validateCopy: (path: string) => Promise<void>): Promise<Clip> {
+    const parent = await this.video({ ...input.scope, clipId: null });
+    if (parent?.ratio !== '16:9') throw new AppFault({ id: 'storageClipLandscapeRequired' });
+    const brand = await this.brand(input.scope.brandId);
+    const shared = await containedPath(brand.path, 'shared_assets');
+    const { path, record } = await initializeImportedClip(
+      parent,
+      input,
+      this.git,
+      (staging, created) => this.initialize(staging, created, shared),
+      validateCopy,
+    );
+    return { ...(await this.summary(path, record)), parentVideoId: parent.id, start: 0, end: input.duration };
   }
 
   async documents(

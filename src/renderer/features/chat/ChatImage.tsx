@@ -3,27 +3,39 @@ import { useTranslation } from 'react-i18next';
 import { useApp } from '../../app/store';
 import { Modal } from '../../shared/ui';
 
-export function ChatImage({ path, alt }: { path: string | null; alt?: string }) {
+export function ChatImage({
+  path,
+  alt,
+  mediaGeneration,
+}: {
+  path: string | null;
+  alt?: string;
+  mediaGeneration: number;
+}) {
   const { t } = useTranslation();
   return path ? (
-    <LocalImage key={path} path={path} alt={alt ?? ''} />
+    <LocalImage key={path} path={path} alt={alt ?? ''} mediaGeneration={mediaGeneration} />
   ) : (
     <span className="chat-image-fallback">{t('chatImageUnavailable')}</span>
   );
 }
 
-function LocalImage({ path, alt }: { path: string; alt: string }) {
+function LocalImage({ path, alt, mediaGeneration }: { path: string; alt: string; mediaGeneration: number }) {
   const { api } = useApp();
   const { t } = useTranslation();
   const [url, setUrl] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
   const [open, setOpen] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  // Verified provider history can authorize a saved artifact after its first URL lookup failed.
   useEffect(() => {
     let active = true;
     void api.mediaUrl(path).then(
       (value) => {
-        if (active) setUrl(value);
+        if (active) {
+          setUrl(value);
+          setFailed(false);
+        }
       },
       () => {
         if (active) setFailed(true);
@@ -32,7 +44,7 @@ function LocalImage({ path, alt }: { path: string; alt: string }) {
     return () => {
       active = false;
     };
-  }, [api, path, attempt]);
+  }, [api, path, attempt, mediaGeneration]);
   const label = alt || t('chatGeneratedImage');
   if (failed)
     return (

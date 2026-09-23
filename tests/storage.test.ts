@@ -95,6 +95,26 @@ describe('local workspace persistence', () => {
     expect(second.dirty).toBe(false);
   });
 
+  it('refreshes persisted brand names after manual and external configuration edits', async () => {
+    const workspace = await storage.openBrand(scope.brandId);
+    await storage.saveWorkspace({
+      scope,
+      revision: workspace.revision,
+      brandConfig: { ...workspace.brand.config, name: 'Renamed Science' },
+      documents: [],
+      packaging: null,
+      commit: { title: 'Rename brand', body: 'Use the updated public brand name.' },
+    });
+    const restored = new LocalStorage(join(directory, 'settings'), git);
+    expect((await restored.getState()).brands[0]?.name).toBe('Renamed Science');
+    const configPath = join(workspace.brand.path, 'brand_identity', 'brand_config.yml');
+    const config = await readFile(configPath, 'utf8');
+    await writeFile(configPath, config.replace('Renamed Science', 'Externally Renamed Science'));
+    const refreshed = await restored.openWorkspace(scope);
+    expect(refreshed.brand.name).toBe('Externally Renamed Science');
+    expect((await restored.getState()).brands[0]?.name).toBe(refreshed.brand.name);
+  });
+
   it.each(['../escape', 'CON', 'nul.txt', 'title.', 'bad/name', 'bad\\name', 'bad:name', '\u0000bad'])(
     'rejects nonportable or escaping names %s',
     (name) => {

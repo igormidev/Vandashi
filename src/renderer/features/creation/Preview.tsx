@@ -3,10 +3,12 @@ import { Clapperboard, Download, FolderOpen, LoaderCircle } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useApp } from '../../app/store';
+import { errorText } from '../../app/diagnostics';
 import { Empty, IconButton } from '../../shared/ui';
+import { formatPercent } from '../../shared/format';
 
 export function Preview({ compact = false }: { compact?: boolean }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { workspace, api, run, busy, dirty } = useApp();
   const mount = useRef<HTMLDivElement>(null);
   const [preview, setPreview] = useState({ key: '', url: '', error: '' });
@@ -33,8 +35,7 @@ export function Preview({ compact = false }: { compact?: boolean }) {
             error: '',
           });
       } catch (failure) {
-        if (!disposed)
-          setPreview({ key, url: '', error: failure instanceof Error ? failure.message : String(failure) });
+        if (!disposed) setPreview({ key, url: '', error: errorText(failure) });
         throw failure;
       }
     });
@@ -108,7 +109,9 @@ export function Preview({ compact = false }: { compact?: boolean }) {
           }}
         >
           {rendering ? <LoaderCircle size={13} className="spin" /> : <Download size={13} />}
-          {rendering ? `${t('rendering')} ${String(Math.round(progress))}%` : t('render')}
+          {rendering
+            ? t('renderingProgress', { percent: formatPercent(progress / 100, i18n.language) })
+            : t('render')}
         </button>
       </div>
       <div

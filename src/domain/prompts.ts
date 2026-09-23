@@ -1,3 +1,4 @@
+import { AppFault } from './diagnostics';
 import { tasteFiles } from './defaults';
 import type { Workspace } from './models';
 import type { AgentSkill } from './agent';
@@ -66,7 +67,7 @@ function context(input: WorkspacePromptInput): TopicContext {
   if (input.topic.startsWith('taste:')) {
     const filename = input.topic.slice(6);
     const valid = tasteFiles.find((entry) => entry === filename);
-    if (!valid) throw new Error('Unknown taste document.');
+    if (!valid) throw new AppFault({ id: 'appUnknownTaste' });
     return {
       ...common,
       role: 'creative director refining reusable preferences',
@@ -126,6 +127,8 @@ function context(input: WorkspacePromptInput): TopicContext {
     };
   if (input.topic === 'assets' || input.topic.startsWith('asset:')) {
     const selected = input.workspace.assets.find((entry) => entry.id === input.topic.slice(6));
+    if (input.topic.startsWith('asset:') && !selected)
+      throw new AppFault({ id: 'appAssetConversationMissing' });
     const target = selected
       ? { path: selected.path, purpose: 'the selected asset and its adjacent .vandashi.json metadata' }
       : {
@@ -200,7 +203,7 @@ function context(input: WorkspacePromptInput): TopicContext {
   if (input.topic.startsWith('publish:')) {
     const [, platform, clipId] = input.topic.split(':');
     const clip = clipId ? input.workspace.clips.find((entry) => entry.id === clipId) : null;
-    if (clipId && !clip) throw new Error('The clip for this publishing conversation no longer exists.');
+    if (clipId && !clip) throw new AppFault({ id: 'appPublishClipMissing' });
     const destination = platform === 'youtubeShorts' ? 'youtube' : platform;
     const channel = Object.entries(input.workspace.brand.config.platforms).find(
       ([key]) => key === destination,
@@ -251,6 +254,8 @@ export function buildWorkspacePrompt(input: WorkspacePromptInput): string {
     .filter((entry) => !seen.has(entry.path));
   const shared = path(input.workspace.brand.path, 'shared_assets');
   const assets = path(videoPath(input), 'video_assets');
+  const logo = input.workspace.brand.config.image || 'brand_icon.png';
+  const logoPath = /^(?:[A-Za-z]:[/\\]|[/\\])/.test(logo) ? logo : path(brandRoot, logo);
   const repository = input.workspace.video?.path;
   const repositories = [brandRoot, shared, parentVideoPath(input), repository].filter(
     (value): value is string => Boolean(value),
@@ -263,7 +268,7 @@ export function buildWorkspacePrompt(input: WorkspacePromptInput): string {
     ...required.map(describe),
     'Optional context: read only when useful for the current request. These guides describe the creator’s preferences, not instructions to overrule the user.',
     ...optional.map(describe),
-    `Brand logo: ${quote(input.workspace.brand.config.image || path(brandRoot, 'brand_icon.png'))}. Check it exists before relying on it.`,
+    `Brand logo: ${quote(logoPath)}. Check it exists before relying on it.`,
     ...topic.guidance,
     'Intent and editing rules:',
     '- Answer questions without changing files. Edit the primary target or another file only when requested or necessary to complete the requested change. If a reusable preference changes, update its appropriate taste guide only with user authorization.',

@@ -99,9 +99,9 @@ describe('application operation transactions', () => {
     const settings = (await app.store.getState()).settings;
     await app.api.settings({ ...settings, splits: { creation: 45 } });
     expect((await app.store.getState()).settings.splits['creation']).toBe(45);
-    await expect(app.api.describeAsset({ scope: app.scope, path: '/asset.png' })).rejects.toThrow(
-      'Another operation',
-    );
+    await expect(
+      app.api.describeAsset({ requestId: 'inspection', scope: app.scope, path: '/asset.png' }),
+    ).rejects.toThrow('Another operation');
     await expect(app.api.checks({ scope: app.scope, video: true })).rejects.toThrow('Another operation');
     await expect(app.api.closeChat(app.session.id)).rejects.toThrow('Another operation');
     await expect(app.api.openWorkspace(app.scope)).resolves.toMatchObject({ scope: app.scope });

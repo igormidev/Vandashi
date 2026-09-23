@@ -4,6 +4,9 @@ import type { DesktopApi } from '../../domain/api';
 import type { AppState, ChatActivity, ModelInfo, Scope, Workspace } from '../../domain/models';
 import i18n from '../i18n';
 import { scopeKey } from '../../domain/defaults';
+import { diagnosticText, errorText } from './diagnostics';
+import { diagnosticFromError } from '../../domain/diagnostics';
+import { rememberBrand } from './brand-summary';
 
 interface ChatTarget {
   topic: string;
@@ -50,6 +53,7 @@ export function AppProvider({ api, children }: { api: DesktopApi; children: Reac
     setRefreshingWorkspace(null);
     workspaceScope.current = value?.scope ?? null;
     updateWorkspace(value);
+    if (value) setState((current) => rememberBrand(current, value.brand));
   }, []);
   const [models, setModels] = useState<ModelInfo[]>([]);
   const [activity, setActivity] = useState<ChatActivity | null>(null);
@@ -59,7 +63,7 @@ export function AppProvider({ api, children }: { api: DesktopApi; children: Reac
     try {
       return await task();
     } catch (error) {
-      setToast(error instanceof Error ? error.message : String(error));
+      setToast(errorText(error));
       return undefined;
     }
   }, []);
@@ -73,13 +77,13 @@ export function AppProvider({ api, children }: { api: DesktopApi; children: Reac
             await i18n.changeLanguage(value.settings.locale);
           })
           .catch((error: unknown) => {
-            setToast(String(error));
+            setToast(errorText(error));
           }),
         api
           .models()
           .then(setModels)
           .catch((error: unknown) => {
-            setToast(String(error));
+            setToast(errorText(error));
           }),
       ]).then(() => undefined),
     [api],
@@ -99,6 +103,7 @@ export function AppProvider({ api, children }: { api: DesktopApi; children: Reac
           else {
             workspaceScope.current = result.scope;
             updateWorkspace(result);
+            setState((current) => rememberBrand(current, result.brand));
           }
         }
         return result;
@@ -118,11 +123,12 @@ export function AppProvider({ api, children }: { api: DesktopApi; children: Reac
     ) {
       workspaceScope.current = deferred.value.scope;
       updateWorkspace(deferred.value);
+      setState((current) => rememberBrand(current, deferred.value.brand));
     }
   }, [dirty]);
   useEffect(() => {
     void refresh().catch((error: unknown) => {
-      setToast(String(error));
+      setToast(errorText(error));
     });
   }, [refresh]);
   useEffect(
@@ -136,7 +142,12 @@ export function AppProvider({ api, children }: { api: DesktopApi; children: Reac
                 : current
               : event.activity,
           );
-        if (event.type === 'notice') setToast(event.detail);
+        if (event.type === 'notice')
+          setToast(
+            event.diagnostic !== undefined
+              ? diagnosticText(event.diagnostic)
+              : diagnosticText(diagnosticFromError(event.detail)),
+          );
         if (
           event.type === 'workspace-changed' &&
           workspaceScope.current &&

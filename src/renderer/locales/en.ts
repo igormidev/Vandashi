@@ -104,6 +104,7 @@ export const en = {
   noRender: 'Render a video to unlock this.',
   render: 'Render video',
   rendering: 'Rendering…',
+  renderingProgress: 'Rendering… {{percent}}',
   preview: 'Preview',
   noPreview: 'The first frame is yours.',
   noPreviewHelp: 'Shape your script, then bring it to life with AI.',
@@ -160,7 +161,6 @@ export const en = {
   repairAi: 'Resolve with AI',
   installHelp: 'Installation guide',
   checkingTool: 'Checking {{tool}}…',
-  checkPercent: '{{count}}%',
   checkStillMissing: 'Some tools still need attention. Review the checks and try again.',
   dependencyReady: 'Ready',
   dependencyMissing: 'Needs attention',
@@ -266,4 +266,4 @@ export const en = {
   clearSearch: 'Clear search',
   noResults: 'No matches',
   empty: 'Nothing here yet',
-};
+} as const;

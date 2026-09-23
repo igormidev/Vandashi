@@ -1,5 +1,9 @@
 import { z } from 'zod';
 import { defaultSettings, platforms } from '../../domain/defaults';
+import { parseAppMessage, parseDiagnostic } from '../../domain/diagnostics';
+import type { Diagnostic } from '../../domain/diagnostics';
+import type { AppMessage } from '../../domain/messages';
+import { supportedLocales } from '../../domain/locales';
 
 export const scopeSchema = z.object({
   brandId: z.string().min(1),
@@ -31,7 +35,7 @@ const selectionSchema = z.object({
   fast: z.boolean(),
 });
 export const settingsSchema = z.object({
-  locale: z.enum(['en', 'ja', 'fr', 'es', 'de', 'ko', 'pt-BR', 'it']),
+  locale: z.enum(supportedLocales),
   chat: selectionSchema,
   automation: selectionSchema,
   scriptSync: selectionSchema,
@@ -79,6 +83,7 @@ export const metadataSchema = z.object({
   contentHash: z.string().optional(),
   metadataStorage: z.enum(['embedded', 'sidecar']).optional(),
   embeddingWarning: z.string().nullable().optional(),
+  embeddingDiagnostic: z.custom<Diagnostic>((value) => parseDiagnostic(value) !== null).optional(),
   preserveBytes: z.boolean().optional(),
 });
 const fileChangeSchema = z.object({
@@ -95,12 +100,14 @@ const messageSchema = z
     turnId: z.string().nullable(),
     files: z.array(fileChangeSchema),
     createdAt: z.string(),
-    appMessage: z.object({ id: z.enum(['turnSaved', 'turnUnchanged']) }).optional(),
+    appMessage: z.custom<AppMessage>((value) => parseAppMessage(value) !== null).optional(),
+    diagnostic: z.custom<Diagnostic>((value) => parseDiagnostic(value) !== null).optional(),
     generatedImages: z.array(z.string()).max(20).optional(),
   })
-  .transform(({ appMessage, generatedImages, ...message }) => ({
+  .transform(({ appMessage, diagnostic, generatedImages, ...message }) => ({
     ...message,
     ...(appMessage === undefined ? {} : { appMessage }),
+    ...(diagnostic === undefined ? {} : { diagnostic }),
     ...(generatedImages === undefined ? {} : { generatedImages }),
   }));
 const checkpointSchema = z

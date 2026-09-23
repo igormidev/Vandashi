@@ -1,10 +1,12 @@
 import { ArrowLeft, Play, Scissors } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { CreatedClip } from '../../../domain/api';
 import type { ModelSelection, Scope, VideoSummary } from '../../../domain/models';
 import { defaultSettings } from '../../../domain/defaults';
 import { useApp } from '../../app/store';
-import { InfoTip, Loading } from '../../shared/ui';
+import { errorText } from '../../app/diagnostics';
+import { Empty, InfoTip, Loading } from '../../shared/ui';
 import { ModelPicker } from '../chat/ModelPicker';
 import { constrainClipRange, timecode, validClipName, validClipRange } from './clip-range';
 import { ClipTimeInput } from './ClipTimeInput';
@@ -18,7 +20,7 @@ export function ClipCreation({
   source: VideoSummary;
   scope: Scope;
   onBack: () => void;
-  onCreated: (id: string) => Promise<void>;
+  onCreated: (result: CreatedClip) => Promise<void>;
 }) {
   const { t } = useTranslation();
   const { api, state, models, run, setToast, busy } = useApp();
@@ -30,6 +32,7 @@ export function ClipCreation({
   const [url, setUrl] = useState('');
   const [selection, setSelection] = useState<ModelSelection>(state?.settings.chat ?? defaultSettings.chat);
   const [creating, setCreating] = useState(false);
+  const [created, setCreated] = useState<CreatedClip | null>(null);
   const [mediaFailed, setMediaFailed] = useState(false);
   const video = useRef<HTMLVideoElement>(null);
   const initializedSource = useRef<string | null>(null);
@@ -72,14 +75,33 @@ export function ClipCreation({
     setCreating(true);
     try {
       const result = await api.createClip({ scope, name: name.trim(), ratio, ...range, prompt, selection });
-      await onCreated(result.id);
+      setCreated(result);
+      await onCreated(result);
     } catch (error) {
-      setToast(error instanceof Error ? error.message : String(error));
+      setToast(errorText(error));
     } finally {
       setCreating(false);
     }
   };
   if (creating) return <Loading label={t('clipCreating')} />;
+  if (created)
+    return (
+      <Empty icon={<Scissors size={28} />} title={created.clip.name} description={t('clipSavedOpenHelp')}>
+        <button
+          className="button primary"
+          type="button"
+          disabled={busy}
+          onClick={() => {
+            setCreating(true);
+            void run(() => onCreated(created)).finally(() => {
+              setCreating(false);
+            });
+          }}
+        >
+          {t('clipReady')}
+        </button>
+      </Empty>
+    );
   return (
     <div className="clip-creation">
       <div className="clip-form-top">

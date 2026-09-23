@@ -16,6 +16,7 @@ const assets: Asset[] = [
     kind: 'image',
     size: 100,
     hash: 'logo',
+    revision: 'a'.repeat(64),
     shared: true,
     mediaUrl: '',
   },
@@ -29,6 +30,7 @@ const assets: Asset[] = [
     kind: 'video',
     size: 100,
     hash: 'footage',
+    revision: 'a'.repeat(64),
     shared: true,
     mediaUrl: '',
   },
@@ -96,6 +98,7 @@ test('shows a host-generated waveform and playable audio for a large asset', asy
     kind: 'audio',
     size: 120_000_000,
     hash: 'recording',
+    revision: 'a'.repeat(64),
     shared: true,
     mediaUrl: 'vandashi-media://local/recording.wav',
   };
@@ -163,7 +166,7 @@ test('lets an import proceed with reviewed manual metadata when automatic descri
   await page.getByRole('navigation').getByRole('button', { name: 'Shared assets', exact: true }).click();
   await page.getByRole('button', { name: 'Add assets', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Add to library', exact: true });
-  await expect(dialog.getByText('AI could not describe this file. Add its details below.')).toBeVisible();
+  await expect(dialog.getByRole('alert')).toContainText('AI temporarily unavailable');
   await dialog.getByRole('textbox', { name: 'Asset title', exact: true }).fill('Reviewed artwork');
   await dialog
     .getByRole('textbox', { name: 'What is in this asset?', exact: true })

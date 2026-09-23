@@ -83,6 +83,7 @@ describe('conversation reference scope', () => {
         kind: 'audio',
         size: 1,
         hash: '',
+        revision: 'a'.repeat(64),
         shared: true,
         mediaUrl: '',
       },

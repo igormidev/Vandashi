@@ -272,17 +272,52 @@ test('shows a preserved clip when generation cannot start after its repository w
   await installClipsFixture(desktopApp, 'after');
   await openForm(page);
   await page.getByRole('textbox', { name: 'Clip name', exact: true }).fill('Preserved draft');
+  await page
+    .getByRole('textbox', { name: 'Creative direction', exact: true })
+    .fill('Keep the original direction after startup failure.');
   await page.getByRole('button', { name: 'Create clip', exact: true }).click();
-  await expect(page.getByRole('status')).toContainText('Clip saved, but Codex could not start.');
+  await expect(page.getByRole('alert')).toContainText('AI generation did not start');
+  await expect(page.getByRole('alert')).toContainText('Codex could not start.');
+  await expect(page.getByRole('textbox', { name: 'Clip name', exact: true })).toHaveCount(0);
+  await expect(page.locator('.clip-workspace-name')).toHaveText('Preserved draft');
+  await expect(page.getByRole('region', { name: 'Clip packaging', exact: true })).toBeVisible();
+  const prompt =
+    'Create the first 9:16 clip from 0s to 30s. Keep the original direction after startup failure.';
+  await expect(page.getByRole('textbox', { name: 'AI chat', exact: true })).toHaveText(prompt);
+  await page.getByRole('button', { name: 'Send message', exact: true }).click();
+  const requests = await clipRequests(desktopApp);
+  expect(requests.filter((request) => request.method === 'createClip')).toHaveLength(1);
+  expect(requests.find((request) => request.method === 'sendChat')?.input).toMatchObject({
+    sessionId: 'created-clip:clip',
+    text: prompt,
+  });
+  await expect(page.getByRole('textbox', { name: 'AI chat', exact: true })).toHaveText('');
+  await page.getByRole('alert').getByRole('button', { name: 'Close', exact: true }).click();
+  await expect(page.getByRole('alert')).toHaveCount(0);
   await page.getByRole('button', { name: 'All clips', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Preview Preserved draft', exact: true })).toBeVisible();
-  await page
-    .locator('.clips-preview-heading')
-    .getByRole('button', { name: 'Edit clip', exact: true })
-    .click();
-  await expect(page.getByRole('region', { name: 'Clip packaging', exact: true })).toBeVisible();
-  await expect(page.getByRole('textbox', { name: 'AI chat', exact: true })).toHaveAttribute(
-    'contenteditable',
-    'true',
+});
+
+test('retries opening an already saved clip without creating another project', async ({
+  desktopApp,
+  page,
+}) => {
+  await installClipsFixture(desktopApp, 'after-open');
+  await openForm(page);
+  await page.getByRole('textbox', { name: 'Clip name', exact: true }).fill('Saved opening retry');
+  await page.getByRole('button', { name: 'Create clip', exact: true }).click();
+  await expect(page.getByRole('status')).toContainText('The saved clip could not be opened yet.');
+  await expect(
+    page.getByText('Your clip is saved. Open it to continue editing.', { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Create clip', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Open clip', exact: true }).click();
+  await expect(page.locator('.clip-workspace-name')).toHaveText('Saved opening retry');
+  await expect(page.getByRole('alert')).toContainText('AI generation did not start');
+  await expect(page.getByRole('textbox', { name: 'AI chat', exact: true })).toContainText(
+    'Create the first 9:16 clip from 0s to 30s.',
+  );
+  expect((await clipRequests(desktopApp)).filter((request) => request.method === 'createClip')).toHaveLength(
+    1,
   );
 });

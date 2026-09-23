@@ -7,8 +7,9 @@ import { AiButton, IconButton } from '../../shared/ui';
 import { PlatformIcon } from '../../shared/PlatformIcon';
 import { CommitDialog } from '../history/CommitDialog';
 import { TasteIcon } from './TasteIcon';
+import type { englishResources } from '../../locales/resources';
 
-const tasteLabels: Record<string, string> = {
+const tasteLabels: Record<string, keyof typeof englishResources.translation> = {
   TITLE_LONG_FORM_VIDEOS_TASTE: 'titleLong',
   TITLE_SHORT_FORM_VIDEOS_TASTE: 'titleShort',
   DESCRIPTION_LONG_FORM_VIDEOS_TASTE: 'descriptionLong',
@@ -63,7 +64,11 @@ export function BrandPage() {
   if (!workspace || !config) return null;
   const tastes = documents.filter((document) => document.kind === 'taste');
   const selected = tastes[active];
-  const label = selected ? t(tasteLabels[selected.name.replace('.md', '')] ?? selected.name) : '';
+  const tasteLabel = (name: string) => {
+    const key = tasteLabels[name.replace('.md', '')];
+    return key ? t(key) : name;
+  };
+  const label = selected ? tasteLabel(selected.name) : '';
   const ask = (topic: string, title: string) => {
     setChatTarget({ topic, title });
   };
@@ -193,7 +198,7 @@ export function BrandPage() {
                   }}
                 >
                   <TasteIcon file={document.name} />
-                  {t(tasteLabels[document.name.replace('.md', '')] ?? document.name)}
+                  {tasteLabel(document.name)}
                 </button>
               ))}
             </div>

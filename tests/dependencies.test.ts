@@ -25,6 +25,7 @@ it('streams check progress, keeps diagnostics, and validates the installed skill
     id,
     status: id === 'skill' ? 'missing' : 'ready',
     detail: id,
+    ...(id === 'skill' ? { label: { id: 'appHyperframesSkillReady' } as const } : {}),
     repairPrompt: null,
     helpUrl: null,
   }));
@@ -39,12 +40,23 @@ it('streams check progress, keeps diagnostics, and validates the installed skill
   const checks = await app.api.checks({ scope: app.scope, video: true });
   expect(checks).toHaveLength(8);
   expect(checks.every((check) => check.status === 'ready')).toBe(true);
+  expect(checks.find((check) => check.id === 'Git')?.diagnostic).toEqual({
+    kind: 'app',
+    message: { id: 'appWorkspaceSaved' },
+  });
+  expect(checks.find((check) => check.id === 'skill')?.diagnostic).toEqual({
+    kind: 'app',
+    message: { id: 'appHyperframesSkillReady' },
+  });
   const progress = app.events.filter((event) => event.type === 'checks');
   expect(progress.map((event) => event.progress)).toEqual(
     [...progress.map((event) => event.progress)].sort((a, b) => a - b),
   );
   expect(progress[0]?.progress).toBe(0);
   expect(progress.at(-1)?.progress).toBe(1);
+  expect(progress.find((event) => event.current === 'skill')?.currentLabel).toEqual({
+    id: 'appHyperframesSkillReady',
+  });
 });
 
 it('continues local diagnostics when Codex is unavailable and never reports success', async () => {
@@ -55,7 +67,26 @@ it('continues local diagnostics when Codex is unavailable and never reports succ
     repairPrompt: null,
   });
   expect(checks.find((check) => check.id === 'Codex')?.detail).toContain('unavailable');
+  expect(checks.find((check) => check.id === 'Codex')?.diagnostic).toEqual({
+    kind: 'external',
+    text: 'Codex is unavailable',
+  });
   expect(checks.find((check) => check.id === 'Git')?.status).toBe('ready');
+});
+
+it.each([
+  { authenticated: false, usageAllowed: true, id: 'appCodexLoginRequired' },
+  { authenticated: true, usageAllowed: false, id: 'appUsageExhausted' },
+])('identifies $id without parsing a provider message', async ({ authenticated, usageAllowed, id }) => {
+  app.agent.connect.mockResolvedValueOnce({
+    connected: true,
+    authenticated,
+    usageAllowed,
+    accountType: null,
+    version: 'test',
+  });
+  const checks = await app.api.checks({ scope: null, video: false });
+  expect(checks[0]).toMatchObject({ status: 'missing', diagnostic: { kind: 'app', message: { id } } });
 });
 
 it('publishes a clean refreshed workspace after entry recovers uncommitted files', async () => {

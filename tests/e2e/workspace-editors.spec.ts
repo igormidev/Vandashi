@@ -43,6 +43,9 @@ test('restores brand drafts after cancel and accepts a reviewed manual commit wh
       }),
     }),
   );
+  await page.getByRole('button', { name: 'Vandashi', exact: true }).click();
+  await expect(page.locator('.brand-row')).toContainText('Quiet Stories');
+  await expect(page.locator('.brand-row')).not.toContainText('Chat test brand');
 });
 
 test('retains separate long and short packaging drafts through commit confirmation', async ({

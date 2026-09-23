@@ -2,6 +2,7 @@ import { lstat, readFile, readdir } from 'node:fs/promises';
 import { basename, extname, join, relative } from 'node:path';
 import type { Asset } from '../../domain/models';
 import { containedPath } from './files';
+import { AppFault } from '../../domain/diagnostics';
 
 const textExtensions = new Set([
   '.html',
@@ -67,9 +68,7 @@ export async function assetReferences(project: string, asset: Asset): Promise<st
         continue;
       count += 1;
       if (count > 5_000 || (await lstat(path)).size > 10 * 1024 * 1024)
-        throw new Error(
-          `Cannot safely check asset references in ${relative(project, path)}. Remove its references before deleting the asset.`,
-        );
+        throw new AppFault({ id: 'storageReferenceCheckFailed', params: { path: relative(project, path) } });
       if (decoded(await readFile(path, 'utf8')).includes(target))
         references.push(relative(project, path).split('\\').join('/'));
     }

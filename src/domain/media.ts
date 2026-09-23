@@ -1,3 +1,5 @@
+import type { AppMessage } from './messages';
+import type { AssetInspectionLease, AssetInspectionProgress } from './asset-inspection';
 import type { AspectRatio, DependencyCheck, StudioInfo } from './models';
 
 export interface MediaProbe {
@@ -17,7 +19,7 @@ export interface ClipMediaInput {
   title: string;
 }
 
-export type RenderProgress = (progress: number, detail: string) => void;
+export type RenderProgress = (progress: number, detail: string, label?: AppMessage) => void;
 
 /** Vendor-neutral operations; paths are supplied by the authorized workspace service. */
 export interface MediaPort {
@@ -30,6 +32,11 @@ export interface MediaPort {
   checks(onCheck?: (check: DependencyCheck) => void): Promise<DependencyCheck[]>;
   probeMedia(path: string): Promise<MediaProbe>;
   audioWaveform(path: string): Promise<number[]>;
+  inspectAsset(
+    path: string,
+    onProgress?: (progress: AssetInspectionProgress) => void,
+    signal?: AbortSignal,
+  ): Promise<AssetInspectionLease>;
   createClip(input: ClipMediaInput): Promise<void>;
   dispose(): Promise<void>;
 }

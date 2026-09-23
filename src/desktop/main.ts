@@ -26,10 +26,12 @@ import {
   rendererLocation,
   trustedSender,
 } from './validation';
-import { desktopMessages } from './messages';
+import { desktopMessages, nativeMessages } from './messages';
+import { defaultLocale, normalizeLocale } from '../domain/locales';
 import { createMediaHandler } from './media-handler';
 import { DesktopStudioHost } from './studio-host';
 import { STUDIO_BRIDGE_FLUSH, STUDIO_BRIDGE_INSTALL } from '../infrastructure/media/studio-bridge';
+import { AppFault, failureEnvelope } from '../domain/diagnostics';
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -41,10 +43,11 @@ if (process.env.VANDASHI_USER_DATA) app.setPath('userData', process.env.VANDASHI
 let mainWindow: BrowserWindow | null = null;
 const git = new LocalGit();
 const agent = new CodexAgent();
-const media = new HyperframesMediaAdapter();
+const media = new HyperframesMediaAdapter({ cacheDirectory: join(app.getPath('userData'), 'models') });
 let closing = false;
 
 async function createWindow(): Promise<void> {
+  let nativeLocale = defaultLocale;
   const mediaUrl = (path: string) => `vandashi-media://local/file?path=${encodeURIComponent(path)}`;
   const store = new LocalStorage(app.getPath('userData'), git, mediaUrl, ({ path, backupPath }) => {
     if (mainWindow && !mainWindow.isDestroyed())
@@ -52,11 +55,21 @@ async function createWindow(): Promise<void> {
         type: 'notice',
         code: 'workspace-recovered',
         detail: desktopMessages.recovery(basename(path), backupPath),
+        diagnostic: {
+          kind: 'app',
+          message: backupPath
+            ? { id: 'recoveredDocument', params: { name: basename(path), path: backupPath } }
+            : { id: 'restoredDocument', params: { name: basename(path) } },
+        },
       });
   });
   const permissions = new PathPermissions(
     (value) => store.allowedPath(value),
     (value) => agent.generatedImage(value),
+  );
+  nativeLocale = await store.getState().then(
+    (state) => state.settings.locale,
+    () => defaultLocale,
   );
   const rendererUrl = rendererLocation(
     app.isPackaged,
@@ -105,12 +118,17 @@ async function createWindow(): Promise<void> {
         return selected ? permissions.grantDirectory(selected) : null;
       },
       chooseFiles: async (kind) => {
+        const messages = nativeMessages(nativeLocale);
         const result = await dialog.showOpenDialog(window, {
           properties: ['openFile', 'multiSelections'],
           ...(kind === 'images'
-            ? { filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg'] }] }
+            ? {
+                filters: [
+                  { name: messages.imagesFilter, extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg'] },
+                ],
+              }
             : kind === 'video'
-              ? { filters: [{ name: 'Video', extensions: ['mp4', 'mov', 'webm', 'mkv'] }] }
+              ? { filters: [{ name: messages.videoFilter, extensions: ['mp4', 'mov', 'webm', 'mkv'] }] }
               : {}),
         });
         return result.canceled
@@ -125,7 +143,7 @@ async function createWindow(): Promise<void> {
       },
       copyImage: async (path) => {
         const image = nativeImage.createFromPath(await store.allowedPath(path));
-        if (image.isEmpty()) throw new Error('This image cannot be copied.');
+        if (image.isEmpty()) throw new AppFault({ id: 'imageCannotCopy' });
         await clipboard.write([
           new ClipboardItem({
             'image/png': new Blob([new Uint8Array(image.toPNG())], { type: 'image/png' }),
@@ -143,12 +161,27 @@ async function createWindow(): Promise<void> {
     },
   );
   ipcMain.handle('vandashi:invoke', async (event, method: unknown, args: unknown) => {
-    if (!trustedSender(event, window.webContents, rendererUrl)) throw new Error('Untrusted request.');
-    const parsed = parseInvocation(method, args);
-    await permissions.authorize(parsed.method, parsed.args);
-    if (!Object.hasOwn(backend, parsed.method)) throw new Error('Unknown operation.');
-    const result: unknown = await Reflect.apply(backend[parsed.method], backend, parsed.args);
-    return result;
+    try {
+      if (!trustedSender(event, window.webContents, rendererUrl))
+        throw new AppFault({ id: 'untrustedRequest' });
+      const parsed = parseInvocation(method, args);
+      await permissions.authorize(parsed.method, parsed.args);
+      if (!Object.hasOwn(backend, parsed.method)) throw new AppFault({ id: 'unknownOperation' });
+      const result: unknown = await Reflect.apply(backend[parsed.method], backend, parsed.args);
+      if (parsed.method === 'getState' && result && typeof result === 'object' && 'settings' in result) {
+        const settings = result.settings;
+        if (settings && typeof settings === 'object' && 'locale' in settings)
+          nativeLocale = normalizeLocale(settings.locale);
+      }
+      if (parsed.method === 'settings') {
+        const settings = parsed.args[0];
+        if (settings && typeof settings === 'object' && 'locale' in settings)
+          nativeLocale = normalizeLocale(settings.locale);
+      }
+      return result;
+    } catch (error) {
+      return failureEnvelope(error);
+    }
   });
   ipcMain.on('vandashi:grant-drop', (event, value: unknown) => {
     if (
@@ -166,6 +199,7 @@ async function createWindow(): Promise<void> {
           type: 'notice',
           code: 'file-unavailable',
           detail: 'The selected file is unavailable.',
+          diagnostic: { kind: 'app', message: { id: 'selectedFileUnavailable' } },
         });
     });
   });
@@ -181,12 +215,13 @@ async function createWindow(): Promise<void> {
     event.preventDefault();
   });
   window.webContents.on('will-prevent-unload', (event) => {
+    const messages = nativeMessages(nativeLocale);
     const choice = dialog.showMessageBoxSync(window, {
       type: 'warning',
-      title: desktopMessages.closeTitle,
-      message: desktopMessages.closeMessage,
-      detail: desktopMessages.closeDetail,
-      buttons: [desktopMessages.closeKeep, desktopMessages.closeDiscard],
+      title: messages.closeTitle,
+      message: messages.closeMessage,
+      detail: messages.closeDetail,
+      buttons: [messages.closeKeep, messages.closeDiscard],
       defaultId: 0,
       cancelId: 0,
       noLink: true,

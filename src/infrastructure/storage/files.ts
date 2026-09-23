@@ -1,3 +1,4 @@
+import { AppFault } from '../../domain/diagnostics';
 import { createHash, randomUUID } from 'node:crypto';
 import { createReadStream } from 'node:fs';
 import { lstat, mkdir, open, readdir, realpath, rename, rm, stat } from 'node:fs/promises';
@@ -12,6 +13,7 @@ export function safeName(input: string, minimum = 1): string {
   if (
     name.length < minimum ||
     name.length > 100 ||
+    name.startsWith('.') ||
     /[<>:"/\\|?*]/u.test(name) ||
     /\p{Cc}/u.test(name) ||
     /[. ]$/u.test(name) ||
@@ -19,7 +21,7 @@ export function safeName(input: string, minimum = 1): string {
     name === '..' ||
     /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/iu.test(name)
   ) {
-    throw new Error('Choose a valid name without reserved filename characters.');
+    throw new AppFault({ id: 'storageInvalidName' });
   }
   return name;
 }
@@ -36,12 +38,12 @@ export function isWithin(root: string, path: string): boolean {
 export async function containedPath(root: string, path: string): Promise<string> {
   const canonicalRoot = await realpath(root);
   const target = resolve(root, path);
-  if (!isWithin(canonicalRoot, target)) throw new Error('The path is outside this workspace.');
+  if (!isWithin(canonicalRoot, target)) throw new AppFault({ id: 'storagePathOutside' });
   let current = target;
   for (;;) {
     try {
       const canonical = await realpath(current);
-      if (!isWithin(canonicalRoot, canonical)) throw new Error('A symbolic link escapes this workspace.');
+      if (!isWithin(canonicalRoot, canonical)) throw new AppFault({ id: 'storageSymlinkOutside' });
       break;
     } catch (error) {
       if (errorCode(error) !== 'ENOENT') throw error;

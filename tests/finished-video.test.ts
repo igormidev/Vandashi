@@ -72,6 +72,7 @@ describe('finished video import', () => {
     await app.store.updateAsset({
       scope: imported.scope,
       assetId: sourceAsset.id,
+      expectedRevision: sourceAsset.revision,
       title: 'Edited metadata',
       description: 'Prepared for release',
       tags: ['release'],
@@ -111,7 +112,9 @@ describe('finished video import', () => {
   it('does not adopt an existing project or follow a source symlink', async () => {
     const app = await setup();
     await expect(app.api.importFinishedVideo({ ...app.input, name: 'Video' })).rejects.toThrow();
-    await expect(app.api.importFinishedVideo({ ...app.input, name: '.Hidden' })).rejects.toThrow('dot');
+    await expect(app.api.importFinishedVideo({ ...app.input, name: '.Hidden' })).rejects.toMatchObject({
+      diagnostic: { kind: 'app', message: { id: 'storageInvalidName' } },
+    });
     const link = join(app.root, 'linked.mp4');
     await symlink(app.source, link);
     await expect(app.api.importFinishedVideo({ ...app.input, sourcePath: link })).rejects.toThrow(

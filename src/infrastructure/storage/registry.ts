@@ -1,3 +1,4 @@
+import { AppFault } from '../../domain/diagnostics';
 import { mkdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { defaultSettings, scopeKey } from '../../domain/defaults';
@@ -5,6 +6,7 @@ import type { AppState, ChatSession, Scope, Settings } from '../../domain/models
 import { atomicWrite, errorCode, SerialQueue } from './files';
 import { registrySchema, sessionSchema, settingsSchema } from './schemas';
 import { z } from 'zod';
+import { parseStorage, storageFault } from './validation';
 
 export class Registry {
   private readonly queue = new SerialQueue();
@@ -15,23 +17,22 @@ export class Registry {
     try {
       return registrySchema.parse(JSON.parse(await readFile(join(this.directory, 'registry.json'), 'utf8')));
     } catch (error) {
-      if (errorCode(error) !== 'ENOENT')
-        throw new Error('The workspace registry cannot be read. Your project files are unchanged.', {
-          cause: error,
-        });
+      if (errorCode(error) !== 'ENOENT') throw storageFault({ id: 'storageRegistryUnreadable' }, error);
       return { brands: [], lastBrandId: null, settings: structuredClone(defaultSettings) };
     }
   }
 
   async update(operation: (state: AppState) => AppState): Promise<void> {
     await this.queue.run(async () => {
-      const state = registrySchema.parse(operation(await this.state()));
+      const state = parseStorage(registrySchema, operation(await this.state()), {
+        id: 'storageRegistryInvalid',
+      });
       await atomicWrite(join(this.directory, 'registry.json'), `${JSON.stringify(state, null, 2)}\n`);
     });
   }
 
   async settings(settings: Settings): Promise<void> {
-    const valid = settingsSchema.parse(settings);
+    const valid = parseStorage(settingsSchema, settings, { id: 'storageSettingsInvalid' });
     await this.update((state) => ({ ...state, settings: valid }));
   }
 
@@ -42,7 +43,7 @@ export class Registry {
         .parse(JSON.parse(await readFile(join(this.directory, 'sessions.json'), 'utf8')));
     } catch (error) {
       if (errorCode(error) === 'ENOENT') return [];
-      throw error;
+      throw storageFault({ id: 'storageSessionsUnreadable' }, error);
     }
   }
 
@@ -54,12 +55,12 @@ export class Registry {
 
   async getSession(id: string): Promise<ChatSession> {
     const session = (await this.allSessions()).find((item) => item.id === id);
-    if (!session) throw new Error('This conversation was not found.');
+    if (!session) throw new AppFault({ id: 'storageSessionMissing' });
     return session;
   }
 
   async saveSession(input: ChatSession): Promise<void> {
-    const session = sessionSchema.parse(input);
+    const session = parseStorage(sessionSchema, input, { id: 'storageSessionInvalid' });
     await this.queue.run(async () => {
       const items = (await this.allSessions()).filter((item) => item.id !== session.id);
       items.push(session);

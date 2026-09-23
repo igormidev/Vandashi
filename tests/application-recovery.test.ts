@@ -61,6 +61,15 @@ describe('durable checkpoints and recovery', () => {
     expect(
       app.events.some((event) => event.type === 'notice' && event.detail.includes('Invalid composition')),
     ).toBe(true);
+    expect(app.events.find((event) => event.type === 'notice' && event.code === 'save-failed')).toMatchObject(
+      {
+        diagnostic: {
+          kind: 'app',
+          message: { id: 'appNormalizationFailed' },
+          externalDetail: 'Invalid composition',
+        },
+      },
+    );
   });
 
   it('undoes sequential turns from persisted checkpoints without rewinding Git history or crossing manual changes', async () => {
@@ -122,6 +131,11 @@ describe('durable checkpoints and recovery', () => {
     expect(session.checkpoints?.[0]?.postHeads?.[app.path]).toBe(await app.git.head(app.path));
     expect((await app.git.status(app.path)).dirty).toBe(false);
     expect(session.messages[0]?.text).toBe('# Survives write failure');
+    expect(
+      app.events.find((event) => event.type === 'notice' && event.code === 'history-recovered'),
+    ).toMatchObject({
+      diagnostic: { kind: 'app', message: { id: 'appHistorySavedAgain' } },
+    });
   });
 
   it('preserves a staged script after the AI has accepted and then interrupted its turn', async () => {

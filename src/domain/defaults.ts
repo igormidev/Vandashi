@@ -1,6 +1,7 @@
 import type { Packaging, Settings } from './models';
+import { defaultLocale } from './locales';
 export const defaultSettings: Settings = {
-  locale: 'en',
+  locale: defaultLocale,
   chat: { model: 'gpt-6-astra', reasoning: 'medium', fast: false },
   automation: { model: 'gpt-6-luna', reasoning: 'medium', fast: false },
   assetMetadata: { model: 'gpt-6-luna', reasoning: 'medium', fast: false },

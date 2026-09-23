@@ -76,7 +76,7 @@ npx hyperframes@0.8.64 skills update
 
 The adapter does not run it automatically. This avoids unexpectedly changing the user's installed skills. The repair chat can run it after the user sends the prefilled request. Restart or reload skill discovery afterward. The core entry point is the `hyperframes` skill; pass the exact skill path discovered by Codex in each video-editing prompt.
 
-Hyperframes' media metadata endpoint reports codec/color information; it does **not** manage Vandashi's asset title, description or tags. The application asset metadata adapter owns these fields and their persistence.
+Hyperframes' media metadata endpoint reports codec/color information; it does **not** manage Vandashi's asset title, description or tags. The application asset metadata adapter owns these fields and their persistence. Automatic descriptions now use [local sampled frames and speech evidence](ASSET-INSPECTION.md), independently of Hyperframes' optional Whisper CLI. The latter remains optional in doctor checks.
 
 ## Upgrade and verification
 

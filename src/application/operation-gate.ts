@@ -1,3 +1,4 @@
+import { AppFault } from '../domain/diagnostics';
 /** One lease covers chat and all automatic helpers, including recovery and commits. */
 export class OperationGate {
   constructor(private readonly onChange: (owner: string | null) => void = () => undefined) {}
@@ -7,7 +8,7 @@ export class OperationGate {
     return this.owner !== null;
   }
   assertIdle(): void {
-    if (this.busy) throw new Error('Another operation is running. Stop it or wait for it to finish.');
+    if (this.busy) throw new AppFault({ id: 'appOperationBusy' });
   }
   private notify(owner: string | null): void {
     try {

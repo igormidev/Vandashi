@@ -28,4 +28,7 @@ export const launchEn = {
     'The first image is the main thumbnail. Other candidates are used only when the destination account supports testing.',
   launchThumbnailCandidate: 'Thumbnail candidate {{index}}',
   launchThumbnailUnavailable: 'Thumbnail unavailable',
-};
+  launchPlatformItem: '{{platform}} · {{name}}',
+  launchStatusLabel: '{{name}} Status',
+  launchUrlLabel: '{{name}} Published video URL',
+} as const;

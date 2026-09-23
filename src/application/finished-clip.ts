@@ -1,0 +1,33 @@
+import { AppFault } from '../domain/diagnostics';
+import type { MediaPort, MediaProbe } from '../domain/media';
+import type { Scope } from '../domain/models';
+import type { StoragePort } from '../domain/storage';
+import { measuredFinishedRatio } from './finished-video';
+
+export function finishedClipRatio(probe: MediaProbe): '9:16' | '1:1' {
+  const ratio = measuredFinishedRatio(probe, ['9:16', '1:1']);
+  if (!ratio) throw new AppFault({ id: 'appFinishedClipRatio' });
+  return ratio;
+}
+
+export async function importFinishedClip(
+  input: { scope: Scope; sourcePath: string },
+  store: StoragePort,
+  media: MediaPort,
+) {
+  const original = await media.probeMedia(input.sourcePath);
+  const ratio = finishedClipRatio(original);
+  return store.importClip(
+    { ...input, name: `imported-${String(Date.now())}`, ratio, duration: original.duration },
+    async (path) => {
+      const copy = await media.probeMedia(path);
+      if (
+        finishedClipRatio(copy) !== ratio ||
+        copy.width !== original.width ||
+        copy.height !== original.height ||
+        Math.abs(copy.duration - original.duration) > 0.01
+      )
+        throw new AppFault({ id: 'appImportedVideoChanged' });
+    },
+  );
+}

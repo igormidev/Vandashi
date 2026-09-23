@@ -1,3 +1,4 @@
+import { AppFault } from '../../domain/diagnostics';
 import type { AgentThread } from '../../domain/agent';
 import type { RpcClient } from './transport';
 import { itemMessage } from './events';
@@ -30,7 +31,7 @@ export async function readHistory(client: RpcClient, threadId: string): Promise<
       }
       cursor = page.nextCursor;
       if (cursor) {
-        if (cursors.has(cursor)) throw new Error('Codex history pagination repeated a cursor.');
+        if (cursors.has(cursor)) throw new AppFault({ id: 'codexHistoryCursorRepeated' });
         cursors.add(cursor);
       }
     } while (cursor);

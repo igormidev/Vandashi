@@ -12,6 +12,10 @@ export function useSessions(scope: Scope) {
   const [selected, setSelected] = useState<string | null>(() => cachedSelection(scopeKey(scope)));
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
+  const [mediaGeneration, setMediaGeneration] = useState<Record<string, number>>({});
+  const mediaHydrated = useCallback((id: string) => {
+    setMediaGeneration((current) => ({ ...current, [id]: (current[id] ?? 0) + 1 }));
+  }, []);
   useEffect(() => {
     cacheSelection(scopeKey(scope), selected);
   }, [scope, selected]);
@@ -88,6 +92,7 @@ export function useSessions(scope: Scope) {
           return [updated, ...current.filter((entry) => entry.id !== result.id)];
         });
         opened.current.add(result.id);
+        mediaHydrated(result.id);
         setSelected(result.id);
         setFailed(false);
         setLoading(false);
@@ -102,7 +107,7 @@ export function useSessions(scope: Scope) {
     return () => {
       disposed = true;
     };
-  }, [api, chatTarget, run, scope]);
+  }, [api, chatTarget, mediaHydrated, run, scope]);
   useEffect(() => {
     if (
       chatTarget ||
@@ -120,6 +125,7 @@ export function useSessions(scope: Scope) {
         const result = await openConversation(api, { scope, topic: session.topic, title: session.title });
         if (!mounted.current) return;
         opened.current.add(result.id);
+        mediaHydrated(result.id);
         setSessions((current) =>
           current.map((entry) =>
             entry.id === result.id && entry.open
@@ -134,7 +140,7 @@ export function useSessions(scope: Scope) {
         throw error;
       }
     });
-  }, [api, busy, chatTarget, run, scope, selected, sessions]);
+  }, [api, busy, chatTarget, mediaHydrated, run, scope, selected, sessions]);
   useEffect(
     () =>
       api.onEvent((event) => {
@@ -173,5 +179,5 @@ export function useSessions(scope: Scope) {
       current === id ? (sessions.find((session) => session.id !== id && session.open)?.id ?? null) : current,
     );
   };
-  return { sessions, selected, setSelected, loading, failed, refresh, replace, close };
+  return { sessions, selected, setSelected, loading, failed, refresh, replace, close, mediaGeneration };
 }

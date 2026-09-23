@@ -55,7 +55,7 @@ export async function executeTurn(
   const resetTimer = (): void => {
     clearTimeout(timer);
     timer = setTimeout(() => {
-      reject?.(new AgentError('timeout', 'Codex stopped reporting progress.'));
+      reject?.(new AgentError('timeout', { id: 'codexProgressTimeout' }));
     }, callbacks.inactivityMs ?? 600_000);
   };
   resetTimer();
@@ -127,7 +127,8 @@ export async function executeTurn(
     if (!currentTurnId)
       throw new AgentError(
         'uncertain-start',
-        `Codex did not confirm the turn start. Its process was stopped; any changes will be preserved. ${error instanceof Error ? error.message : String(error)}`,
+        { id: 'codexUncertainStart' },
+        error instanceof Error ? error.message : String(error),
       );
     throw error;
   } finally {

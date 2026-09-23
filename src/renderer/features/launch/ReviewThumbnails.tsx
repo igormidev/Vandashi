@@ -87,7 +87,7 @@ function Candidate({ path, index }: { path: string; index: number }) {
     };
   }, [api, path]);
   return url ? (
-    <img src={url} alt={t('launchThumbnailCandidate', { index: index + 1 })} />
+    <img src={url} alt={t('launchThumbnailCandidate', { index: String(index + 1) })} />
   ) : (
     <div className="release-thumbnail-empty">{t('launchThumbnailUnavailable')}</div>
   );

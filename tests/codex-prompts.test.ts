@@ -37,6 +37,20 @@ const workspace: Workspace = {
 };
 const base = { workspace, mode: 'edit' as const, text: 'Make the opening clearer.' };
 describe('workspace prompts', () => {
+  it.each([
+    ['', '/studio/Example/brand_identity/brand_icon.png'],
+    ['brand_icon.webp', '/studio/Example/brand_identity/brand_icon.webp'],
+    ['/legacy/logo.png', '/legacy/logo.png'],
+    ['C:\\studio\\logo.png', 'C:\\studio\\logo.png'],
+    ['\\\\server\\studio\\logo.png', '\\\\server\\studio\\logo.png'],
+  ])('resolves the saved brand logo from video and clip conversations: %s', (image, expected) => {
+    const branded = structuredClone(workspace);
+    branded.brand.config.image = image;
+    for (const topic of ['creation', 'clip', 'assets']) {
+      const prompt = buildWorkspacePrompt({ ...base, workspace: branded, topic });
+      expect(prompt).toContain(`Brand logo: ${JSON.stringify(expected)}.`);
+    }
+  });
   it('requires the correct format guide and preserves the other format', () => {
     const prompt = buildWorkspacePrompt({ ...base, topic: 'packaging:title:short' });
     const mandatory = prompt.split('Optional context:')[0];
@@ -91,6 +105,39 @@ describe('workspace prompts', () => {
   });
   it('rejects unknown taste paths rather than granting arbitrary file ownership', () => {
     expect(() => buildWorkspacePrompt({ ...base, topic: 'taste:../../secret' })).toThrow('Unknown taste');
+  });
+  it('rejects missing selected assets instead of broadening ownership to the library', () => {
+    for (const mode of ['read', 'edit'] as const)
+      for (const topic of ['asset:deleted', 'asset:'])
+        expect(() => buildWorkspacePrompt({ ...base, mode, topic })).toThrow(
+          'asset for this conversation no longer exists',
+        );
+    expect(buildWorkspacePrompt({ ...base, topic: 'assets' })).toContain(
+      'the asset library for this workspace',
+    );
+  });
+  it('keeps a valid selected asset and its metadata as the primary target', () => {
+    const selected = {
+      id: 'poster',
+      path: '/studio/Example/videos/video/video_assets/assets/poster.png',
+      relativePath: 'assets/poster.png',
+      title: 'Poster',
+      description: '',
+      tags: [],
+      kind: 'image' as const,
+      size: 1,
+      hash: 'poster',
+      revision: 'a'.repeat(64),
+      shared: false,
+      mediaUrl: '',
+    };
+    const prompt = buildWorkspacePrompt({
+      ...base,
+      topic: 'asset:poster',
+      workspace: { ...workspace, assets: [selected] },
+    });
+    expect(prompt.split('Optional context:')[0]).toContain(`"${selected.path}": the selected asset`);
+    expect(prompt).not.toContain('the asset library for this workspace');
   });
   it('gives theme editing the script guide and clip editing the actual parent project', () => {
     const theme = buildWorkspacePrompt({ ...base, topic: 'packaging:theme' });

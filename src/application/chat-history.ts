@@ -1,10 +1,11 @@
+import { AppFault } from '../domain/diagnostics';
 import { AgentError, type AgentPort, type AgentThread } from '../domain/agent';
 import type { AppEvent, ChatMessage, ChatSession, Scope } from '../domain/models';
 import type { StoragePort } from '../domain/storage';
 
 /** Recover provider snapshots without dropping application receipts, errors, or stable user IDs. */
 export function mergeThreadHistory(session: ChatSession, thread: AgentThread): ChatSession {
-  if (thread.id !== session.threadId) throw new Error('Codex returned a different conversation.');
+  if (thread.id !== session.threadId) throw new AppFault({ id: 'codexDifferentThread' });
   const messages = session.messages.slice();
   const known = (message: ChatMessage): number => {
     const exact = messages.findIndex((local) => local.id === message.id);
@@ -82,10 +83,12 @@ export async function openChatSession(
     } catch (error) {
       if (!(error instanceof AgentError) || error.code !== 'missing-history') throw error;
       session.threadId = null;
+      const fault = new AppFault({ id: 'appHistoryMissing' });
       notify({
         type: 'notice',
         code: 'missing-history',
-        detail: 'The previous Codex conversation could not be found. A new conversation will start.',
+        detail: fault.message,
+        diagnostic: fault.diagnostic,
       });
     }
   }

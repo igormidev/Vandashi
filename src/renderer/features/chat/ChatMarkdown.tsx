@@ -3,7 +3,15 @@ import { useApp } from '../../app/store';
 import { ChatImage } from './ChatImage';
 import { messagePath } from './message-path';
 
-export function ChatMarkdown({ text, root }: { text: string; root: string }) {
+export function ChatMarkdown({
+  text,
+  root,
+  mediaGeneration,
+}: {
+  text: string;
+  root: string;
+  mediaGeneration: number;
+}) {
   const { api, run } = useApp();
   return (
     <ReactMarkdown
@@ -11,7 +19,7 @@ export function ChatMarkdown({ text, root }: { text: string; root: string }) {
       components={{
         img: ({ src, alt }) => {
           const path = typeof src === 'string' ? messagePath(src, root) : null;
-          return <ChatImage key={path} path={path} alt={alt ?? ''} />;
+          return <ChatImage key={path} path={path} alt={alt ?? ''} mediaGeneration={mediaGeneration} />;
         },
         a: ({ href, children }) => (
           <a

@@ -7,9 +7,11 @@ interface DesktopFixtures {
   desktopApp: ElectronApplication;
   page: Page;
   userData: string;
+  rendererUrl: string;
 }
 
 export const test = base.extend<DesktopFixtures>({
+  rendererUrl: ['', { option: true }],
   userData: async ({ baseURL }, use) => {
     if (baseURL)
       throw new Error('Desktop tests start their own renderer; do not configure a browser baseURL.');
@@ -20,12 +22,12 @@ export const test = base.extend<DesktopFixtures>({
       await rm(directory, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
     }
   },
-  desktopApp: async ({ userData }, use) => {
+  desktopApp: async ({ userData, rendererUrl }, use) => {
     const environment: Record<string, string> = {};
     for (const [key, value] of Object.entries(process.env))
       if (typeof value === 'string' && key !== 'ELECTRON_RUN_AS_NODE') environment[key] = value;
     environment.VANDASHI_USER_DATA = userData;
-    environment.ELECTRON_RENDERER_URL = '';
+    environment.ELECTRON_RENDERER_URL = rendererUrl;
     const application = await _electron.launch({
       args: [join(process.cwd(), 'out/main/index.js')],
       env: environment,

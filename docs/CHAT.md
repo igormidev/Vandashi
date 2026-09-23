@@ -24,6 +24,14 @@ are not fetched. Failed local images offer an explicit retry that rechecks autho
 Provider artifacts outside the workspace require the exact verified grant described in
 `CODEX.md`; a filename written only in Markdown cannot create that grant.
 
+An asset-specific conversation keeps its original target. If the current storage index
+no longer contains that asset, sending fails before an inference turn, transcript change,
+or project edit. It never silently becomes the broader library conversation. The asset
+index treats each `relativePath` as already relative to the selected library, including
+legitimate nested folders named `assets`, `video_assets`, or `shared_assets`. Real local
+and shared filesystem fixtures and deleted-asset transcripts cover these boundaries in
+`tests/assets-scope.test.ts`.
+
 Successful edit turns end with an application-owned Git receipt. `application/turn-receipt.ts`
 compares each repository's captured starting commit with its verified commit after
 reconciliation, so shell edits and commits made directly by the agent are included even

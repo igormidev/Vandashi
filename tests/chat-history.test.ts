@@ -129,5 +129,10 @@ describe('persisted Codex history recovery', () => {
     expect(app.events.some((event) => event.type === 'notice' && event.code === 'missing-history')).toBe(
       true,
     );
+    expect(
+      app.events.find((event) => event.type === 'notice' && event.code === 'missing-history'),
+    ).toMatchObject({
+      diagnostic: { kind: 'app', message: { id: 'appHistoryMissing' } },
+    });
   });
 });

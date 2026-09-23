@@ -1,3 +1,4 @@
+import { AppFault } from '../domain/diagnostics';
 import type { SaveInput, Scope } from '../domain/models';
 import type { GitPort, StoragePort } from '../domain/storage';
 
@@ -17,8 +18,7 @@ export class Workspaces {
           'Recover pending workspace changes',
           `Preserve previously uncommitted files: ${status.paths.join(', ')}.`,
         );
-      if ((await this.git.status(repository)).dirty)
-        throw new Error('Workspace changes could not be committed.');
+      if ((await this.git.status(repository)).dirty) throw new AppFault({ id: 'appWorkspaceCommitFailed' });
     }
   }
 

@@ -1,3 +1,4 @@
+import { AppFault } from '../../domain/diagnostics';
 import { constants } from 'node:fs';
 import { copyFile, mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { extname, join } from 'node:path';
@@ -76,7 +77,7 @@ export function validateClipRange(start: number, end: number, sourceDuration: nu
     end <= start ||
     end > sourceDuration + 0.05
   ) {
-    throw new Error('Choose a clip range inside the source video with an end after its start.');
+    throw new AppFault({ id: 'mediaClipRangeInvalid' });
   }
 }
 
@@ -86,13 +87,13 @@ export async function createClipProject(
 ): Promise<void> {
   const metadata = await probe(input.sourceVideoPath);
   if (metadata.width === null || metadata.height === null)
-    throw new Error('The clip source must be a video.');
+    throw new AppFault({ id: 'mediaClipSourceInvalid' });
   validateClipRange(input.start, input.end, metadata.duration);
   const path = join(input.projectPath, 'index.html');
   // A clip creation must never overwrite an existing composition or its media.
   try {
     await stat(path);
-    throw new Error('A composition already exists in this clip folder.');
+    throw new AppFault({ id: 'mediaClipExists' });
   } catch (error) {
     if (!(error instanceof Error) || !('code' in error) || error.code !== 'ENOENT') throw error;
   }
@@ -106,8 +107,7 @@ export async function createClipProject(
   await seedProject(input.projectPath, input.ratio, input.title);
   // Only replace the seed we have just created, and leave a concurrent author edit intact.
   const expected = createComposition(input.ratio, input.title);
-  if ((await readFile(path, 'utf8')) !== expected)
-    throw new Error('The clip changed while it was being created.');
+  if ((await readFile(path, 'utf8')) !== expected) throw new AppFault({ id: 'mediaClipChanged' });
   await writeFile(
     path,
     createComposition(input.ratio, input.title, {

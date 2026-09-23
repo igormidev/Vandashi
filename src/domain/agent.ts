@@ -1,4 +1,7 @@
 import type { ChatMessage, ModelInfo, ModelSelection } from './models';
+import { AppFault, DiagnosticError } from './diagnostics';
+import type { Diagnostic } from './diagnostics';
+import type { AppMessage } from './messages';
 
 export interface AgentStatus {
   connected: boolean;
@@ -32,7 +35,7 @@ export type AgentEvent =
   | { type: 'thread'; threadId: string }
   | { type: 'turn'; turnId: string }
   | { type: 'message'; message: ChatMessage; delta: boolean }
-  | { type: 'warning'; detail: string };
+  | { type: 'warning'; detail: string; diagnostic?: Diagnostic };
 export interface AgentRunInput extends AgentThreadOptions {
   threadId: string | null;
   prompt: string;
@@ -57,7 +60,7 @@ export interface AgentPort {
   stop(): Promise<void>;
   dispose(): void;
 }
-export class AgentError extends Error {
+export class AgentError extends DiagnosticError {
   // uncertain-start is emitted only after the adapter confirms its process stopped; preserve possible edits.
   constructor(
     readonly code:
@@ -68,9 +71,14 @@ export class AgentError extends Error {
       | 'protocol'
       | 'timeout'
       | 'uncertain-start',
-    message: string,
+    message: string | AppMessage,
+    externalDetail?: string,
   ) {
-    super(message);
+    super(
+      typeof message === 'string'
+        ? { kind: 'external', text: message.slice(0, 32_768) }
+        : new AppFault(message, externalDetail).diagnostic,
+    );
     this.name = 'AgentError';
   }
 }

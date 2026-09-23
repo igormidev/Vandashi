@@ -20,6 +20,7 @@ export async function installPackagingRegressionFixture(desktop: ElectronApplica
       tags: [],
       kind: 'image',
       hash: '',
+      revision: 'a'.repeat(64),
       size: 100,
       shared: false,
       mediaUrl: '',

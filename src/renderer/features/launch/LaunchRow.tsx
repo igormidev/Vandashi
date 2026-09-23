@@ -31,7 +31,7 @@ export function LaunchRow({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(false);
   const lock = busy || dirty || saving;
-  const name = label ? `${t(platform)} · ${label}` : t(platform);
+  const name = label ? t('launchPlatformItem', { platform: t(platform), name: label }) : t(platform);
   const update = (status: LaunchStatus, url = value.text) => {
     if (!workspace) return;
     if (url.trim()) {
@@ -73,7 +73,7 @@ export function LaunchRow({
         <div className="launch-controls">
           <select
             value={launch?.status ?? 'not_started'}
-            aria-label={`${name} ${t('launchStatus')}`}
+            aria-label={t('launchStatusLabel', { name })}
             disabled={lock}
             onChange={(event) => {
               const status = statuses.find((entry) => entry === event.target.value);
@@ -89,7 +89,7 @@ export function LaunchRow({
           <input
             type="url"
             value={value.text}
-            aria-label={`${name} ${t('publicationUrl')}`}
+            aria-label={t('launchUrlLabel', { name })}
             placeholder={t('publicationUrl')}
             disabled={lock}
             aria-invalid={error}

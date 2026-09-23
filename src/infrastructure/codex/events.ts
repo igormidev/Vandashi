@@ -4,6 +4,7 @@ import { USER_PROMPT_MARKER } from '../../domain/prompts';
 import type { RpcNotification } from './transport';
 import { array, itemSchema, object, string, strings } from './schemas';
 import type { CodexItem } from './schemas';
+import { AppFault } from '../../domain/diagnostics';
 
 const MAX_TOOL_TEXT = 64 * 1024;
 function visibleUserText(item: CodexItem): string {
@@ -129,11 +130,14 @@ export class EventReducer {
       return this.update(itemId, turnId, 'tool', string(data['delta']), true);
     if (event.method === 'warning' || event.method === 'configWarning')
       return { type: 'warning', detail: string(data['message']) || string(data['summary']) };
-    if (event.method === 'vandashi/request-declined')
+    if (event.method === 'vandashi/request-declined') {
+      const fault = new AppFault({ id: 'codexRequestWithheld', params: { method: string(data['method']) } });
       return {
         type: 'warning',
-        detail: `Codex requested ${string(data['method'])}. This action was withheld; reply to any question in the conversation.`,
+        detail: fault.message,
+        diagnostic: fault.diagnostic,
       };
+    }
     return null;
   }
   output(): string {

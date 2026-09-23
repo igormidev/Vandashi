@@ -21,6 +21,12 @@ import type {
   VideoSummary,
   Workspace,
 } from './models';
+import type { Diagnostic } from './diagnostics';
+
+export interface CreatedClip {
+  clip: Clip;
+  generation: { status: 'started' } | { status: 'failed'; diagnostic: Diagnostic; prompt: string };
+}
 
 export interface DesktopApi {
   getState(): Promise<AppState>;
@@ -46,10 +52,12 @@ export interface DesktopApi {
   cancelChat(): Promise<void>;
   undoChat(id: string): Promise<ChatSession>;
   importAsset(input: { scope: Scope; draft: AssetDraft }): Promise<Asset>;
-  describeAsset(input: { scope: Scope; path: string }): Promise<AssetDraft>;
+  describeAsset(input: { scope: Scope; path: string; requestId: string }): Promise<AssetDraft>;
+  cancelAssetInspection(requestId: string): Promise<void>;
   updateAsset(input: {
     scope: Scope;
     assetId: string;
+    expectedRevision: string;
     title: string;
     description: string;
     tags: string[];
@@ -77,7 +85,7 @@ export interface DesktopApi {
     end: number;
     prompt: string;
     selection: Settings['chat'];
-  }): Promise<Clip>;
+  }): Promise<CreatedClip>;
   updateLaunch(input: { scope: Scope; launch: Launch }): Promise<void>;
   generateChapters(scope: Scope): Promise<Chapter[]>;
   importFinishedClip(input: { scope: Scope; sourcePath: string }): Promise<Clip>;

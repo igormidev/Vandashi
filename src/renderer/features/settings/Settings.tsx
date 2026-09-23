@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useApp } from '../../app/store';
 import { Modal, InfoTip } from '../../shared/ui';
 import { ModelPicker } from '../chat/ModelPicker';
+import { normalizeLocale } from '../../../domain/locales';
 
 export function Settings({ onClose, onChecks }: { onClose: () => void; onChecks: () => void }) {
   const { t } = useTranslation();
@@ -18,7 +19,7 @@ export function Settings({ onClose, onChecks }: { onClose: () => void; onChecks:
           <select
             value={settings.locale}
             onChange={(event) => {
-              setSettings({ ...settings, locale: event.target.value });
+              setSettings({ ...settings, locale: normalizeLocale(event.target.value) });
             }}
           >
             <option value="en">{t('languageEnglish')}</option>

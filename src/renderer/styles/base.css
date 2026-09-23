@@ -573,6 +573,8 @@ svg {
 .field-error {
   color: var(--danger);
   font-size: 11px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 .folder-picker {
   display: flex;

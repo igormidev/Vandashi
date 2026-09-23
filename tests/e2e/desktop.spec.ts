@@ -2,6 +2,7 @@ import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { test, expect } from './fixtures';
 import { audioFixture } from './audio-fixture';
+import { diagnosticFromBridge } from '../../src/domain/diagnostics';
 
 test('opens the actual isolated desktop shell with a constrained preload', async ({
   desktopApp,
@@ -31,13 +32,17 @@ test('opens the actual isolated desktop shell with a constrained preload', async
       await window.vandashi.describeAsset({
         scope: { brandId: 'fake', videoId: null, clipId: null },
         path: sourcePath,
+        requestId: 'unselected-inspection',
       });
       return '';
     } catch (failure) {
-      return String(failure);
+      return failure instanceof Error ? failure.message : String(failure);
     }
   }, unselected);
-  expect(error).toContain('outside registered workspaces');
+  expect(diagnosticFromBridge(error)).toMatchObject({
+    kind: 'app',
+    message: { id: 'storageUnregisteredPath' },
+  });
 });
 
 test('native picker grants authorize real imports and media stays confined to the brand', async ({
@@ -73,12 +78,15 @@ test('native picker grants authorize real imports and media stays confined to th
         });
         return '';
       } catch (failure) {
-        return String(failure);
+        return failure instanceof Error ? failure.message : String(failure);
       }
     },
     { scope, sourcePath: source },
   );
-  expect(denied).toContain('outside registered workspaces');
+  expect(diagnosticFromBridge(denied)).toMatchObject({
+    kind: 'app',
+    message: { id: 'storageUnregisteredPath' },
+  });
   await desktopApp.evaluate(({ dialog }, selection) => {
     dialog.showOpenDialog = () => Promise.resolve({ canceled: false, filePaths: [selection] });
   }, source);
@@ -113,12 +121,15 @@ test('native picker grants authorize real imports and media stays confined to th
         await window.vandashi.mediaUrl(path);
         return '';
       } catch (failure) {
-        return String(failure);
+        return failure instanceof Error ? failure.message : String(failure);
       }
     },
     join(brand.path, 'brand_identity', '.git', 'config'),
   );
-  expect(configDenied).toContain('Unsupported media request');
+  expect(diagnosticFromBridge(configDenied)).toMatchObject({
+    kind: 'app',
+    message: { id: 'desktopMediaRequestUnsupported' },
+  });
   const audio = join(userData, 'selected.wav');
   await writeFile(audio, audioFixture());
   await desktopApp.evaluate(({ dialog }, selection) => {

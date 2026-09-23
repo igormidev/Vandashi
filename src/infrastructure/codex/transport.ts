@@ -43,7 +43,7 @@ export class JsonLineDecoder {
   push(chunk: string): string[] {
     this.buffer += chunk;
     if (Buffer.byteLength(this.buffer) > this.maxBytes)
-      throw new AgentError('protocol', 'Codex message exceeded the size limit.');
+      throw new AgentError('protocol', { id: 'codexMessageTooLarge' });
     const lines = this.buffer.split('\n');
     this.buffer = lines.pop() ?? '';
     return lines.filter((line) => line.trim().length > 0);
@@ -90,13 +90,15 @@ export class CodexTransport implements RpcClient {
       this.stderr = (this.stderr + chunk).slice(-4096);
     });
     this.child.on('error', (error) => {
-      this.fail(new AgentError('unavailable', `Could not start Codex: ${error.message}`));
+      this.fail(new AgentError('unavailable', { id: 'codexStartFailed' }, error.message));
     });
     this.child.stdin.on('error', (error) => {
       this.fail(error);
     });
     this.child.on('exit', (code) => {
-      this.fail(new AgentError('unavailable', `Codex exited (${String(code)}). ${this.stderr}`));
+      this.fail(
+        new AgentError('unavailable', { id: 'codexExited', params: { code: String(code) } }, this.stderr),
+      );
     });
   }
   async initialize(): Promise<unknown> {
@@ -108,12 +110,12 @@ export class CodexTransport implements RpcClient {
     return result;
   }
   request(method: string, params: unknown): Promise<unknown> {
-    if (this.closed) return Promise.reject(new AgentError('unavailable', 'Codex is disconnected.'));
+    if (this.closed) return Promise.reject(new AgentError('unavailable', { id: 'codexDisconnected' }));
     const id = ++this.serial;
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
         this.pending.delete(id);
-        reject(new AgentError('timeout', `Codex did not respond to ${method}.`));
+        reject(new AgentError('timeout', { id: 'codexRequestTimeout', params: { method } }));
       }, this.timeoutMs);
       this.pending.set(id, { resolve, reject, timer });
       this.write({ id, method, params });
@@ -128,7 +130,7 @@ export class CodexTransport implements RpcClient {
     return () => this.failures.delete(listener);
   }
   close(): Promise<void> {
-    this.fail(new AgentError('unavailable', 'Codex connection closed.'));
+    this.fail(new AgentError('unavailable', { id: 'codexConnectionClosed' }));
     this.shutdown ??= shutdownProcess(this.child, this.processClosed);
     return this.shutdown;
   }

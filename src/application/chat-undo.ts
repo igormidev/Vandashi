@@ -1,3 +1,4 @@
+import { AppFault } from '../domain/diagnostics';
 import type { AgentPort } from '../domain/agent';
 import type { AppEvent, ChatSession } from '../domain/models';
 import type { GitPort, StoragePort } from '../domain/storage';
@@ -20,13 +21,12 @@ export async function undoChat(
   const session = await store.getSession(id);
   const original = structuredClone(session);
   const checkpoint = session.checkpoints?.at(-1);
-  if (!checkpoint?.threadId) throw new Error('This conversation has no recoverable turn.');
-  if (!checkpoint.postHeads)
-    throw new Error('This turn has no verified file checkpoint and cannot be safely reverted.');
+  if (!checkpoint?.threadId) throw new AppFault({ id: 'appUndoUnavailable' });
+  if (!checkpoint.postHeads) throw new AppFault({ id: 'appUndoUnverified' });
   for (const repository of Object.keys(checkpoint.heads)) {
-    if ((await git.status(repository)).dirty) throw new Error('Save current file changes before reverting.');
+    if ((await git.status(repository)).dirty) throw new AppFault({ id: 'appSaveBeforeUndo' });
     if ((await git.head(repository)) !== checkpoint.postHeads[repository])
-      throw new Error('Files changed after this turn. Reverting it would discard later work.');
+      throw new AppFault({ id: 'appUndoLaterChanges' });
   }
   const branch = await agent.forkBefore(checkpoint.threadId, checkpoint.turnId);
   const current = await heads(Object.keys(checkpoint.heads));
@@ -62,10 +62,12 @@ export async function undoChat(
         errors.push(recoveryError);
       }
     }
-    throw new AggregateError(
-      errors,
-      'Reverting the turn failed. The previous content was restored where possible; your Git backup history is preserved.',
+    const failure = new AppFault(
+      { id: 'appUndoFailed' },
+      errors.map((cause) => (cause instanceof Error ? cause.message : String(cause))).join('\n'),
     );
+    failure.cause = new AggregateError(errors);
+    throw failure;
   }
   notify({ type: 'workspace-changed', scope: session.scope });
   return session;

@@ -1,6 +1,11 @@
 import type { Page } from '@playwright/test';
 import { test, expect } from './fixtures';
-import { assetRefreshControl, assetRefreshStatus, installAssetRefreshFixture } from './asset-refresh-fixture';
+import {
+  assetRefreshControl,
+  assetRefreshStatus,
+  assetSaveRequests,
+  installAssetRefreshFixture,
+} from './asset-refresh-fixture';
 
 async function settleFrames(page: Page, focus = false) {
   await page.evaluate(async (sendFocus) => {
@@ -16,6 +21,39 @@ async function settleFrames(page: Page, focus = false) {
 }
 
 for (const video of [false, true]) {
+  test(`${video ? 'video' : 'shared'} asset conflicts preserve the draft until reset and require the latest revision on retry`, async ({
+    desktopApp,
+    page,
+  }) => {
+    await installAssetRefreshFixture(desktopApp, video);
+    await page.reload();
+    await page
+      .getByRole('navigation')
+      .getByRole('button', { name: video ? 'Assets' : 'Shared assets', exact: true })
+      .click();
+    await page.locator('.asset-tile').click();
+    const title = page.getByRole('textbox', { name: 'Asset title', exact: true });
+    await expect(title).toBeEnabled();
+    await title.fill('My local draft');
+    await assetRefreshControl(desktopApp, { externalTitle: 'External logo', notify: video });
+    await page.locator('.asset-inspector').getByRole('button', { name: 'Save changes', exact: true }).click();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByRole('button', { name: 'Save changes', exact: true }).click();
+    await expect(page.getByText(/This asset changed outside the editor/u)).toBeVisible();
+    await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await expect(title).toHaveValue('My local draft');
+    expect((await assetSaveRequests(desktopApp))[0]?.expectedRevision).toBe('a'.repeat(64));
+    await page.getByRole('button', { name: 'Reset details', exact: true }).click();
+    await expect(title).toHaveValue('External logo');
+    await title.fill('Reviewed latest details');
+    await page.locator('.asset-inspector').getByRole('button', { name: 'Save changes', exact: true }).click();
+    await dialog.getByRole('button', { name: 'Save changes', exact: true }).click();
+    await expect(dialog).toHaveCount(0);
+    await expect(title).toHaveValue('Reviewed latest details');
+    const requests = await assetSaveRequests(desktopApp);
+    expect(requests.map((request) => request.expectedRevision)).toEqual(['a'.repeat(64), 'b'.repeat(64)]);
+  });
+
   test(`${video ? 'video' : 'shared'} assets bound refresh requests and preserve typed metadata through focus and late reads`, async ({
     desktopApp,
     page,

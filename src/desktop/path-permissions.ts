@@ -1,3 +1,4 @@
+import { AppFault } from '../domain/diagnostics';
 import { lstat, realpath } from 'node:fs/promises';
 import { isAbsolute } from 'node:path';
 import type { ApiMethod, DesktopApi } from '../domain/api';
@@ -13,7 +14,7 @@ export class PathPermissions {
 
   async grantDirectory(value: string): Promise<string> {
     const canonical = await realpath(value);
-    if (!(await lstat(canonical)).isDirectory()) throw new Error('Choose a directory.');
+    if (!(await lstat(canonical)).isDirectory()) throw new AppFault({ id: 'desktopChooseDirectory' });
     this.directories.set(canonical, canonical);
     return canonical;
   }
@@ -21,7 +22,7 @@ export class PathPermissions {
   grantFile(value: string): Promise<string> {
     const promise = (async () => {
       const canonical = await realpath(value);
-      if (!(await lstat(canonical)).isFile()) throw new Error('Choose a regular file.');
+      if (!(await lstat(canonical)).isFile()) throw new AppFault({ id: 'desktopChooseFile' });
       return canonical;
     })();
     this.files.set(value, promise);
@@ -41,13 +42,13 @@ export class PathPermissions {
     if (selected) {
       const canonical = await selected;
       if ((await realpath(value)) !== canonical || !(await lstat(canonical)).isFile())
-        throw new Error('The selected file has changed location. Select it again.');
+        throw new AppFault({ id: 'desktopSelectedLocationChanged' });
       return canonical;
     }
     const artifact = await this.providerImage?.(value);
     if (artifact) return artifact;
     const workspace = await this.workspacePath(value);
-    if (!(await lstat(workspace)).isFile()) throw new Error('Choose a regular file.');
+    if (!(await lstat(workspace)).isFile()) throw new AppFault({ id: 'desktopChooseFile' });
     return workspace;
   }
 
@@ -55,8 +56,7 @@ export class PathPermissions {
     if (method === 'createBrand') {
       const input = args[0] as Parameters<DesktopApi['createBrand']>[0];
       const canonical = await realpath(input.parentPath);
-      if (!this.directories.has(canonical))
-        throw new Error('Choose the brand location with the folder picker.');
+      if (!this.directories.has(canonical)) throw new AppFault({ id: 'desktopBrandPickerRequired' });
       input.parentPath = canonical;
     } else if (method === 'sendChat') {
       const input = args[0] as Parameters<DesktopApi['sendChat']>[0];

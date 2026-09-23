@@ -1,3 +1,4 @@
+import { AppFault } from '../../domain/diagnostics';
 import { z } from 'zod';
 import type { AgentCapabilities, AgentStatus } from '../../domain/agent';
 import type { ModelInfo } from '../../domain/models';
@@ -37,7 +38,7 @@ export async function loadModels(client: RpcClient): Promise<{ models: ModelInfo
     raw.push(...page.data);
     cursor = page.nextCursor;
     if (cursor) {
-      if (cursors.has(cursor)) throw new Error('Codex model pagination repeated a cursor.');
+      if (cursors.has(cursor)) throw new AppFault({ id: 'codexModelCursorRepeated' });
       cursors.add(cursor);
     }
   } while (cursor);
@@ -100,7 +101,7 @@ async function browserCatalog(client: RpcClient): Promise<string[]> {
     }
     cursor = string(page['nextCursor']) || null;
     if (cursor) {
-      if (cursors.has(cursor)) throw new Error('Browser capability pagination repeated a cursor.');
+      if (cursors.has(cursor)) throw new AppFault({ id: 'codexBrowserCursorRepeated' });
       cursors.add(cursor);
     }
   } while (cursor);

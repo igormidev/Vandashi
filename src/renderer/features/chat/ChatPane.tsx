@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import type { ChatMessage, Scope } from '../../../domain/models';
 import { scopeKey } from '../../../domain/defaults';
 import { useApp } from '../../app/store';
+import { diagnosticText, messageText } from '../../app/diagnostics';
 import { Empty, IconButton, Loading, Modal } from '../../shared/ui';
 import { clearDraft } from './draft-cache';
 import { Composer } from './Composer';
@@ -13,12 +14,27 @@ import { ChatMarkdown } from './ChatMarkdown';
 import { ChatImage } from './ChatImage';
 import '../../styles/chat.css';
 
-function Message({ message, root }: { message: ChatMessage; root: string }) {
+function Message({
+  message,
+  root,
+  mediaGeneration,
+}: {
+  message: ChatMessage;
+  root: string;
+  mediaGeneration: number;
+}) {
   const { t } = useTranslation();
   if (message.appMessage)
     return (
       <article className="message receipt">
-        <p>{t(message.appMessage.id, { ns: 'messages' })}</p>
+        <p>{messageText(message.appMessage)}</p>
+        {message.files.length > 0 && <DiffFiles files={message.files} />}
+      </article>
+    );
+  if (message.diagnostic)
+    return (
+      <article className={`message ${message.role}`}>
+        <p>{diagnosticText(message.diagnostic)}</p>
         {message.files.length > 0 && <DiffFiles files={message.files} />}
       </article>
     );
@@ -34,14 +50,14 @@ function Message({ message, root }: { message: ChatMessage; root: string }) {
           {message.files.length > 0 && <DiffFiles files={message.files} />}
         </details>
         {message.generatedImages?.map((path) => (
-          <ChatImage key={path} path={path} />
+          <ChatImage key={path} path={path} mediaGeneration={mediaGeneration} />
         ))}
       </div>
     );
   return (
     <article className={`message ${message.role}`}>
       <div className="message-body">
-        <ChatMarkdown text={message.text} root={root} />
+        <ChatMarkdown text={message.text} root={root} mediaGeneration={mediaGeneration} />
       </div>
       {message.files.length > 0 && <DiffFiles files={message.files} />}
     </article>
@@ -58,7 +74,8 @@ export function ChatPane() {
 function Conversation({ scope }: { scope: Scope }) {
   const { t } = useTranslation();
   const { api, run, chatTarget, setChatTarget, busy, activity, dirty, workspace } = useApp();
-  const { sessions, selected, setSelected, loading, failed, refresh, replace, close } = useSessions(scope);
+  const { sessions, selected, setSelected, loading, failed, refresh, replace, close, mediaGeneration } =
+    useSessions(scope);
   const [confirm, setConfirm] = useState<'reset' | 'undo' | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [resetVersion, setResetVersion] = useState<Record<string, number>>({});
@@ -146,6 +163,7 @@ function Conversation({ scope }: { scope: Scope }) {
               <Message
                 key={message.id}
                 message={message}
+                mediaGeneration={mediaGeneration[session.id] ?? 0}
                 root={workspace?.video?.path ?? `${workspace?.brand.path ?? ''}/brand_identity`}
               />
             ))}

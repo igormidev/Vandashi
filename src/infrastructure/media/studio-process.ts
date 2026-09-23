@@ -1,3 +1,4 @@
+import { AppFault } from '../../domain/diagnostics';
 import type { ChildProcess } from 'node:child_process';
 import { createServer } from 'node:net';
 import { resolve } from 'node:path';
@@ -37,14 +38,14 @@ export function parseStudioReady(line: string, expectedProject: string): Omit<St
   if (!parsed.success) return null;
   const result = parsed.data.result;
   if (resolve(result.projectDir) !== resolve(expectedProject))
-    throw new Error('Hyperframes opened a different project.');
+    throw new AppFault({ id: 'mediaStudioDifferentProject' });
   if (
     /[\\/:]/.test(result.projectName) ||
     Array.from(result.projectName).some((character) => character.charCodeAt(0) < 32) ||
     result.projectName === '.' ||
     result.projectName === '..'
   )
-    throw new Error('Hyperframes returned an invalid project identifier.');
+    throw new AppFault({ id: 'mediaStudioInvalidProject' });
   const baseUrl = `http://127.0.0.1:${String(result.port)}`;
   const projectId = encodeURIComponent(result.projectName);
   return {
@@ -67,7 +68,7 @@ async function availablePort(): Promise<number> {
       server.close((error) => {
         if (error) reject(error);
         else if (address === null || typeof address === 'string')
-          reject(new Error('Unable to allocate a Studio port.'));
+          reject(new AppFault({ id: 'mediaStudioPort' }));
         else resolvePort(address.port);
       });
     });
@@ -91,7 +92,7 @@ export async function startStudioProcess(runtime: MediaRuntime, projectPath: str
       let pending = '';
       let diagnostics = '';
       const timer = setTimeout(() => {
-        reject(new Error(`Hyperframes Studio did not become ready. ${diagnostics}`.trim()));
+        reject(new AppFault({ id: 'mediaStudioNotReady' }, diagnostics.trim() || undefined));
       }, runtime.startupTimeoutMs);
       child.stderr?.on('data', (chunk: Buffer) => {
         diagnostics = (diagnostics + chunk.toString()).slice(-2_000);
@@ -100,7 +101,7 @@ export async function startStudioProcess(runtime: MediaRuntime, projectPath: str
         pending += chunk.toString();
         if (pending.length > 1_000_000) {
           clearTimeout(timer);
-          reject(new Error('Hyperframes returned an oversized startup response.'));
+          reject(new AppFault({ id: 'mediaStudioStartupLimit' }));
           return;
         }
         const lines = pending.split('\n');
@@ -124,7 +125,11 @@ export async function startStudioProcess(runtime: MediaRuntime, projectPath: str
       });
       child.once('close', (code) => {
         clearTimeout(timer);
-        reject(new Error(diagnostics.trim() || `Hyperframes Studio exited (${String(code)}).`));
+        reject(
+          diagnostics.trim()
+            ? new Error(diagnostics.trim())
+            : new AppFault({ id: 'mediaStudioExited', params: { code: String(code) } }),
+        );
       });
     });
   } catch (error) {

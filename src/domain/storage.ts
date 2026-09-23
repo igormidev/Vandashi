@@ -1,5 +1,6 @@
 import type {
   AppState,
+  AspectRatio,
   Asset,
   AssetDraft,
   Brand,
@@ -26,6 +27,7 @@ export interface StorageRecovery {
 }
 export type RecoveryListener = (recovery: StorageRecovery) => void;
 export interface GitPort {
+  checkAvailable(): Promise<void>;
   init(repository: string): Promise<void>;
   head(repository: string): Promise<string>;
   contentRevision(repository: string): Promise<string>;
@@ -54,6 +56,19 @@ export interface ImportedVideo {
   ratio: '16:9' | '9:16';
   sourcePath: string;
 }
+export interface ImportedClip {
+  scope: Scope;
+  name: string;
+  ratio: '9:16' | '1:1';
+  sourcePath: string;
+  duration: number;
+}
+/** Called on a private unpublished project. Must not reenter this storage port. */
+export type ProjectPreparation = (project: {
+  path: string;
+  name: string;
+  ratio: AspectRatio;
+}) => Promise<void>;
 
 /** Persistence contracts contain no Electron or provider-specific dependencies. */
 export interface StoragePort {
@@ -62,11 +77,15 @@ export interface StoragePort {
   createBrand(input: { parentPath: string; name: string }): Promise<Brand>;
   openBrand(id: string): Promise<Workspace>;
   listVideos(brandId: string): Promise<VideoSummary[]>;
-  createVideo(input: { brandId: string; name: string; ratio: '16:9' | '9:16' }): Promise<Workspace>;
+  createVideo(
+    input: { brandId: string; name: string; ratio: '16:9' | '9:16' },
+    prepare?: ProjectPreparation,
+  ): Promise<Workspace>;
   importVideo(input: ImportedVideo, validateCopy: (path: string) => Promise<void>): Promise<Workspace>;
   openWorkspace(scope: Scope): Promise<Workspace>;
   saveWorkspace(input: SaveInput): Promise<Workspace>;
-  createClip(input: NewClip): Promise<Clip>;
+  createClip(input: NewClip, prepare?: ProjectPreparation): Promise<Clip>;
+  importClip(input: ImportedClip, validateCopy: (path: string) => Promise<void>): Promise<Clip>;
   repositories(scope: Scope): Promise<string[]>;
   projectPath(scope: Scope): Promise<string>;
   setRenderedPath(scope: Scope, path: string): Promise<void>;
@@ -79,6 +98,7 @@ export interface StoragePort {
   updateAsset(input: {
     scope: Scope;
     assetId: string;
+    expectedRevision: string;
     title: string;
     description: string;
     tags: string[];

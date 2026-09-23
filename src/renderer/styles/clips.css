@@ -308,6 +308,23 @@
 .clip-workspace-header .spacer {
   flex: 1;
 }
+.clip-generation-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 12px 17px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+}
+.clip-generation-error > div {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.clip-generation-error p {
+  margin-top: 5px;
+  color: var(--muted);
+}
 .clip-editor-columns {
   display: grid;
   grid-template-columns: minmax(290px, 1fr) minmax(350px, 1.1fr) minmax(260px, 0.9fr);

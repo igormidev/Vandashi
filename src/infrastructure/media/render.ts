@@ -1,3 +1,4 @@
+import { AppFault } from '../../domain/diagnostics';
 import { stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { z } from 'zod';
@@ -32,7 +33,7 @@ export async function mediaResponse(url: string, init?: RequestInit): Promise<Re
   const response = await fetch(url, { ...init, signal: init?.signal ?? AbortSignal.timeout(15_000) });
   if (!response.ok) {
     const body = (await response.text()).slice(0, 2_000);
-    throw new Error(`Hyperframes request failed (${String(response.status)}): ${body}`);
+    throw new AppFault({ id: 'mediaRequestFailed', params: { status: response.status } }, body || undefined);
   }
   return response;
 }
@@ -55,7 +56,7 @@ export async function observeRender(
   const response = await mediaResponse(`${studio.baseUrl}/api/render/${encodeURIComponent(jobId)}/progress`, {
     signal,
   });
-  if (!response.body) throw new Error('Hyperframes did not provide render progress.');
+  if (!response.body) throw new AppFault({ id: 'mediaRenderProgressMissing' });
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let pending = '';
@@ -65,24 +66,25 @@ export async function observeRender(
       const next = await reader.read();
       if (next.done) break;
       pending += decoder.decode(next.value, { stream: true });
-      if (pending.length > 1_000_000) throw new Error('Hyperframes returned an oversized progress event.');
+      if (pending.length > 1_000_000) throw new AppFault({ id: 'mediaRenderProgressLimit' });
       const events = pending.split(/\r?\n\r?\n/);
       pending = events.pop() ?? '';
       for (const event of events) {
         const progress = parseRenderProgress(event);
         if (!progress) continue;
         onProgress?.(progress.progress, progress.stage ?? progress.status);
-        if (progress.status === 'failed') throw new Error(progress.error ?? 'The video render failed.');
-        if (progress.status === 'cancelled') throw new Error('The video render was cancelled.');
+        if (progress.status === 'failed')
+          throw progress.error ? new Error(progress.error) : new AppFault({ id: 'mediaRenderFailed' });
+        if (progress.status === 'cancelled') throw new AppFault({ id: 'mediaRenderJobCancelled' });
         if (progress.status === 'complete') complete = true;
       }
     }
   } finally {
     await reader.cancel().catch(() => undefined);
   }
-  if (!complete) throw new Error('The renderer disconnected before completing the video.');
+  if (!complete) throw new AppFault({ id: 'mediaRenderDisconnected' });
   const output = join(studio.info.projectPath, 'renders', `${jobId}.mp4`);
   const file = await stat(output);
-  if (!file.isFile() || file.size === 0) throw new Error('The renderer did not produce a video file.');
+  if (!file.isFile() || file.size === 0) throw new AppFault({ id: 'mediaRenderOutputMissing' });
   return output;
 }

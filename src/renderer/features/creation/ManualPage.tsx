@@ -2,6 +2,7 @@ import { Clapperboard } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useApp } from '../../app/store';
+import { errorText } from '../../app/diagnostics';
 import { Empty, Loading } from '../../shared/ui';
 
 export function ManualPage() {
@@ -21,8 +22,7 @@ export function ManualPage() {
         const opened = await api.startStudio({ brandId, videoId, clipId: clipId ?? null });
         if (!disposed) setStudio({ key, url: opened.url, error: '' });
       } catch (failure) {
-        if (!disposed)
-          setStudio({ key, url: '', error: failure instanceof Error ? failure.message : String(failure) });
+        if (!disposed) setStudio({ key, url: '', error: errorText(failure) });
         throw failure;
       }
     });

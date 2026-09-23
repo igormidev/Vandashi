@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useApp } from '../../app/store';
 import { Modal } from '../../shared/ui';
+import { errorText } from '../../app/diagnostics';
 
 export function CommitDialog({
   onSave,
@@ -18,6 +19,7 @@ export function CommitDialog({
   const [body, setBody] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
   useEffect(() => {
     let disposed = false;
     if (!workspace) return;
@@ -25,11 +27,14 @@ export function CommitDialog({
       .suggestCommit({ scope: workspace.scope, summary })
       .then((value) => {
         if (!disposed) {
+          setGenerationError(null);
           setTitle(value.title);
           setBody(value.body);
         }
       })
-      .catch(() => undefined)
+      .catch((error: unknown) => {
+        if (!disposed) setGenerationError(errorText(error));
+      })
       .finally(() => {
         if (!disposed) setLoading(false);
       });
@@ -48,6 +53,11 @@ export function CommitDialog({
     >
       <div className="form">
         {loading && <p className="muted">{t('generatingCommit')}</p>}
+        {generationError && (
+          <p className="field-error" role="alert">
+            {generationError}
+          </p>
+        )}
         <label className="field">
           <span>{t('commitTitle')}</span>
           <input

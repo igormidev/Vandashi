@@ -1,3 +1,4 @@
+import { AppFault } from '../domain/diagnostics';
 import type { AgentPort } from '../domain/agent';
 import type { MediaPort } from '../domain/media';
 import type { AppEvent, Scope, Workspace } from '../domain/models';
@@ -21,10 +22,10 @@ export class Studio {
   ) {}
   async start(scope: Scope) {
     return this.gate.run('studio-open', async () => {
-      if (!scope.videoId) throw new Error('Open a video first.');
+      if (!scope.videoId) throw new AppFault({ id: 'appOpenVideo' });
       const path = await this.store.projectPath(scope);
       if (!(await this.git.status(path)).dirty) this.baselines.set(path, await this.git.head(path));
-      else if (!this.baselines.has(path)) throw new Error('Save pending changes before opening the editor.');
+      else if (!this.baselines.has(path)) throw new AppFault({ id: 'appSaveBeforeStudio' });
       const studio = await this.media.startStudio(path);
       this.studioUrls.set(path, studio.url);
       await this.prepareStudio?.(studio.url);
@@ -45,11 +46,8 @@ export class Studio {
       const path = await this.store.projectPath(scope);
       const sha = this.baselines.get(path);
       await this.flush(path);
-      if (!sha) throw new Error('No editor checkpoint is available.');
-      if ((await this.git.head(path)) !== sha)
-        throw new Error(
-          'The project was committed after opening this editor. Reopen it before discarding changes.',
-        );
+      if (!sha) throw new AppFault({ id: 'appStudioCheckpointMissing' });
+      if ((await this.git.head(path)) !== sha) throw new AppFault({ id: 'appStudioCheckpointChanged' });
       if ((await this.git.status(path)).dirty) {
         await this.git.commit(
           path,
@@ -64,15 +62,12 @@ export class Studio {
   }
   async save(input: { scope: Scope; title: string; body: string }): Promise<Workspace> {
     return this.gate.run('studio-save', async () => {
-      if (!input.title.trim() || !input.body.trim())
-        throw new Error('A commit title and description are required.');
+      if (!input.title.trim() || !input.body.trim()) throw new AppFault({ id: 'appCommitRequired' });
       const cwd = await this.store.projectPath(input.scope);
       const settings = (await this.store.getState()).settings;
       for (const repository of await this.store.repositories(input.scope))
         if (repository !== cwd && (await this.git.status(repository)).dirty)
-          throw new Error(
-            'Save changes in the other workspace repositories before synchronizing Studio edits.',
-          );
+          throw new AppFault({ id: 'appStudioOtherChanges' });
       await this.flush(cwd);
       const diff = await this.git.diff(cwd);
       const result = await this.agent.run(
@@ -96,7 +91,7 @@ Pending changes (inspect the full files yourself if this excerpt is truncated): 
         () => undefined,
       );
       if (result.status !== 'completed')
-        throw new Error(result.error ?? 'Could not synchronize the script. Your edits are still available.');
+        throw new AppFault({ id: 'appScriptSyncFailed' }, result.error ?? undefined);
       await this.media.normalizeProject(cwd);
       await this.git.commit(cwd, input.title, input.body);
       this.baselines.delete(cwd);
@@ -107,17 +102,14 @@ Pending changes (inspect the full files yourself if this excerpt is truncated): 
   async render(scope: Scope): Promise<string> {
     return this.gate.run('render', async () => {
       for (const repository of await this.store.repositories(scope))
-        if ((await this.git.status(repository)).dirty)
-          throw new Error('Save pending changes before rendering.');
+        if ((await this.git.status(repository)).dirty) throw new AppFault({ id: 'appSaveBeforeRender' });
       const project = await this.store.projectPath(scope);
       const source = await this.git.contentRevision(project);
-      const path = await this.media.renderVideo(project, (progress, detail) => {
-        this.emit({ type: 'render', progress, detail });
+      const path = await this.media.renderVideo(project, (progress, detail, label) => {
+        this.emit({ type: 'render', progress, detail, ...(label ? { label } : {}) });
       });
       if ((await this.git.contentRevision(project)) !== source || (await this.git.status(project)).dirty)
-        throw new Error(
-          'The video source changed during rendering. Your output is preserved, but save the current source and render again before publishing.',
-        );
+        throw new AppFault({ id: 'appRenderSourceChanged' });
       await this.store.setRenderedPath(scope, path);
       await this.commits.reconcile(scope);
       this.emit({ type: 'workspace-changed', scope });

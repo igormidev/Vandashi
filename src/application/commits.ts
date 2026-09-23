@@ -1,3 +1,4 @@
+import { AppFault } from '../domain/diagnostics';
 import { parseAgentJson } from './agent-json';
 import type { MediaPort } from '../domain/media';
 import type { AgentPort } from '../domain/agent';
@@ -39,7 +40,7 @@ export class Commits {
       () => undefined,
     );
     if (result.status !== 'completed')
-      throw new Error(result.error ?? 'Could not generate a commit message.');
+      throw new AppFault({ id: 'appCommitGenerationFailed' }, result.error ?? undefined);
     const parsed: unknown = parseAgentJson(result.output);
     if (
       !parsed ||
@@ -51,7 +52,7 @@ export class Commits {
       !parsed.title.trim() ||
       !parsed.body.trim()
     )
-      throw new Error('The commit message was empty.');
+      throw new AppFault({ id: 'appCommitEmpty' });
     return { title: parsed.title.trim(), body: parsed.body.trim() };
   }
   async reconcile(scope: Scope, normalize = true): Promise<void> {
@@ -62,7 +63,7 @@ export class Commits {
       normalizationError =
         error instanceof Error
           ? error
-          : new Error(typeof error === 'string' ? error : 'Could not prepare composition IDs.');
+          : new AppFault({ id: 'appCompositionIdsFailed' }, typeof error === 'string' ? error : undefined);
     }
     const repositories = await this.store.repositories(scope);
     const pending: string[] = [];
@@ -90,11 +91,8 @@ export class Commits {
       if ((await this.git.status(repository)).dirty)
         await this.git.commit(repository, message.title, message.body);
       if ((await this.git.status(repository)).dirty)
-        throw new Error(`Could not save all changes in ${repository}`);
+        throw new AppFault({ id: 'appRepositorySaveFailed', params: { repository } });
     }
-    if (normalizationError)
-      throw new Error(
-        `The source was saved, but Hyperframes could not prepare it for preview: ${normalizationError.message}`,
-      );
+    if (normalizationError) throw new AppFault({ id: 'appNormalizationFailed' }, normalizationError.message);
   }
 }

@@ -1,12 +1,24 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron';
 import type { ApiMethod, DesktopApi } from '../domain/api';
 import type { AppEvent } from '../domain/models';
+import { diagnosticFromError, encodeDiagnostic, envelopeDiagnostic } from '../domain/diagnostics';
 
 function invoke<K extends ApiMethod>(
   method: K,
   ...args: Parameters<DesktopApi[K]>
 ): ReturnType<DesktopApi[K]> {
-  return ipcRenderer.invoke('vandashi:invoke', method, args) as ReturnType<DesktopApi[K]>;
+  return ipcRenderer.invoke('vandashi:invoke', method, args).then(
+    (value: unknown) => {
+      const diagnostic = envelopeDiagnostic(value);
+      if (diagnostic) throw new Error(encodeDiagnostic(diagnostic));
+      return value;
+    },
+    (error: unknown) => {
+      // IPC and contextBridge both discard custom Error fields. Carry a validated machine record
+      // in message, and decode it once in the renderer; external prose never becomes an app ID.
+      throw new Error(encodeDiagnostic(diagnosticFromError(error)));
+    },
+  ) as ReturnType<DesktopApi[K]>;
 }
 const api: DesktopApi = {
   getState: () => invoke('getState'),
@@ -33,6 +45,7 @@ const api: DesktopApi = {
   undoChat: (id) => invoke('undoChat', id),
   importAsset: (input) => invoke('importAsset', input),
   describeAsset: (input) => invoke('describeAsset', input),
+  cancelAssetInspection: (requestId) => invoke('cancelAssetInspection', requestId),
   updateAsset: (input) => invoke('updateAsset', input),
   deleteAsset: (input) => invoke('deleteAsset', input),
   importThumbnail: (input) => invoke('importThumbnail', input),

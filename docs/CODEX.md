@@ -54,6 +54,17 @@ The subprocess smoke is verified on macOS; Windows process-tree shutdown needs n
 
 Server requests cannot hang indefinitely. Command/file approvals are declined, structured questions receive an empty answer, and unsupported requests receive a clear RPC rejection. The UI receives a recoverable warning; the agent is instructed to ask questions in its reply. The transport does not auto-approve escalation or external actions. A future interactive approval UI can extend this single boundary.
 
+App-authored failures carry typed `Diagnostic` descriptors from the English source catalog
+in `domain/messages/codex-en.ts`. `AgentError` retains its operational `code`; app-owned
+messages use an ID and typed interpolation parameters, while a string from the provider
+remains external text. Process exit/start wrappers keep bounded stderr or OS details in
+`externalDetail`. A provider warning is never classified by matching its English wording.
+Application notices forward these descriptors, and chat errors persist them alongside the
+English `text` fallback so future locale changes can reformat app text without changing
+provider output or user content. Pre-migration messages remain readable as raw text.
+`codex-diagnostics.test.ts` verifies provenance, withheld requests, size guards, and actual
+subprocess stderr; `application-diagnostics.test.ts` verifies the persisted boundary.
+
 Model names, reasoning levels, image support, and speed tiers come from paginated `model/list`. Standard mode clears the persisted service tier; Fast uses the catalog's priority tier. Explicit unavailable selections fail instead of silently changing models.
 
 ## Read and edit modes

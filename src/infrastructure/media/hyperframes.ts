@@ -1,3 +1,6 @@
+import { AppFault } from '../../domain/diagnostics';
+import type { AssetInspectionLease, AssetInspectionProgress } from '../../domain/asset-inspection';
+import { AssetInspector } from './asset-inspection';
 import { access } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import type { ClipMediaInput, MediaPort, MediaProbe, RenderProgress } from '../../domain/media';
@@ -27,6 +30,7 @@ interface ActiveRender {
 export class HyperframesMediaAdapter implements MediaPort {
   private readonly runtime: MediaRuntime;
   private readonly waveforms: AudioWaveforms;
+  private readonly inspector: AssetInspector;
   private studio: StudioProcess | null = null;
   private transitions: Promise<void> = Promise.resolve();
   private rendering: ActiveRender | null = null;
@@ -35,6 +39,7 @@ export class HyperframesMediaAdapter implements MediaPort {
   constructor(options: MediaAdapterOptions = {}) {
     this.runtime = resolveMediaRuntime(options);
     this.waveforms = new AudioWaveforms(this.runtime);
+    this.inspector = new AssetInspector(this.runtime, options);
   }
 
   async normalizeProject(projectPath: string): Promise<void> {
@@ -70,6 +75,14 @@ export class HyperframesMediaAdapter implements MediaPort {
     return this.waveforms.get(path);
   }
 
+  inspectAsset(
+    path: string,
+    onProgress?: (progress: AssetInspectionProgress) => void,
+    signal?: AbortSignal,
+  ): Promise<AssetInspectionLease> {
+    return this.inspector.inspect(path, onProgress, signal);
+  }
+
   async checks(onCheck?: (check: DependencyCheck) => void): Promise<DependencyCheck[]> {
     return checkMediaDependencies(this.runtime, onCheck);
   }
@@ -77,9 +90,9 @@ export class HyperframesMediaAdapter implements MediaPort {
   async startStudio(projectPath: string): Promise<StudioInfo> {
     const target = resolve(projectPath);
     return this.transition(async () => {
-      if (this.disposed) throw new Error('The video studio is closed.');
+      if (this.disposed) throw new AppFault({ id: 'mediaStudioClosed' });
       if (this.rendering !== null && this.rendering.projectPath !== target)
-        throw new Error('Finish the current render before changing projects.');
+        throw new AppFault({ id: 'mediaRenderBeforeProject' });
       if (
         this.studio?.info.projectPath === target &&
         this.studio.child.exitCode === null &&
@@ -94,13 +107,12 @@ export class HyperframesMediaAdapter implements MediaPort {
   }
 
   async stopStudio(): Promise<void> {
-    if (this.rendering !== null)
-      throw new Error('Finish or cancel the current render before closing the studio.');
+    if (this.rendering !== null) throw new AppFault({ id: 'mediaRenderBeforeClose' });
     await this.transition(() => this.closeStudio());
   }
 
   async renderVideo(projectPath: string, onProgress?: RenderProgress): Promise<string> {
-    if (this.rendering !== null) throw new Error('A video render is already running.');
+    if (this.rendering !== null) throw new AppFault({ id: 'mediaRenderActive' });
     const active: ActiveRender = {
       projectPath: resolve(projectPath),
       controller: new AbortController(),
@@ -109,11 +121,11 @@ export class HyperframesMediaAdapter implements MediaPort {
     };
     this.rendering = active;
     try {
-      onProgress?.(0, 'Preparing video renderer');
+      onProgress?.(0, 'Preparing video renderer', { id: 'mediaRendererPreparing' });
       await this.startStudio(projectPath);
       active.controller.signal.throwIfAborted();
       const studio = this.studio;
-      if (studio === null) throw new Error('The video studio did not start.');
+      if (studio === null) throw new AppFault({ id: 'mediaStudioStartFailed' });
       active.studio = studio;
       active.jobId = await startRender(studio);
       if (active.controller.signal.aborted) await this.cancelJob(active);
@@ -131,13 +143,14 @@ export class HyperframesMediaAdapter implements MediaPort {
   async cancelRender(): Promise<void> {
     const active = this.rendering;
     if (active === null) return;
-    active.controller.abort(new Error('Video rendering was cancelled.'));
+    active.controller.abort(new AppFault({ id: 'mediaRenderCancelled' }));
     await this.cancelJob(active);
   }
 
   async dispose(): Promise<void> {
     this.disposed = true;
     await this.waveforms.dispose();
+    await this.inspector.dispose();
     await this.cancelRender().catch(() => undefined);
     await this.transition(() => this.closeStudio());
   }

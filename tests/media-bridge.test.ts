@@ -1,6 +1,10 @@
 import { runInNewContext } from 'node:vm';
 import { describe, expect, it, vi } from 'vitest';
-import { STUDIO_BRIDGE_FLUSH, STUDIO_BRIDGE_INSTALL } from '../src/infrastructure/media/studio-bridge';
+import {
+  STUDIO_BRIDGE_FLUSH,
+  STUDIO_BRIDGE_INSTALL,
+  type StudioFlushResult,
+} from '../src/infrastructure/media/studio-bridge';
 
 function deferred<T>() {
   let resolve: (value: T) => void = () => {
@@ -40,7 +44,7 @@ function fixture() {
     active,
     nativeFetch,
     install: () => runInNewContext(STUDIO_BRIDGE_INSTALL, context) as unknown,
-    flush: () => runInNewContext(STUDIO_BRIDGE_FLUSH, context) as Promise<void>,
+    flush: () => runInNewContext(STUDIO_BRIDGE_FLUSH, context) as Promise<StudioFlushResult>,
   };
 }
 
@@ -82,12 +86,30 @@ describe('Studio flush boundary', () => {
     const url = 'http://127.0.0.1:1234/api/projects/test/files/index.html';
     bridge.nativeFetch.mockResolvedValueOnce(new Response(null, { status: 409 }));
     await bridge.window.fetch(url, { method: 'PUT' });
-    await expect(bridge.flush()).rejects.toThrow('HTTP 409');
+    await expect(bridge.flush()).resolves.toEqual({
+      ok: false,
+      diagnostic: { kind: 'app', message: { id: 'mediaBridgeSaveHttp', params: { status: 409 } } },
+    });
     bridge.install(); // Idempotent reinjection must not discard the pending error.
-    await expect(bridge.flush()).rejects.toThrow('HTTP 409');
+    await expect(bridge.flush()).resolves.toEqual({
+      ok: false,
+      diagnostic: { kind: 'app', message: { id: 'mediaBridgeSaveHttp', params: { status: 409 } } },
+    });
     bridge.nativeFetch.mockResolvedValueOnce(new Response(null));
     await bridge.window.fetch(url, { method: 'PUT' });
-    await expect(bridge.flush()).resolves.toBeUndefined();
+    await expect(bridge.flush()).resolves.toEqual({ ok: true });
+  });
+
+  it('preserves vendor flush failures as external text instead of matching English messages', async () => {
+    const bridge = fixture();
+    bridge.window.addEventListener('hf-studio-flush-pending-edits', (event) => {
+      const detail = (event as CustomEvent<{ promises: Promise<unknown>[] }>).detail;
+      detail.promises.push(Promise.reject(new Error('Studio is still saving. Provider-specific Ω')));
+    });
+    await expect(bridge.flush()).resolves.toEqual({
+      ok: false,
+      diagnostic: { kind: 'external', text: 'Studio is still saving. Provider-specific Ω' },
+    });
   });
 
   it('does not wait for unrelated read streams', async () => {
@@ -95,7 +117,7 @@ describe('Studio flush boundary', () => {
     const network = deferred<Response>();
     bridge.nativeFetch.mockReturnValueOnce(network.promise);
     const read = bridge.window.fetch('http://127.0.0.1:1234/api/projects/test/events');
-    await expect(bridge.flush()).resolves.toBeUndefined();
+    await expect(bridge.flush()).resolves.toEqual({ ok: true });
     network.resolve(new Response(null));
     await read;
   });

@@ -1,7 +1,9 @@
+import { AppFault, DiagnosticError, parseDiagnostic } from '../domain/diagnostics';
 import { webFrameMain, type WebContents, type WebFrameMain } from 'electron';
+import { desktopUrl } from './request-errors';
 
 function studioUrl(value: string): URL {
-  const url = new URL(value);
+  const url = desktopUrl(value, { id: 'desktopStudioLocationInvalid' });
   if (
     url.protocol !== 'http:' ||
     url.hostname !== '127.0.0.1' ||
@@ -11,7 +13,7 @@ function studioUrl(value: string): URL {
     url.password ||
     !/^#project\/[a-zA-Z0-9_%.-]+(?:\?[^#]*)?$/u.test(url.hash)
   )
-    throw new Error('Invalid local Studio location.');
+    throw new AppFault({ id: 'desktopStudioLocationInvalid' });
   return url;
 }
 
@@ -56,12 +58,20 @@ export class DesktopStudioHost {
   }
 
   async flushStudio(value: string): Promise<void> {
-    if (value !== this.expected) throw new Error('The active editor changed. Reopen it before saving.');
+    if (value !== this.expected) throw new AppFault({ id: 'desktopStudioChanged' });
     const frames = this.contents.mainFrame.frames.filter((frame) => this.matches(frame));
-    if (frames.length !== 1) throw new Error('The editor is not available. Reopen it before saving.');
+    if (frames.length !== 1) throw new AppFault({ id: 'desktopStudioUnavailable' });
     const frame = frames[0];
-    if (!frame) throw new Error('The editor is not available.');
+    if (!frame) throw new AppFault({ id: 'desktopStudioUnavailable' });
     await this.install(frame);
-    await frame.executeJavaScript(this.flushScript);
+    const result: unknown = await frame.executeJavaScript(this.flushScript);
+    if (result && typeof result === 'object' && 'ok' in result) {
+      if (result.ok === true && Object.keys(result).length === 1) return;
+      if (result.ok === false && 'diagnostic' in result && Object.keys(result).length === 2) {
+        const diagnostic = parseDiagnostic(result.diagnostic);
+        if (diagnostic) throw new DiagnosticError(diagnostic);
+      }
+    }
+    throw new AppFault({ id: 'invalidDiagnostic' });
   }
 }

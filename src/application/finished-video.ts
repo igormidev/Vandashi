@@ -1,8 +1,13 @@
+import { AppFault } from '../domain/diagnostics';
 import type { DesktopApi } from '../domain/api';
 import type { MediaPort, MediaProbe } from '../domain/media';
+import type { AspectRatio } from '../domain/models';
 import type { StoragePort } from '../domain/storage';
 
-export function finishedVideoRatio(probe: MediaProbe): '16:9' | '9:16' {
+export function measuredFinishedRatio<T extends AspectRatio>(
+  probe: MediaProbe,
+  allowed: readonly T[],
+): T | null {
   const { width, height, duration } = probe;
   if (
     !width ||
@@ -14,16 +19,19 @@ export function finishedVideoRatio(probe: MediaProbe): '16:9' | '9:16' {
     !Number.isFinite(duration) ||
     duration <= 0
   )
-    throw new Error('Choose a valid finished video with a positive duration.');
+    throw new AppFault({ id: 'appFinishedVideoInvalid' });
   // Accept codec-friendly even-pixel rounding, not a different creative aspect ratio.
   const matches = (ratio: number) =>
     Math.abs(width / height - ratio) / ratio <= 0.01 &&
     (Math.abs(width - height * ratio) <= 2 || Math.abs(height - width / ratio) <= 2);
-  if (matches(16 / 9)) return '16:9';
-  if (matches(9 / 16)) return '9:16';
-  throw new Error(
-    'Import a 16:9 landscape or 9:16 portrait video. Square videos use the clip import workflow.',
-  );
+  const values = { '16:9': 16 / 9, '9:16': 9 / 16, '1:1': 1 };
+  return allowed.find((ratio) => matches(values[ratio])) ?? null;
+}
+
+export function finishedVideoRatio(probe: MediaProbe): '16:9' | '9:16' {
+  const ratio = measuredFinishedRatio(probe, ['16:9', '9:16']);
+  if (!ratio) throw new AppFault({ id: 'appFinishedVideoRatio' });
+  return ratio;
 }
 
 export async function importFinishedVideo(
@@ -41,6 +49,6 @@ export async function importFinishedVideo(
       copy.height !== original.height ||
       Math.abs(copy.duration - original.duration) > 0.01
     )
-      throw new Error('The selected video changed while it was imported. Select it again.');
+      throw new AppFault({ id: 'appImportedVideoChanged' });
   });
 }

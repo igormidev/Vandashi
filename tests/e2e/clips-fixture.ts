@@ -8,7 +8,8 @@ import { chatFixtureData } from './chat-fixture-data';
 
 export async function installClipsFixture(
   desktop: ElectronApplication,
-  failCreation: 'none' | 'before' | 'after' = 'none',
+  failCreation: 'none' | 'before' | 'after' | 'after-open' = 'none',
+  imported = false,
 ) {
   const directory = await desktop.evaluate(({ app }) => app.getPath('userData'));
   const source = join(process.cwd(), 'tests/fixtures/chapter-video.mp4');
@@ -47,9 +48,21 @@ export async function installClipsFixture(
       const sessions: ChatSession[] = [];
       const requests: { method: string; input: unknown }[] = [];
       let fail = fixture.failCreation;
+      let failOpening = fixture.failCreation === 'after-open';
       let active = '';
       const key = (scope: Scope) => scope.clipId ?? 'parent';
       workspaces.set('parent', parent);
+      if (fixture.imported) {
+        const clip = {
+          ...fixture.clip,
+          origin: 'imported' as const,
+          id: 'created-clip',
+          name: 'Finished excerpt',
+        };
+        const scope = { ...parent.scope, clipId: clip.id };
+        workspaces.set('parent', { ...parent, clips: [clip] });
+        workspaces.set(clip.id, { ...parent, scope, video: clip, revision: 'imported-one', clips: [] });
+      }
       const emit = (event: AppEvent) =>
         BrowserWindow.getAllWindows()[0]?.webContents.send('vandashi:event', event);
       const finish = (cancelled = false) => {
@@ -97,7 +110,13 @@ export async function installClipsFixture(
         if (method === 'checks')
           return [{ id: 'Ready', status: 'ready', detail: '', repairPrompt: null, helpUrl: null }];
         if (method === 'openBrand') return workspaces.get('parent');
-        if (method === 'openWorkspace') return workspaces.get(key(input as Scope));
+        if (method === 'openWorkspace') {
+          if ((input as Scope).clipId && failOpening) {
+            failOpening = false;
+            throw new Error('The saved clip could not be opened yet.');
+          }
+          return workspaces.get(key(input as Scope));
+        }
         if (method === 'mediaUrl') {
           const clip = workspaces.get('created-clip')?.video;
           return `vandashi-media://local/${input === clip?.renderedPath ? (clip?.ratio === '1:1' ? 'square' : 'portrait') : 'source'}`;
@@ -185,9 +204,16 @@ export async function installClipsFixture(
           const scope = { ...request.scope, clipId: clip.id };
           workspaces.set('parent', { ...parent, clips: [clip] });
           workspaces.set(clip.id, { ...parent, scope, video: clip, revision: 'clip-one', clips: [] });
-          if (fail === 'after') {
+          if (fail === 'after' || fail === 'after-open') {
             fail = 'none';
-            throw new Error('Clip saved, but Codex could not start.');
+            return {
+              clip,
+              generation: {
+                status: 'failed',
+                diagnostic: { kind: 'external', text: 'Codex could not start.' },
+                prompt: `Create the first ${request.ratio} clip from ${String(request.start)}s to ${String(request.end)}s. ${request.prompt}`,
+              },
+            };
           }
           active = `${clip.id}:clip`;
           sessions.push({
@@ -218,7 +244,7 @@ export async function installClipsFixture(
             updatedAt: '',
           });
           emit({ type: 'activity', activity: { sessionId: active, phase: 'working', detail: '' } });
-          return clip;
+          return { clip, generation: { status: 'started' } };
         }
         throw new Error(`Unexpected clips fixture method ${method}`);
       });
@@ -227,6 +253,7 @@ export async function installClipsFixture(
       ...chatFixtureData(true, {}),
       mediaPaths,
       failCreation,
+      imported,
     },
   );
 }

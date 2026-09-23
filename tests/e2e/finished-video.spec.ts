@@ -1,6 +1,7 @@
 import { copyFile, readFile, readdir, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { test, expect } from './fixtures';
+import { diagnosticFromBridge } from '../../src/domain/diagnostics';
 import { chatCalls, chatRequests, installChatFixture } from './chat-fixture';
 
 test('imports from Videos into Launch without entering a composition or sending an upload', async ({
@@ -65,10 +66,13 @@ test('uses real native grants and media probing to preserve an imported file acr
       await window.vandashi?.importFinishedVideo(value);
       return '';
     } catch (error) {
-      return String(error);
+      return error instanceof Error ? error.message : String(error);
     }
   }, input);
-  expect(denied).toContain('outside registered workspaces');
+  expect(diagnosticFromBridge(denied)).toMatchObject({
+    kind: 'app',
+    message: { id: 'storageUnregisteredPath' },
+  });
   await desktopApp.evaluate(({ dialog }, path) => {
     dialog.showOpenDialog = () => Promise.resolve({ canceled: false, filePaths: [path] });
   }, sourcePath);

@@ -3,6 +3,18 @@ import { useTranslation } from 'react-i18next';
 import type { ModelSelection } from '../../../domain/models';
 import { useApp } from '../../app/store';
 import { IconButton } from '../../shared/ui';
+import type { chatEn } from '../../locales/chat-en';
+
+const reasoningLabels: Record<string, keyof typeof chatEn> = {
+  none: 'reasoningNone',
+  minimal: 'reasoningMinimal',
+  low: 'reasoningLow',
+  medium: 'reasoningMedium',
+  high: 'reasoningHigh',
+  xhigh: 'reasoningExtraHigh',
+  max: 'reasoningMax',
+  ultra: 'reasoningUltra',
+};
 
 export function ModelPicker({
   value,
@@ -16,6 +28,10 @@ export function ModelPicker({
   const { models, run, refresh } = useApp();
   const { t } = useTranslation();
   const model = models.find((entry) => entry.id === value.model);
+  const reasoningLabel = (level: string) => {
+    const key = reasoningLabels[level];
+    return key ? t(key) : level;
+  };
   return (
     <div className="model-controls">
       {!models.length && (
@@ -55,11 +71,11 @@ export function ModelPicker({
         }}
       >
         {model && !model.reasoning.includes(value.reasoning) && (
-          <option value={value.reasoning}>{value.reasoning}</option>
+          <option value={value.reasoning}>{reasoningLabel(value.reasoning)}</option>
         )}
         {(model?.reasoning ?? [value.reasoning]).map((level) => (
           <option key={level} value={level}>
-            {level}
+            {reasoningLabel(level)}
           </option>
         ))}
       </select>

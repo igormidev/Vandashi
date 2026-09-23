@@ -47,7 +47,10 @@ describe('uncertain Codex startup', () => {
     });
     expect(settled).toBe(false);
     stopped();
-    expect(await result).toMatchObject({ code: 'uncertain-start' });
+    expect(await result).toMatchObject({
+      code: 'uncertain-start',
+      diagnostic: { kind: 'app', message: { id: 'codexUncertainStart' }, externalDetail: 'Lost ACK' },
+    });
   });
 
   it('treats a malformed acknowledgement as uncertain and preserves explicit rejection semantics', async () => {

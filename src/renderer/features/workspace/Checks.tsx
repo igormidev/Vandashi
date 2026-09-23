@@ -3,17 +3,21 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { scopeKey } from '../../../domain/defaults';
 import type { DependencyCheck } from '../../../domain/models';
+import type { AppMessage } from '../../../domain/messages';
 import { useApp } from '../../app/store';
+import { diagnosticText, messageText } from '../../app/diagnostics';
 import { Split } from '../../shared/Split';
+import { formatPercent } from '../../shared/format';
 import { ChatPane } from '../chat/ChatPane';
 
 export function Checks({ video, onReady }: { video: boolean; onReady: () => void }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { api, workspace, reload, run, busy, setChatTarget, setToast } = useApp();
   const [checks, setChecks] = useState<DependencyCheck[]>([]);
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState(0);
   const [current, setCurrent] = useState('Codex');
+  const [currentLabel, setCurrentLabel] = useState<AppMessage>();
   const [attempt, setAttempt] = useState(0);
   const [repair, setRepair] = useState(false);
   const [validated, setValidated] = useState(false);
@@ -37,6 +41,7 @@ export function Checks({ video, onReady }: { video: boolean; onReady: () => void
         setChecks(event.checks);
         setProgress(event.progress);
         setCurrent(event.current);
+        setCurrentLabel(event.currentLabel);
       }),
     [api, scope, video],
   );
@@ -76,8 +81,12 @@ export function Checks({ video, onReady }: { video: boolean; onReady: () => void
       <div className="check-list">
         <h1>{t('checking')}</h1>
         <div className="check-heading">
-          <span>{loading ? t('checkingTool', { tool: current }) : t('dependencyMissing')}</span>
-          <span className="mono">{t('checkPercent', { count: Math.round(progress * 100) })}</span>
+          <span>
+            {loading
+              ? t('checkingTool', { tool: currentLabel ? messageText(currentLabel) : current })
+              : t('dependencyMissing')}
+          </span>
+          <span className="mono">{formatPercent(progress, i18n.language)}</span>
         </div>
         <div
           className="check-progress"
@@ -95,8 +104,8 @@ export function Checks({ video, onReady }: { video: boolean; onReady: () => void
               {check.status === 'ready' ? <Check size={19} /> : <CircleAlert size={19} />}
             </span>
             <div>
-              <h3>{check.id}</h3>
-              <p>{check.detail}</p>
+              <h3>{check.label ? messageText(check.label) : check.id}</h3>
+              <p>{check.diagnostic ? diagnosticText(check.diagnostic) : check.detail}</p>
               {check.status !== 'ready' && (
                 <div className="toolbar">
                   {check.helpUrl && (
@@ -118,7 +127,7 @@ export function Checks({ video, onReady }: { video: boolean; onReady: () => void
                       onClick={() => {
                         setChatTarget({
                           topic: `repair:${check.id}`,
-                          title: check.id,
+                          title: check.label ? messageText(check.label) : check.id,
                           prompt: check.repairPrompt ?? '',
                         });
                         setRepair(true);

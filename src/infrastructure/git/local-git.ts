@@ -1,3 +1,4 @@
+import { AppFault } from '../../domain/diagnostics';
 import { execFile } from 'node:child_process';
 import { lstat, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -12,11 +13,25 @@ const validRevision = /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/u;
 export class LocalGit implements GitPort {
   constructor(private readonly binary = 'git') {}
 
+  async checkAvailable(): Promise<void> {
+    try {
+      const { stdout } = await execute(this.binary, ['--version'], {
+        timeout: 30_000,
+        maxBuffer: 64 * 1024,
+        encoding: 'utf8',
+        windowsHide: true,
+      });
+      if (!/^git version \d/u.test(stdout.trim())) throw new Error(stdout.trim());
+    } catch (error) {
+      throw new AppFault({ id: 'gitUnavailable' }, error instanceof Error ? error.message : String(error));
+    }
+  }
+
   private async run(repository: string, args: string[]): Promise<string> {
     try {
       const directory = await lstat(join(repository, '.git'));
       if (!directory.isDirectory() || directory.isSymbolicLink())
-        throw new Error('The project Git directory must be local to this workspace.');
+        throw new AppFault({ id: 'gitDirectoryNotLocal' });
     } catch (error) {
       if (!(error instanceof Error) || !('code' in error) || error.code !== 'ENOENT' || args[0] !== 'init')
         throw error;
@@ -82,7 +97,7 @@ export class LocalGit implements GitPort {
   }
 
   async commit(repository: string, title: string, body: string): Promise<string> {
-    if (!title.trim() || !body.trim()) throw new Error('A commit title and description are required.');
+    if (!title.trim() || !body.trim()) throw new AppFault({ id: 'appCommitRequired' });
     if ((await this.status(repository)).dirty) {
       await this.stage(repository);
       await this.run(repository, ['commit', '--no-gpg-sign', '-m', title.trim(), '-m', body.trim()]);
@@ -143,13 +158,14 @@ export class LocalGit implements GitPort {
   }
 
   async diffBetween(repository: string, from: string, to: string): Promise<FileChange[]> {
-    if (!validRevision.test(from) || !validRevision.test(to)) throw new Error('Invalid history comparison.');
+    if (!validRevision.test(from) || !validRevision.test(to))
+      throw new AppFault({ id: 'gitHistoryComparisonInvalid' });
     // Deletions and additions stay explicit, including renamed or binary assets.
     return this.fileChanges(repository, ['--no-renames', from, to]);
   }
 
   async history(repository: string, page: number): Promise<{ commits: Commit[]; hasMore: boolean }> {
-    if (!Number.isSafeInteger(page) || page < 0) throw new Error('Invalid history page.');
+    if (!Number.isSafeInteger(page) || page < 0) throw new AppFault({ id: 'gitHistoryPageInvalid' });
     const lines = (await this.run(repository, ['log', `--skip=${String(page * 12)}`, '-13', '--format=%H']))
       .trim()
       .split('\n')
@@ -176,7 +192,7 @@ export class LocalGit implements GitPort {
 
   async readAt(repository: string, revision: string, path: string): Promise<string> {
     if (!validRevision.test(revision) || path.startsWith('/') || path.split(/[\\/]/u).includes('..'))
-      throw new Error('Invalid history reference.');
+      throw new AppFault({ id: 'gitHistoryReferenceInvalid' });
     return this.run(repository, ['show', `${revision}:${path}`]);
   }
 
@@ -188,9 +204,8 @@ export class LocalGit implements GitPort {
   }
 
   async restore(repository: string, revision: string): Promise<void> {
-    if (!validRevision.test(revision)) throw new Error('Invalid restore revision.');
-    if ((await this.status(repository)).dirty)
-      throw new Error('Save current changes before restoring a checkpoint.');
+    if (!validRevision.test(revision)) throw new AppFault({ id: 'gitRestoreRevisionInvalid' });
+    if ((await this.status(repository)).dirty) throw new AppFault({ id: 'gitRestoreDirty' });
     const backup = await this.head(repository);
     await this.run(repository, ['update-ref', `refs/vandashi/backups/${String(Date.now())}`, backup]);
     try {
@@ -222,7 +237,7 @@ export class LocalGit implements GitPort {
           path.split(/[\\/]/u).some((part) => part === '..' || part === '.git'),
       )
     )
-      throw new Error('Invalid file restore request.');
+      throw new AppFault({ id: 'gitRestoreFilesInvalid' });
     await this.run(repository, ['restore', `--source=${revision}`, '--staged', '--worktree', '--', ...paths]);
   }
 }

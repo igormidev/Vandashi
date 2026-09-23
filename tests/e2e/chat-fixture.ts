@@ -182,10 +182,14 @@ export async function installChatFixture(
         if (method === 'chooseFiles')
           return [fixture.options.assetImportPath ?? fixture.options.mediaPath ?? '/tmp/imported.mp4'];
         if (method === 'suggestCommit') {
+          if (fixture.options.commitFailure)
+            return { __vandashiFailure: 'v1', diagnostic: fixture.options.commitFailure };
           if (fixture.options.commitFails) throw new Error('AI temporarily unavailable');
           return { title: 'Clarify asset metadata', body: 'Update the selected title and description.' };
         }
         if (method === 'describeAsset') {
+          if (fixture.options.describeFailure)
+            return { __vandashiFailure: 'v1', diagnostic: fixture.options.describeFailure };
           if (fixture.options.describeFails) throw new Error('AI temporarily unavailable');
           const request = input as { path: string };
           return {
@@ -199,6 +203,7 @@ export async function installChatFixture(
         if (method === 'updateAsset') {
           const request = input as {
             assetId: string;
+            expectedRevision: string;
             title: string;
             description: string;
             tags: string[];
@@ -208,11 +213,13 @@ export async function installChatFixture(
             throw new Error('Metadata changes require a reviewed commit');
           const asset = currentWorkspace.assets.find((entry) => entry.id === request.assetId);
           if (!asset) throw new Error('Missing asset');
+          if (request.expectedRevision !== asset.revision) throw new Error('Asset metadata conflict');
           const updated = {
             ...asset,
             title: request.title,
             description: request.description,
             tags: request.tags,
+            revision: 'b'.repeat(64),
           };
           currentWorkspace = {
             ...currentWorkspace,
@@ -233,6 +240,7 @@ export async function installChatFixture(
             kind: request.draft.kind,
             size: 10,
             hash: 'imported',
+            revision: 'a'.repeat(64),
             shared: true,
             mediaUrl: '',
           };

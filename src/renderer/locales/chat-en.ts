@@ -8,4 +8,12 @@ export const chatEn = {
   chatInspectImage: 'Inspect {{name}}',
   chatImageUnavailable: 'Image unavailable',
   chatRetryImage: 'Retry image',
-};
+  reasoningNone: 'None',
+  reasoningMinimal: 'Minimal',
+  reasoningLow: 'Low',
+  reasoningMedium: 'Medium',
+  reasoningHigh: 'High',
+  reasoningExtraHigh: 'Extra high',
+  reasoningMax: 'Maximum',
+  reasoningUltra: 'Ultra',
+} as const;

@@ -199,7 +199,7 @@ export function VideosPage({
   );
 }
 function VideoTile({ video, onOpen }: { video: VideoSummary; onOpen: () => void }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { api, run } = useApp();
   const [url, setUrl] = useState('');
   useEffect(() => {
@@ -221,7 +221,7 @@ function VideoTile({ video, onOpen }: { video: VideoSummary; onOpen: () => void 
       <div className="video-meta">
         <span>{video.ratio}</span>
         {video.origin === 'imported' && <span>{t('importedVideo')}</span>}
-        <span>{new Date(video.updatedAt).toLocaleDateString()}</span>
+        <span>{new Date(video.updatedAt).toLocaleDateString(i18n.language)}</span>
       </div>
     </div>
   );

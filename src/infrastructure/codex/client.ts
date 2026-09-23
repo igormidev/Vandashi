@@ -9,6 +9,7 @@ import type {
   AgentThreadOptions,
 } from '../../domain/agent';
 import { AgentError } from '../../domain/agent';
+import { diagnosticFromError } from '../../domain/diagnostics';
 import type { ModelInfo } from '../../domain/models';
 import { loadCapabilities, loadModels, status } from './discovery';
 import { executeTurn } from './execution';
@@ -72,7 +73,7 @@ export class CodexAgent implements AgentPort {
   async readThread(threadId: string): Promise<AgentThread> {
     const { client, codexHome } = await this.ensureConnection();
     const history = await readHistory(client, threadId);
-    if (history.id !== threadId) throw new AgentError('protocol', 'Codex returned a different conversation.');
+    if (history.id !== threadId) throw new AgentError('protocol', { id: 'codexDifferentThread' });
     for (const message of history.messages) this.images.observe(codexHome, threadId, message);
     return history;
   }
@@ -80,7 +81,7 @@ export class CodexAgent implements AgentPort {
     return this.images.resolve(path);
   }
   async run(input: AgentRunInput, onEvent: (event: AgentEvent) => void): Promise<AgentRunResult> {
-    if (this.running) throw new AgentError('busy', 'Another AI operation is already running.');
+    if (this.running) throw new AgentError('busy', { id: 'codexBusy' });
     this.running = true;
     this.stopRequested = false;
     try {
@@ -88,21 +89,27 @@ export class CodexAgent implements AgentPort {
       if (!this.rawModels.length) await this.models();
       const model = this.rawModels.find((entry) => entry.model === input.selection.model);
       if (!model)
-        throw new AgentError('unavailable', `The selected model is unavailable: ${input.selection.model}`);
+        throw new AgentError('unavailable', {
+          id: 'codexModelUnavailable',
+          params: { model: input.selection.model },
+        });
       if (
         !model.supportedReasoningEfforts.some((entry) => entry.reasoningEffort === input.selection.reasoning)
       ) {
-        throw new AgentError(
-          'unavailable',
-          `The selected reasoning level is unavailable for ${model.displayName}.`,
-        );
+        throw new AgentError('unavailable', {
+          id: 'codexReasoningUnavailable',
+          params: { model: model.displayName },
+        });
       }
       if (
         input.selection.fast &&
         !model.serviceTiers.some((entry) => entry.id === 'priority') &&
         !model.additionalSpeedTiers.includes('fast')
       ) {
-        throw new AgentError('unavailable', `Fast mode is unavailable for ${model.displayName}.`);
+        throw new AgentError('unavailable', {
+          id: 'codexFastUnavailable',
+          params: { model: model.displayName },
+        });
       }
       const threadId = input.threadId ?? (await this.createThread(input));
       if (input.threadId && !this.loadedThreads.has(input.threadId)) {
@@ -129,7 +136,11 @@ export class CodexAgent implements AgentPort {
           this.active = { threadId, turnId };
           if (this.wasStopped())
             void this.stop().catch((error: unknown) => {
-              onEvent({ type: 'warning', detail: error instanceof Error ? error.message : String(error) });
+              onEvent({
+                type: 'warning',
+                detail: error instanceof Error ? error.message : String(error),
+                diagnostic: diagnosticFromError(error),
+              });
             });
         },
       });
@@ -139,7 +150,7 @@ export class CodexAgent implements AgentPort {
     }
   }
   async forkBefore(threadId: string, turnId: string): Promise<AgentThread> {
-    if (this.running) throw new AgentError('busy', 'Wait for the active AI operation before undoing.');
+    if (this.running) throw new AgentError('busy', { id: 'codexWaitBeforeUndo' });
     const { client } = await this.ensureConnection();
     try {
       const response = threadResponse.parse(

@@ -1,4 +1,7 @@
+import type { AssetInspectionNote, AssetInspectionProgress } from './asset-inspection';
 import type { AppMessage } from './messages';
+import type { Diagnostic } from './diagnostics';
+import type { Locale } from './locales';
 
 export type AspectRatio = '16:9' | '9:16' | '1:1';
 export type AssetKind = 'image' | 'video' | 'audio' | 'other';
@@ -67,7 +70,10 @@ export interface Asset {
   tags: string[];
   kind: AssetKind;
   size: number;
+  /** Original imported bytes while the stored copy matches its recorded embedded metadata. */
   hash: string;
+  /** Current media bytes and exact sidecar state; required for optimistic metadata updates. */
+  revision: string;
   shared: boolean;
   mediaUrl: string;
 }
@@ -120,7 +126,7 @@ export interface ModelSelection {
   fast: boolean;
 }
 export interface Settings {
-  locale: string;
+  locale: Locale;
   chat: ModelSelection;
   automation: ModelSelection;
   scriptSync: ModelSelection;
@@ -137,6 +143,8 @@ export interface DependencyCheck {
   id: string;
   status: 'checking' | 'ready' | 'missing' | 'error';
   detail: string;
+  diagnostic?: Diagnostic;
+  label?: AppMessage;
   repairPrompt: string | null;
   helpUrl: string | null;
 }
@@ -148,6 +156,7 @@ export interface ChatMessage {
   files: FileChange[];
   createdAt: string;
   appMessage?: AppMessage;
+  diagnostic?: Diagnostic;
   generatedImages?: string[];
 }
 export interface ChatSession {
@@ -188,19 +197,30 @@ export type AppEvent =
       checks: DependencyCheck[];
       progress: number;
       current: string;
+      currentLabel?: AppMessage;
     }
   | { type: 'chat'; sessionId: string; message: ChatMessage; delta: boolean }
   | { type: 'activity'; activity: ChatActivity }
   | { type: 'workspace-changed'; scope: Scope }
-  | { type: 'notice'; code: string; detail: string }
-  | { type: 'render'; progress: number; detail: string };
+  | { type: 'notice'; code: string; detail: string; diagnostic?: Diagnostic }
+  | {
+      type: 'asset-inspection';
+      scope: Scope;
+      sourcePath: string;
+      requestId: string;
+      inspection: AssetInspectionProgress;
+    }
+  | { type: 'render'; progress: number; detail: string; label?: AppMessage };
 export interface StudioInfo {
   url: string;
   previewUrl: string;
   projectPath: string;
 }
 export interface AssetDraft {
+  inspection?: AssetInspectionNote;
   sourcePath: string;
+  /** Exact original bytes inspected for this metadata; omitted only for uninspected manual drafts. */
+  sourceHash?: string;
   title: string;
   description: string;
   tags: string[];

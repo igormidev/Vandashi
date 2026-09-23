@@ -74,6 +74,16 @@ export async function applicationFixture() {
       Promise.resolve({ duration: 60, width: 1920, height: 1080, hasAudio: true, format: 'mp4' }),
     ),
     createClip: vi.fn<MediaPort['createClip']>(() => Promise.resolve(undefined)),
+    inspectAsset: vi.fn<MediaPort['inspectAsset']>((source) =>
+      Promise.resolve({
+        sourceHash: 'a'.repeat(64),
+        kind: 'image',
+        images: [{ path: source, seconds: 0 }],
+        transcript: [],
+        note: { frames: 1, sampledSeconds: 0, duration: 0, speech: 'none' },
+        dispose: () => Promise.resolve(undefined),
+      }),
+    ),
     audioWaveform: vi.fn<MediaPort['audioWaveform']>(() => Promise.resolve(Array<number>(100).fill(0.5))),
     dispose: vi.fn<MediaPort['dispose']>(() => Promise.resolve(undefined)),
   } satisfies MediaPort;

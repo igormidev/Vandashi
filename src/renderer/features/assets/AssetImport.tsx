@@ -1,9 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { scopeKey } from '../../../domain/defaults';
+import type { AssetInspectionProgress } from '../../../domain/asset-inspection';
 import type { AssetDraft } from '../../../domain/models';
 import { useApp } from '../../app/store';
 import { Loading, Modal } from '../../shared/ui';
 import { fallbackAssetKind, parseAssetTags } from './asset-index';
+import { errorText } from '../../app/diagnostics';
 
 export function AssetImport({ paths, onClose }: { paths: string[]; onClose: () => void }) {
   const { t } = useTranslation();
@@ -13,7 +16,16 @@ export function AssetImport({ paths, onClose }: { paths: string[]; onClose: () =
   const [tags, setTags] = useState('');
   const [describing, setDescribing] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [failed, setFailed] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const inspectionId = useRef('');
+  const pending = useRef<{
+    scope: string;
+    path: string;
+    requestId: string;
+    promise: Promise<AssetDraft>;
+  } | null>(null);
+  const [failure, setFailure] = useState<string | null>(null);
+  const [inspection, setInspection] = useState<AssetInspectionProgress | null>(null);
   const path = paths[index];
   const brandId = workspace?.scope.brandId;
   const videoId = workspace?.scope.videoId ?? null;
@@ -21,19 +33,40 @@ export function AssetImport({ paths, onClose }: { paths: string[]; onClose: () =
   const scope = useMemo(() => (brandId ? { brandId, videoId, clipId } : null), [brandId, videoId, clipId]);
   useEffect(() => {
     if (!path || !scope) return;
+    const previous = pending.current;
+    const sameRequest = previous?.scope === scopeKey(scope) && previous.path === path ? previous : null;
+    const requestId = sameRequest?.requestId ?? crypto.randomUUID();
+    inspectionId.current = requestId;
     let disposed = false;
+    const unsubscribe = api.onEvent((event) => {
+      if (
+        !disposed &&
+        event.type === 'asset-inspection' &&
+        event.requestId === requestId &&
+        scopeKey(event.scope) === scopeKey(scope)
+      )
+        setInspection(event.inspection);
+    });
     setDirty(true);
-    void api
-      .describeAsset({ scope, path })
+    // Development StrictMode replays setup. Reattach to its result and cancellation ID;
+    // starting a second inspection would abandon the first operation's lease.
+    const request = sameRequest ?? {
+      scope: scopeKey(scope),
+      path,
+      requestId,
+      promise: api.describeAsset({ scope, path, requestId }),
+    };
+    pending.current = request;
+    void request.promise
       .then((result) => {
         if (!disposed) {
           setDraft(result);
           setTags(result.tags.join(', '));
         }
       })
-      .catch(() => {
+      .catch((error: unknown) => {
         if (disposed) return;
-        setFailed(true);
+        setFailure(errorText(error));
         setDraft({
           sourcePath: path,
           title:
@@ -52,6 +85,7 @@ export function AssetImport({ paths, onClose }: { paths: string[]; onClose: () =
       });
     return () => {
       disposed = true;
+      unsubscribe();
     };
   }, [api, path, scope, setDirty]);
   const advance = (): void => {
@@ -63,7 +97,8 @@ export function AssetImport({ paths, onClose }: { paths: string[]; onClose: () =
     setDraft(null);
     setTags('');
     setDescribing(true);
-    setFailed(false);
+    setFailure(null);
+    setInspection(null);
     setIndex(index + 1);
   };
   const importAsset = async (): Promise<void> => {
@@ -73,7 +108,9 @@ export function AssetImport({ paths, onClose }: { paths: string[]; onClose: () =
       const imported = await api.importAsset({
         scope,
         draft: {
-          ...draft,
+          sourcePath: draft.sourcePath,
+          ...(draft.sourceHash ? { sourceHash: draft.sourceHash } : {}),
+          kind: draft.kind,
           title: draft.title.trim(),
           description: draft.description.trim(),
           tags: parseAssetTags(tags),
@@ -85,28 +122,73 @@ export function AssetImport({ paths, onClose }: { paths: string[]; onClose: () =
     });
     setSaving(false);
   };
+  const cancelInspection = async (): Promise<void> => {
+    setCancelling(true);
+    await run(async () => {
+      await api.cancelAssetInspection(inspectionId.current);
+      setDirty(false);
+      onClose();
+    });
+    setCancelling(false);
+  };
   return (
     <Modal
-      locked={describing || saving}
+      locked={describing || saving || cancelling}
       title={t('importAsset')}
       open
       onClose={() => {
-        if (!describing && !saving) {
+        if (!describing && !saving && !cancelling) {
           setDirty(false);
           onClose();
         }
       }}
     >
       {describing ? (
-        <Loading label={t('describeAsset')} />
+        <div className="form">
+          <Loading
+            label={t(
+              inspection?.phase === 'model-download'
+                ? 'assetInspectionDownload'
+                : inspection?.phase === 'frames'
+                  ? 'assetInspectionFrames'
+                  : inspection?.phase === 'speech'
+                    ? 'assetInspectionSpeech'
+                    : 'describeAsset',
+            )}
+          />
+          {inspection?.phase === 'model-download' && (
+            <progress aria-label={t('assetInspectionDownload')} value={inspection.progress} max={1} />
+          )}
+        </div>
       ) : (
         draft && (
           <div className="form">
             <div className="asset-import-filename mono">
               {draft.sourcePath.replaceAll('\\', '/').split('/').at(-1)}
             </div>
-            {failed && <p className="muted">{t('assetImportFailed')}</p>}
-            <fieldset className="form" disabled={saving}>
+            {failure && (
+              <p className="field-error" role="alert">
+                {failure}
+              </p>
+            )}
+            {draft.inspection && (
+              <div className="muted" role="note">
+                {draft.inspection.frames > 0 && (
+                  <p>{t('assetInspectionFrameNote', { count: draft.inspection.frames })}</p>
+                )}
+                {draft.inspection.sampledSeconds > 0 && (
+                  <p>
+                    {t(
+                      draft.inspection.speech === 'recognized'
+                        ? 'assetInspectionSpeechNote'
+                        : 'assetInspectionNoSpeech',
+                      { seconds: String(Math.ceil(draft.inspection.sampledSeconds)) },
+                    )}
+                  </p>
+                )}
+              </div>
+            )}
+            <fieldset className="form" disabled={saving || cancelling}>
               <label className="field">
                 <span>{t('assetTitle')}</span>
                 <input
@@ -144,13 +226,29 @@ export function AssetImport({ paths, onClose }: { paths: string[]; onClose: () =
         {paths.length > 1 && (
           <span className="muted">{t('assetImportRemaining', { count: paths.length - index })}</span>
         )}
-        <button className="button" type="button" disabled={describing || saving} onClick={advance}>
-          {t(paths.length > 1 ? 'assetImportSkip' : 'cancel')}
+        <button
+          className="button"
+          type="button"
+          disabled={saving || cancelling || (describing && !inspection)}
+          onClick={() => {
+            if (describing) void cancelInspection();
+            else advance();
+          }}
+        >
+          {t(
+            cancelling
+              ? 'assetInspectionCancelling'
+              : describing
+                ? 'cancel'
+                : paths.length > 1
+                  ? 'assetImportSkip'
+                  : 'cancel',
+          )}
         </button>
         <button
           className="button primary"
           type="button"
-          disabled={describing || saving || !draft?.title.trim() || !draft.description.trim()}
+          disabled={describing || saving || cancelling || !draft?.title.trim() || !draft.description.trim()}
           onClick={() => {
             void importAsset();
           }}

@@ -1,3 +1,5 @@
+import { AppFault, diagnosticEnglish, diagnosticFromError } from '../../domain/diagnostics';
+import type { Diagnostic } from '../../domain/diagnostics';
 import { randomUUID } from 'node:crypto';
 import { constants } from 'node:fs';
 import { copyFile, rename, rm, stat } from 'node:fs/promises';
@@ -13,6 +15,12 @@ export interface AssetMetadata {
 export interface EmbeddingResult {
   metadataStorage: 'embedded' | 'sidecar';
   embeddingWarning: string | null;
+  embeddingDiagnostic?: Diagnostic;
+}
+export interface PreparedMetadata {
+  result: EmbeddingResult;
+  path: string | null;
+  dispose: () => Promise<void>;
 }
 const writableContainers = new Set([
   '.png',
@@ -28,8 +36,7 @@ const writableContainers = new Set([
 ]);
 
 async function writeMp3(path: string, metadata: AssetMetadata): Promise<void> {
-  if ((await stat(path)).size > 64 * 1024 * 1024)
-    throw new Error('This audio file uses a sidecar to avoid loading a large recording into memory.');
+  if ((await stat(path)).size > 64 * 1024 * 1024) throw new AppFault({ id: 'storageLargeAudioSidecar' });
   const existing = await NodeID3.Promise.read(path);
   const descriptions = existing.userDefinedText?.filter((tag) => tag.description !== 'Vandashi tags') ?? [];
   await NodeID3.Promise.update(
@@ -45,16 +52,27 @@ async function writeMp3(path: string, metadata: AssetMetadata): Promise<void> {
   );
   const written = await NodeID3.Promise.read(path);
   if (written.title !== metadata.title || written.comment?.text !== metadata.description)
-    throw new Error('The audio metadata could not be verified.');
+    throw new AppFault({ id: 'storageAudioMetadataUnverified' });
 }
 
-/** Metadata tools modify only a disposable copy; failed or unsupported writes keep all media bytes intact. */
-export async function embedMetadata(path: string, metadata: AssetMetadata): Promise<EmbeddingResult> {
+/** Prepare a disposable copy, so callers can check the original revision before installing it. */
+export async function prepareEmbeddedMetadata(
+  path: string,
+  metadata: AssetMetadata,
+): Promise<PreparedMetadata> {
   const extension = extname(path).toLowerCase();
   if (!writableContainers.has(extension) && extension !== '.mp3')
-    return { metadataStorage: 'sidecar', embeddingWarning: null };
+    return {
+      result: { metadataStorage: 'sidecar', embeddingWarning: null },
+      path: null,
+      dispose: () => Promise.resolve(),
+    };
   const temporary = join(dirname(path), `.vandashi-metadata-${randomUUID()}${extension}`);
   await copyFile(path, temporary, constants.COPYFILE_EXCL);
+  const dispose = async () => {
+    await rm(temporary, { force: true });
+    await rm(`${temporary}_original`, { force: true });
+  };
   const tool = new ExifTool({ maxProcs: 1, taskTimeoutMillis: 15_000 });
   try {
     if (extension === '.mp3') await writeMp3(temporary, metadata);
@@ -66,20 +84,38 @@ export async function embedMetadata(path: string, metadata: AssetMetadata): Prom
       );
       const written = await tool.read(temporary);
       if (written.Title !== metadata.title || (written.Description ?? '') !== metadata.description)
-        throw new Error('Embedded metadata could not be verified.');
+        throw new AppFault({ id: 'storageEmbeddedMetadataUnverified' });
     }
-    await rename(temporary, path);
-    return { metadataStorage: 'embedded', embeddingWarning: null };
-  } catch (error) {
     return {
-      metadataStorage: 'sidecar',
-      embeddingWarning:
-        error instanceof Error ? error.message : 'This format could not store embedded metadata.',
+      result: { metadataStorage: 'embedded', embeddingWarning: null },
+      path: temporary,
+      dispose,
+    };
+  } catch (error) {
+    await dispose();
+    const diagnostic = diagnosticFromError(error);
+    return {
+      result: {
+        metadataStorage: 'sidecar',
+        embeddingWarning: diagnosticEnglish(diagnostic),
+        embeddingDiagnostic: diagnostic,
+      },
+      path: null,
+      dispose,
     };
   } finally {
     await tool.end();
-    await rm(temporary, { force: true });
-    await rm(`${temporary}_original`, { force: true });
+  }
+}
+
+/** Imports own their new destination; metadata edits instead install a prepared copy after revision checks. */
+export async function embedMetadata(path: string, metadata: AssetMetadata): Promise<EmbeddingResult> {
+  const prepared = await prepareEmbeddedMetadata(path, metadata);
+  try {
+    if (prepared.path) await rename(prepared.path, path);
+    return prepared.result;
+  } finally {
+    await prepared.dispose();
   }
 }
 

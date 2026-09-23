@@ -1,8 +1,9 @@
 import { constants } from 'node:fs';
 import { copyFile, lstat, mkdir, readFile, rename, rm, stat } from 'node:fs/promises';
-import { basename, extname, join, relative } from 'node:path';
+import { basename, dirname, extname, join, relative } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import type { Asset, AssetDraft, AssetKind } from '../../domain/models';
+import { AppFault } from '../../domain/diagnostics';
 import {
   atomicWrite,
   containedPath,
@@ -14,8 +15,16 @@ import {
   walkFiles,
 } from './files';
 import { metadataSchema } from './schemas';
-import { embedMetadata, readEmbeddedMetadata, type AssetMetadata } from './embedded-metadata';
+import {
+  embedMetadata,
+  prepareEmbeddedMetadata,
+  readEmbeddedMetadata,
+  type AssetMetadata,
+  type PreparedMetadata,
+} from './embedded-metadata';
 import { z } from 'zod';
+import { storageFault } from './validation';
+import { appMessageEnglish } from '../../domain/messages';
 
 export const metadataSuffix = '.vandashi.json';
 
@@ -51,13 +60,14 @@ export class AssetStore {
       tags: [],
       hash,
     };
+    let sidecarHash: string | null = null;
     try {
-      metadata = metadataSchema.parse(
-        JSON.parse(await readFile(await containedPath(root, path + metadataSuffix), 'utf8')),
-      );
+      const content = await readFile(await containedPath(root, path + metadataSuffix));
+      sidecarHash = hashText(content.toString('base64'));
+      metadata = metadataSchema.parse(JSON.parse(content.toString('utf8')));
     } catch (error) {
       if (errorCode(error) !== 'ENOENT')
-        throw new Error(`The metadata for ${basename(path)} is invalid.`, { cause: error });
+        throw storageFault({ id: 'storageMetadataInvalid', params: { name: basename(path) } }, error);
       const cached = this.embedded.get(path);
       const embedded = cached?.stamp === stamp ? cached.metadata : await readEmbeddedMetadata(path);
       this.embedded.set(path, { stamp, metadata: embedded });
@@ -72,6 +82,7 @@ export class AssetStore {
       description: metadata.description,
       tags: metadata.tags,
       hash: metadata.contentHash === hash ? metadata.hash : hash,
+      revision: hashText(JSON.stringify([hash, sidecarHash])),
       size: info.size,
       kind: assetKind(path),
       shared: shared || relativePath.startsWith('_shared/'),
@@ -88,11 +99,14 @@ export class AssetStore {
 
   async import(root: string, draft: AssetDraft, shared: boolean): Promise<Asset> {
     const source = await lstat(draft.sourcePath);
-    if (!source.isFile() || source.isSymbolicLink())
-      throw new Error('Choose a regular media file to import.');
-    if (assetKind(draft.sourcePath) === 'other') throw new Error('This media file format is not supported.');
+    if (!source.isFile() || source.isSymbolicLink()) throw new AppFault({ id: 'storageMediaFileRequired' });
+    if (assetKind(draft.sourcePath) === 'other') throw new AppFault({ id: 'storageMediaUnsupported' });
     const hash = await hashFile(draft.sourcePath);
-    const duplicate = (await this.list(root, shared)).find((asset) => asset.hash === hash);
+    if (draft.sourceHash !== undefined && draft.sourceHash !== hash)
+      throw new AppFault({ id: 'storageAssetInspectionStale' });
+    const duplicate = (await this.list(root, shared)).find(
+      (asset) => asset.hash === hash || this.cache.get(asset.path)?.hash === hash,
+    );
     if (duplicate) return duplicate;
     const sourceName = safeName(basename(draft.sourcePath));
     let path = await containedPath(root, sourceName);
@@ -103,8 +117,7 @@ export class AssetStore {
       );
     await copyFile(draft.sourcePath, path, constants.COPYFILE_EXCL);
     try {
-      if ((await hashFile(path)) !== hash)
-        throw new Error('The source file changed while it was being imported.');
+      if ((await hashFile(path)) !== hash) throw new AppFault({ id: 'storageImportSourceChanged' });
       const metadata = {
         title: draft.title.trim() || basename(sourceName, extname(sourceName)),
         description: draft.description.trim(),
@@ -125,13 +138,14 @@ export class AssetStore {
   async update(
     root: string,
     assetId: string,
-    metadata: { title: string; description: string; tags: string[] },
+    metadata: { title: string; description: string; tags: string[]; expectedRevision: string },
     shared: boolean,
   ): Promise<Asset> {
     const asset = (await this.list(root, shared)).find((item) => item.id === assetId);
-    if (!asset) throw new Error('The selected asset no longer exists.');
-    if (!shared && asset.shared) throw new Error('Edit this asset in the shared library.');
-    if (!metadata.title.trim()) throw new Error('The asset title cannot be empty.');
+    if (!asset) throw new AppFault({ id: 'storageAssetMissing' });
+    if (!shared && asset.shared) throw new AppFault({ id: 'storageSharedEditRequired' });
+    if (!metadata.title.trim()) throw new AppFault({ id: 'storageAssetTitleRequired' });
+    this.assertRevision(asset, metadata.expectedRevision);
     const path = await containedPath(root, asset.path + metadataSuffix);
     const fields = {
       title: metadata.title.trim(),
@@ -142,30 +156,54 @@ export class AssetStore {
       ? metadataSchema.parse(JSON.parse(await readFile(path, 'utf8')))
       : null;
     const preserveBytes = prior?.preserveBytes === true;
-    const embedding = preserveBytes
-      ? { metadataStorage: 'sidecar' as const, embeddingWarning: 'Finished video bytes are preserved.' }
-      : await embedMetadata(asset.path, fields);
-    await atomicWrite(
-      path,
-      JSON.stringify(
-        {
-          ...fields,
-          hash: asset.hash,
-          contentHash: await hashFile(asset.path),
-          ...embedding,
-          ...(preserveBytes ? { preserveBytes } : {}),
-        },
-        null,
-        2,
-      ),
-    );
+    const prepared: PreparedMetadata = preserveBytes
+      ? {
+          result: {
+            metadataStorage: 'sidecar',
+            embeddingWarning: appMessageEnglish({ id: 'storageFinishedBytesPreserved' }),
+            embeddingDiagnostic: { kind: 'app', message: { id: 'storageFinishedBytesPreserved' } },
+          },
+          path: null,
+          dispose: () => Promise.resolve(),
+        }
+      : await prepareEmbeddedMetadata(asset.path, fields);
+    const stagedSidecar = join(dirname(path), `.vandashi-metadata-${randomUUID()}.json`);
+    try {
+      await atomicWrite(
+        stagedSidecar,
+        JSON.stringify(
+          {
+            ...fields,
+            hash: asset.hash,
+            contentHash: await hashFile(prepared.path ?? asset.path),
+            ...prepared.result,
+            ...(preserveBytes ? { preserveBytes } : {}),
+          },
+          null,
+          2,
+        ),
+      );
+      this.assertRevision(await this.read(root, asset.path, shared), metadata.expectedRevision);
+      if (prepared.path) await rename(prepared.path, await containedPath(root, asset.path));
+      await rename(stagedSidecar, await containedPath(root, path));
+    } finally {
+      try {
+        await prepared.dispose();
+      } finally {
+        await rm(stagedSidecar, { force: true });
+      }
+    }
     return this.read(root, asset.path, shared);
+  }
+
+  private assertRevision(asset: Asset, expected: string): void {
+    if (asset.revision !== expected) throw new AppFault({ id: 'assetMetadataConflict' });
   }
 
   async delete(root: string, assetId: string, shared: boolean): Promise<void> {
     const asset = (await this.list(root, shared)).find((item) => item.id === assetId);
-    if (!asset) throw new Error('The selected asset no longer exists.');
-    if (!shared && asset.shared) throw new Error('Remove this asset from the shared library.');
+    if (!asset) throw new AppFault({ id: 'storageAssetMissing' });
+    if (!shared && asset.shared) throw new AppFault({ id: 'storageSharedRemoveRequired' });
     await rm(await containedPath(root, asset.path));
     await rm(await containedPath(root, asset.path + metadataSuffix), { force: true });
     this.cache.delete(asset.path);
@@ -179,7 +217,7 @@ export class AssetStore {
     try {
       manifest = z.record(z.string(), z.string()).parse(JSON.parse(await readFile(manifestPath, 'utf8')));
     } catch (error) {
-      if (errorCode(error) !== 'ENOENT') throw error;
+      if (errorCode(error) !== 'ENOENT') throw storageFault({ id: 'storageSharedManifestInvalid' }, error);
     }
     const sourceFiles = await walkFiles(sharedRoot);
     for (const source of sourceFiles) {
@@ -192,9 +230,7 @@ export class AssetStore {
         continue;
       }
       if (destinationHash !== null && destinationHash !== manifest[key]) {
-        throw new Error(
-          `The local shared copy of ${key} has changed. Preserve or move that copy before synchronizing the library.`,
-        );
+        throw new AppFault({ id: 'storageSharedCopyConflict', params: { path: key } });
       }
       await mkdir(join(destination, '..'), { recursive: true });
       const temporary = `${destination}.vandashi-copy-${randomUUID()}`;

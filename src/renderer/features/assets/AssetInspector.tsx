@@ -33,6 +33,7 @@ export function AssetInspector({
   const [title, setTitle] = useState(asset.title);
   const [description, setDescription] = useState(asset.description);
   const [tags, setTags] = useState(asset.tags.join(', '));
+  const [expectedRevision, setExpectedRevision] = useState(asset.revision);
   const [saving, setSaving] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const sharedLocked = asset.shared && workspace?.video !== null;
@@ -58,6 +59,7 @@ export function AssetInspector({
       await api.updateAsset({
         scope: workspace.scope,
         assetId: asset.id,
+        expectedRevision,
         title: title.trim(),
         description: description.trim(),
         tags: parseAssetTags(tags),
@@ -67,6 +69,10 @@ export function AssetInspector({
       setConfirming(false);
       await reload();
       setToast(t('saved'));
+    } catch (error) {
+      // The store defers this snapshot until Reset so a conflict never erases the inspector draft.
+      await reload().catch(() => undefined);
+      throw error;
     } finally {
       setSaving(false);
     }
@@ -85,7 +91,7 @@ export function AssetInspector({
       </div>
       <div className="asset-inspector-scroll">
         <div className="asset-large-preview">
-          <AssetPreview key={`${asset.mediaUrl}:${asset.hash}`} asset={asset} />
+          <AssetPreview key={`${asset.mediaUrl}:${asset.revision}`} asset={asset} />
         </div>
         <div className="asset-file-actions">
           <span className="mono">{formatSize(asset.size, i18n.language)}</span>
@@ -157,6 +163,7 @@ export function AssetInspector({
             setTitle(asset.title);
             setDescription(asset.description);
             setTags(asset.tags.join(', '));
+            setExpectedRevision(asset.revision);
             setDirty(false);
           }}
         >

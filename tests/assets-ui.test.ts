@@ -13,6 +13,7 @@ function asset(id: string, path: string, fields: Partial<Asset> = {}): Asset {
     kind: 'image',
     size: 100,
     hash: id,
+    revision: 'a'.repeat(64),
     shared: false,
     mediaUrl: `media://${id}`,
     ...fields,
@@ -21,16 +22,16 @@ function asset(id: string, path: string, fields: Partial<Asset> = {}): Asset {
 
 describe('asset library index', () => {
   const items = [
-    asset('city', 'video_assets/footage/city.png', {
+    asset('city', 'footage/city.png', {
       description: 'São Paulo from above',
       tags: ['city', 'background'],
     }),
-    asset('street', 'video_assets/footage/night/street.mp4', {
+    asset('street', 'footage/night/street.mp4', {
       kind: 'video',
       description: 'Empty street at midnight',
     }),
-    asset('music', 'video_assets/score.mp3', { kind: 'audio', tags: ['background'] }),
-    asset('logo', 'shared_assets/logos/logo.png', { shared: true }),
+    asset('music', 'score.mp3', { kind: 'audio', tags: ['background'] }),
+    asset('logo', 'logos/logo.png', { shared: true }),
   ];
   const index = indexAssets(items);
   const filters = {
@@ -69,12 +70,30 @@ describe('asset library index', () => {
 
   it('normalizes imported Windows paths and cleans repeated tag input', () => {
     expect(indexAssets([asset('windows', 'video_assets\\nature\\forest.png')]).entries[0]?.parent).toBe(
-      'nature',
+      'video_assets/nature',
     );
     expect(parseAssetTags(' #nature, nature, , ##night, landscape ')).toEqual([
       'nature',
       'night',
       'landscape',
     ]);
+  });
+
+  it('preserves real nested folders whose names match storage roots', () => {
+    const nested = indexAssets([
+      asset('one', 'assets/logo.png'),
+      asset('two', 'video_assets/logo.png'),
+      asset('three', 'shared_assets/logo.png', { shared: true }),
+    ]);
+    expect(filterAssets(nested, filters)).toEqual({
+      assets: [],
+      folders: ['assets', 'shared_assets', 'video_assets'],
+    });
+    expect(filterAssets(nested, { ...filters, folder: 'assets' }).assets.map((item) => item.id)).toEqual([
+      'one',
+    ]);
+    expect(
+      filterAssets(nested, { ...filters, query: 'shared_assets' }).assets.map((item) => item.id),
+    ).toEqual(['three']);
   });
 });

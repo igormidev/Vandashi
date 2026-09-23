@@ -218,7 +218,7 @@ export function AssetsPage() {
                   }}
                 >
                   <div className="asset-tile-preview">
-                    <AssetPreview key={`${asset.id}:${asset.hash}`} asset={asset} compact />
+                    <AssetPreview key={`${asset.id}:${asset.revision}`} asset={asset} compact />
                     {selectedId === asset.id && (
                       <span className="asset-selected-mark">
                         <Check size={11} />
@@ -250,7 +250,7 @@ export function AssetsPage() {
       </section>
       {selected ? (
         <AssetInspector
-          key={[selected.id, selected.title, selected.description, selected.tags.join(',')].join('|')}
+          key={`${selected.id}:${selected.revision}`}
           asset={selected}
           locked={locked}
           onDelete={() => {

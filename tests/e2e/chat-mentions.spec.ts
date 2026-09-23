@@ -44,13 +44,13 @@ test('inserts at the caret, dismisses suggestions, preserves IME Enter, and clea
   await page.reload();
   const editor = page.getByRole('textbox', { name: 'AI chat', exact: true });
   await editor.fill('Before  after');
-  await editor.press('Home');
+  await editor.press(process.platform === 'darwin' ? 'Meta+ArrowLeft' : 'Home');
   for (let index = 0; index < 7; index++) await editor.press('ArrowRight');
   await editor.pressSequentially('@brand');
   await page.getByRole('option', { name: 'brand_config.yml', exact: true }).click();
   await expect(editor.locator('.kind-config')).toHaveText('brand_config.yml');
   await expect(editor).toContainText('Before brand_config.yml  after');
-  await editor.press('End');
+  await editor.press(process.platform === 'darwin' ? 'Meta+ArrowRight' : 'End');
   await editor.pressSequentially(' @nonexistent');
   await expect(page.getByText('No matching files in this conversation.', { exact: true })).toBeVisible();
   await editor.press('Escape');
