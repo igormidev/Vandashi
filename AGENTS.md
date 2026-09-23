@@ -73,6 +73,9 @@ AI work must not display invented percentages. Respect reduced-motion preference
 Keep local model overrides only while saving or recovering a failed adoption. After a
 successful settings and discovery refresh, every mounted chat must follow the latest
 global model, reasoning and speed preference. A swallowed refresh failure is not success.
+Attachment picking and sending share a synchronous composer owner. Lock attachment
+addition/removal, mode and submission through picker settlement and send acknowledgement;
+retain the exact draft and file selections after a failed send so retry is truthful.
 
 Keep UI editing locked through workspace refreshes, not only the preceding operation.
 Never replace a dirty local draft with an asynchronous snapshot. Validation belongs to

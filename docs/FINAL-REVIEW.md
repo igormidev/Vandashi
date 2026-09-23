@@ -41,7 +41,7 @@ the next cross-platform run is in progress.
 | 17  | Video Pre-page                  | 384–391 | /root/final_video_prepage_review   | accepted-macos  |
 | 18  | Video Pre-page: Validation      | 392–425 | /root/final_validation_review      | accepted-macos  |
 | 19  | Video Pre-page: Onboarding Form | 426–435 | /root/final_onboarding_review      | accepted-macos  |
-| 20  | Packaging Page                  | 436–457 | /root/final_packaging_review       | needs-evidence  |
+| 20  | Packaging Page                  | 436–457 | /root/final_packaging_review       | accepted-macos  |
 | 21  | Creation workspace              | 458–522 | /root/final_creation_review        | accepted-macos  |
 | 22  | Manual video editing            | 523–533 | /root/final_manual_edit_review     | accepted-macos  |
 | 23  | Asset creation                  | 534–553 | /root/final_assets_review          | needs-evidence  |
@@ -411,3 +411,35 @@ The desktop startup correction now preserves a successful same-URL replacement w
 retaining real failures. Fixtures await full initial load; the thirteen-file observation
 has twenty seconds, and only Windows's job budget increases to sixty minutes. Windows
 latency remains a hypothesis until the next complete matrix; no tests were removed.
+
+Checkpoint `83e7e4e` passed the actual immutable staged gate: 854 tests passed, 13
+existing opt-in skips, zero static-analysis warnings/errors, 274 modules/1,088 dependencies,
+and both production builds. The complete current native suite passed 214/214 in 4.7 minutes;
+the old startup reproduced the reload failure before the corrected 20-case focused run.
+Architecture and agent-documentation reviewers accepted the final startup contracts.
+The commit was pushed successfully; its fresh cross-platform matrix remains separate.
+
+The current package also passed native overflow/close/reopen chat checks and exact tab,
+selection and unsent-draft persistence after restart; the original Chat reviewer accepted
+CHAT-03. A real thumbnail replacement preserved candidate order and replaced the first
+image with a descriptive filename/sidecar/YAML reference while leaving the other candidate
+and composition untouched. Packaging's original reviewer accepted PACK-04 and the local
+macOS section; external account candidate capabilities remain PACK-05/Launch evidence.
+
+Assets' original reviewer accepted ASSET-16 after a real selected-image rename repaired
+script/composition paths with exact media bytes preserved. Referenced deletion displayed
+the blocking paths and Cancel preserved the clean repository. Native asset drops remain
+unverified: the same automation could not initiate a file move in Finder itself.
+
+The Chat re-review found one additional attachment state defect: Remove stayed enabled
+during send acknowledgement and conflicting dirty/AI states; Attach omitted the local
+send lock. Three controlled development-Electron regressions reproduced these gaps.
+The shared composer now owns file picking and sending synchronously, shows picker progress,
+locks attachment/mode changes while pending and retains exact text/files after failure.
+All 21 focused native cases passed (26.3 seconds), including 11 consumer-routing cases
+covering brand/taste, packaging, thumbnails, Creation, both asset consumers, clips and
+prepared publishing. The original reviewer accepted the source fix and all 21 cases; the full gate follows separately.
+
+The explicit shared SVG import and following read-only turn succeeded in the real package.
+Two Undo actions preserved the no-edit turn's HEADs, then restored all six baseline trees
+and retained the five changed commits as backups. Native Finder drops remain unverified.

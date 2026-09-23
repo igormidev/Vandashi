@@ -229,8 +229,12 @@ Both macOS failures and one Windows failure occur at the first `page.reload()` a
 the test fixture exposed `DOMContentLoaded`, before initial loading necessarily finished.
 The macOS traces show process loss 53–62 ms after that reload, not a test timeout.
 The fixture now waits for `load`; a separate desktop startup fix and deterministic
-native regression cover an actual early native Reload. Native verification of these
-changes is pending at this entry. Genuine load failures must remain failures.
+native regression cover an actual early native Reload. The subsequent local native
+run passed all 214 cases, including the held-initial-load/native-Reload regression
+and all four Preview completion/startup cases. Its log is
+`/tmp/vandashi-renderer-startup-full-native.log`. The current package checkpoint below
+records the associated `83e7e4e` source and actual packaged tests. Genuine load failures
+remain failures; this local run does not establish the newer cross-platform CI result.
 
 The remaining Windows failure is the five-second observation of a native save of all
 13 taste documents. Without a timeout artifact, slow Git is a hypothesis rather than
@@ -245,3 +249,39 @@ passed at the same SHA: 58 unit tests, 312 browser tests and successful deployme
 [the public site](https://igormidev.github.io/Vandashi/). Its uploaded
 [Pages artifact](https://github.com/igormidev/Vandashi/actions/runs/35917027797/artifacts/10776180579)
 does not establish desktop acceptance.
+
+## Current local package — 83e7e4e
+
+The fresh unsigned macOS ARM64 package at
+`/tmp/vandashi-final-startup-package/mac-arm64/Vandashi.app/Contents/MacOS/Vandashi`
+includes the early native Reload and Preview startup fixes. Its original
+`frozen-input.json` truthfully records HEAD `40c97dd` while those fixes were staged.
+They were subsequently committed as `83e7e4eb31da7d1b6a3a952cf451b9d4b24c9ffb`
+without rebuilding the root output. The separate `commit-association.json` records
+that provenance and verifies all 219 current source/build-input files byte for byte
+against the new commit; the original frozen manifest was not rewritten.
+
+All 288 packaged output files (12,835,040 bytes) match the frozen SHA-256 hashes,
+and root output hashes and modification times remained unchanged through testing.
+Six runtime/Studio/native resource paths and five shipped license/notice files were
+verified. The existing eight speech-model payloads were checked against the production
+manifest again. Packaging and checks are recorded under
+`/tmp/vandashi-final-startup-package/` in `package-build.log`,
+`package-verification.json`, `cache-verification.json` and `bundle-verification.json`.
+
+Both real tests passed with zero skips and exit code 0 in **49.31 seconds**. Studio,
+pending-edit flush, live Codex script synchronization and rendering passed in 45.61
+seconds; English/Portuguese CPU speech, timeout and cancellation passed in 3.25
+seconds. The run used `live-smoke-environment.sh` in that directory, with the new
+executable, verified cache/tool paths, `VANDASHI_REQUIRE_PACKAGED_SMOKE=0` and
+`VANDASHI_PACKAGE_AGENT_SMOKE=1`. Results are `live-smoke.log`, `live-smoke.json` and
+`live-smoke-verification.json` in the same directory.
+
+The retained MP4 at
+`live-artifacts/renders/Packaged composition_2026-09-23_18-20-29.mp4` was independently
+probed as H.264, 1920×1080, 0.400000 seconds. Its `live-artifacts/render-frame.png`
+was visually inspected and shows the red flushed title; `live-artifacts/script.md`
+contains the matching synchronized script. The Studio cleanup assertion passed and
+no owned packaged app/Studio processes remained. Together with the 214/214 local
+native run above, this is current local macOS evidence. It does not claim a completed
+cross-platform CI matrix, signed distribution or final installer acceptance.

@@ -12,6 +12,7 @@ import { defaultSettings, platforms } from '../../src/domain/defaults';
 import type { Diagnostic } from '../../src/domain/diagnostics';
 
 export interface ChatFixtureOptions {
+  extraTopics?: { topic: string; title: string }[];
   initialMessages?: ChatMessage[];
   publishCheckpoints?: ChatCheckpoint[];
   clips?: boolean;
@@ -190,6 +191,16 @@ export function chatFixtureData(video: boolean, options: ChatFixtureOptions) {
       isDefault: true,
     },
   ];
+  for (const entry of options.extraTopics ?? [])
+    sessions.push({
+      id: `attachment:${entry.topic}`,
+      scope,
+      ...entry,
+      threadId: null,
+      messages: [],
+      open: false,
+      updatedAt: '',
+    });
   return {
     state,
     workspace,

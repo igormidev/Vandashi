@@ -344,6 +344,10 @@ without movement. Request ownership also governs loading completion so stale res
 cannot clear the current operation’s indicator. Session-list retry and per-tab closing have
 separate owners, so background hydration cannot hide a draft or clear another request.
 `PendingIconButton` keeps image/SHA copy actions visible and prevents repeated writes.
+The chat composer shares one synchronous owner between file picking and submission.
+Its picker exposes local progress and prevents duplicate pickers or a send before the
+selection settles. Submission locks attachment mutations and mode changes through its
+acknowledgement; failure preserves the exact text and file selections for retry.
 `WorkspaceNavigation` renders destination-owned progress, and the global busy header remains
 visible at the minimum window width even after a helper dialog is dismissed.
 Model selection remains locally owned only while persistence or adoption is pending or

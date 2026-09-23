@@ -56,6 +56,9 @@ export function Composer({ session, disabled = false }: { session: ChatSession; 
   }, [session.id, draft, mode]);
   const selection = validSelection(chosen ?? state?.settings.chat ?? defaultSettings.chat, models);
   const [sending, setSending] = useState(false);
+  const [picking, setPicking] = useState(false);
+  const submissionOwner = useRef(false);
+  const locked = busy || dirty || sending || picking;
   const [cancelling, setCancelling] = useState(false);
   const logoLabel = t('logo');
   const references = useMemo(
@@ -63,7 +66,8 @@ export function Composer({ session, disabled = false }: { session: ChatSession; 
     [workspace, session.topic, logoLabel],
   );
   const send = async () => {
-    if (!text.trim() || draft.pending || busy || dirty || sending || !models.length) return;
+    if (!text.trim() || draft.pending || locked || submissionOwner.current || !models.length) return;
+    submissionOwner.current = true;
     setSending(true);
     const value = await run(async () => {
       await api.sendChat({
@@ -81,6 +85,7 @@ export function Composer({ session, disabled = false }: { session: ChatSession; 
       setAttachments([]);
     }
     setSending(false);
+    submissionOwner.current = false;
   };
   const changeModel = (value: ModelSelection) => {
     if (!state || modelOwner.current) return;
@@ -110,7 +115,7 @@ export function Composer({ session, disabled = false }: { session: ChatSession; 
           <button
             className="button small"
             type="button"
-            disabled={busy || dirty || sending}
+            disabled={locked}
             onClick={() => {
               setDraft((current) => ({ ...current, text: current.pending ?? current.text, pending: null }));
             }}
@@ -120,7 +125,7 @@ export function Composer({ session, disabled = false }: { session: ChatSession; 
           <button
             className="button small ghost"
             type="button"
-            disabled={busy || dirty || sending}
+            disabled={locked}
             onClick={() => {
               setDraft((current) => ({ ...current, pending: null }));
             }}
@@ -136,7 +141,7 @@ export function Composer({ session, disabled = false }: { session: ChatSession; 
         }}
         onDrop={(event) => {
           event.preventDefault();
-          if (busy || dirty || sending) return;
+          if (locked || submissionOwner.current) return;
           setAttachments((current) => [
             ...new Set([
               ...current,
@@ -155,8 +160,10 @@ export function Composer({ session, disabled = false }: { session: ChatSession; 
                 <button
                   type="button"
                   aria-label={t('remove')}
+                  disabled={locked}
                   onClick={() => {
-                    setAttachments(attachments.filter((entry) => entry !== path));
+                    if (locked || submissionOwner.current) return;
+                    setAttachments((current) => current.filter((entry) => entry !== path));
                   }}
                 >
                   <X size={11} />
@@ -168,7 +175,7 @@ export function Composer({ session, disabled = false }: { session: ChatSession; 
         <RichComposer
           value={text}
           references={references}
-          disabled={dirty || sending || busy}
+          disabled={locked}
           onChange={setText}
           placeholder={t(dirty ? 'dirtyHelp' : 'chatPlaceholder')}
           onSend={() => {
@@ -178,21 +185,32 @@ export function Composer({ session, disabled = false }: { session: ChatSession; 
         <div className="composer-actions">
           <IconButton
             label={t('attach')}
-            disabled={busy || dirty}
+            disabled={locked}
+            aria-busy={picking}
             onClick={() => {
+              if (locked || submissionOwner.current) return;
+              submissionOwner.current = true;
+              setPicking(true);
               void run(async () => {
                 const paths = await api.chooseFiles('assets');
                 setAttachments((current) => [...new Set([...current, ...paths])]);
+              }).finally(() => {
+                submissionOwner.current = false;
+                setPicking(false);
               });
             }}
           >
-            <Paperclip size={16} />
+            {picking ? (
+              <LoaderCircle className="spin" size={16} aria-hidden="true" />
+            ) : (
+              <Paperclip size={16} />
+            )}
           </IconButton>
           <select
             className="mode-select"
             aria-label={t('readMode')}
             value={mode}
-            disabled={busy}
+            disabled={busy || sending || picking}
             onChange={(event) => {
               setMode(event.target.value === 'read' ? 'read' : 'edit');
             }}
@@ -227,7 +245,7 @@ export function Composer({ session, disabled = false }: { session: ChatSession; 
             <button
               className="send-button"
               type="button"
-              disabled={busy || !text.trim() || !!draft.pending || dirty || sending || !models.length}
+              disabled={locked || !text.trim() || !!draft.pending || !models.length}
               aria-busy={sending}
               aria-label={t('send')}
               onClick={() => {
@@ -246,7 +264,7 @@ export function Composer({ session, disabled = false }: { session: ChatSession; 
       <ModelPicker
         value={selection}
         onChange={changeModel}
-        disabled={busy || sending}
+        disabled={busy || sending || picking}
         pending={savingModel}
         {...(modelFailure
           ? {

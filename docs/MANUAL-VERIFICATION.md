@@ -563,3 +563,70 @@ Cancel returned to the unchanged visible conversation and amber logo. Exact comp
 showed the entire hydrated session unchanged and both repositories' HEADs, trees and
 tracked file bytes unchanged and clean. Evidence: `/tmp/vandashi-undo-missing-before.json`
 and `/tmp/vandashi-undo-missing-result.json`. The copied-profile app was then closed.
+
+## Current committed package — chat tab lifecycle
+
+The fresh `83e7e4e` package passed both real integrations again (2/2, zero skips,
+49.31 seconds). All 288 output files and 219 source/build inputs were associated with
+that commit; resource/notices checks passed. Evidence is under
+`/tmp/vandashi-final-startup-package/` including `commit-association.json`.
+
+In the actual Northstar brand page, root opened all 13 guide chats through their own
+AI actions. Newest-first order matched the opening sequence; the tab strip reached the
+oldest Brand attributes and asset chats by dragging its horizontal scrollbar. The hovered
+tab exposed its close action. Closing all 15 tabs returned the centered empty-state copy.
+Reopening Brand attributes retained the real earlier logo-edit conversation.
+
+Root then opened Titles · long form and Visual identity, entered an unsent Visual identity
+draft, quit and relaunched the same package/profile. The exact three-tab order and selected
+Visual identity chat were restored with the complete unsent draft. After clearing that test
+draft without sending, Brand attributes still showed the original history. No project
+content was edited by this lifecycle check.
+
+The native thumbnail-chat picker attached the retained rendered PNG. A real AI turn
+replaced only the first thumbnail with `thumbnails/red-title-on-dark-canvas.png`, renamed
+its metadata sidecar, removed the unreferenced old first image/sidecar, and updated the
+ordered YAML list. The package immediately displayed the red title image with the Main
+badge and the unchanged city image second. Commit `b8e6d44` is clean; the replacement bytes
+exactly match the supplied image, and the second candidate, index.html and script.md are
+unchanged. Evidence: `/tmp/vandashi-thumbnail-replacement-manual.json`. No image generation,
+external upload or account capability was asserted by this filename/reference check.
+
+Fresh canvas's selected-image AI action opened a focused asset conversation. Its real
+turn renamed `hidden-city-original.png` and its sidecar to `misty-mint-city-opening.png`,
+preserved exact image bytes/metadata, and repaired index.html and the canonical script
+mention. Clean commit `8d0084e` contains only those six old/new/reference paths; all three
+clip HEADs and independent clip copies were unchanged. The refreshed library cleared the
+obsolete selection and selecting the renamed item displayed the original image/metadata.
+
+Delete this asset? → Delete was blocked with “This asset is used by index.html, script.md.”
+The confirmation remained recoverable. Cancel returned to the asset; exact HEAD, image
+and sidecar bytes remained unchanged and Git stayed clean. Creation opened its preview
+automatically and played the original city/circle opening with the new script path.
+Evidence: `/tmp/vandashi-asset-rename-before-delete.json` and
+`/tmp/vandashi-asset-reference-delete-result.json`.
+
+To isolate the native drop limitation, root created an empty owned Finder subfolder and
+attempted to drag the owned SVG into it from both icon and label. Neither generated a
+Finder move, although CUA dragging the app's horizontal scrollbar worked. The source
+stayed present and target stayed empty; the empty probe folder was removed. This is an
+automation limitation and provides no affirmative application drag/drop evidence.
+
+From Fresh canvas's Creation chat, the native picker attached `mint-logo-shared.svg`.
+The explicit request made it reusable across Recovery Studio videos and clips, preserving
+composition/script/timing and local copies. Real AI immediately showed Working/Stop and
+locked attachment controls/navigation, then returned Ready and Changes saved. It created
+the authoritative shared asset plus accurate title/description/tags/hash at shared commit
+`3719073`. The parent (`f4bf28e`) and all three clips received byte-identical materialized
+copies with matching metadata and clean commits. Their scripts/compositions were unchanged;
+brand identity HEAD stayed unchanged. Evidence: `/tmp/vandashi-explicit-shared-before.json`
+and `/tmp/vandashi-explicit-shared-result.json`. A subsequent read-only check started
+normally with visible Working feedback, demonstrating synchronization left no dirty
+preflight blockage. Completion and Undo acceptance are recorded separately below.
+
+The read-only follow-up completed with exact-byte/hash confirmation and no repository
+changes. Undo removed that conversation turn while preserving every HEAD. A second
+Undo restored the shared import's complete six-repository baseline trees, kept all
+repositories clean, and retained all five changed commits under backup refs. Evidence:
+`/tmp/vandashi-shared-readonly-undo.json` and `/tmp/vandashi-shared-import-undo.json`.
+The package was closed before subsequent renderer regression testing.
