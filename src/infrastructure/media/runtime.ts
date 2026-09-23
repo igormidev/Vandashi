@@ -59,8 +59,54 @@ export function launchCli(runtime: MediaRuntime, args: string[]): ChildProcess {
   });
 }
 
-export async function terminateProcess(child: ChildProcess): Promise<void> {
-  if (child.exitCode !== null || child.signalCode !== null) return;
+const terminations = new WeakMap<ChildProcess, Promise<void>>();
+
+/** Concurrent disposal joins the same shutdown, including the Windows tree-kill process. */
+export function terminateProcess(child: ChildProcess): Promise<void> {
+  const pending = terminations.get(child);
+  if (pending) return pending;
+  if (child.exitCode !== null || child.signalCode !== null) return Promise.resolve();
+  const termination =
+    process.platform === 'win32' && child.pid !== undefined
+      ? terminateWindowsTree(child, child.pid)
+      : terminatePosixProcess(child);
+  terminations.set(child, termination);
+  return termination;
+}
+
+async function terminateWindowsTree(child: ChildProcess, pid: number): Promise<void> {
+  const closed = new Promise<void>((resolve) => {
+    child.once('close', resolve);
+  });
+  const windows = process.env['SystemRoot'] ?? process.env['WINDIR'];
+  const command = windows ? join(windows, 'System32', 'taskkill.exe') : 'taskkill.exe';
+  // Windows SIGTERM immediately kills only the parent, losing the tree before taskkill can inspect it.
+  const killer = spawn(command, ['/PID', String(pid), '/T', '/F'], {
+    windowsHide: true,
+    stdio: 'ignore',
+  });
+  const fallback = (): void => {
+    if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');
+  };
+  const killed = new Promise<void>((resolve) => {
+    killer.once('error', fallback);
+    killer.once('close', (code) => {
+      if (code !== 0) fallback();
+      resolve();
+    });
+  });
+  const force = setTimeout(() => {
+    fallback();
+    if (killer.exitCode === null && killer.signalCode === null) killer.kill('SIGKILL');
+  }, 3_000);
+  try {
+    await Promise.all([closed, killed]);
+  } finally {
+    clearTimeout(force);
+  }
+}
+
+async function terminatePosixProcess(child: ChildProcess): Promise<void> {
   await new Promise<void>((resolve) => {
     const finish = (): void => {
       clearTimeout(force);
@@ -69,15 +115,7 @@ export async function terminateProcess(child: ChildProcess): Promise<void> {
     };
     child.once('close', finish);
     const force = setTimeout(() => {
-      if (process.platform === 'win32' && child.pid !== undefined) {
-        const killer = spawn('taskkill', ['/pid', String(child.pid), '/T', '/F'], {
-          windowsHide: true,
-          stdio: 'ignore',
-        });
-        killer.once('error', () => {
-          child.kill('SIGKILL');
-        });
-      } else child.kill('SIGKILL');
+      child.kill('SIGKILL');
     }, 3_000);
     const deadline = setTimeout(() => {
       child.off('close', finish);

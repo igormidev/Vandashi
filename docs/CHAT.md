@@ -24,6 +24,22 @@ are not fetched. Failed local images offer an explicit retry that rechecks autho
 Provider artifacts outside the workspace require the exact verified grant described in
 `CODEX.md`; a filename written only in Markdown cannot create that grant.
 
+A conversation opened during another foreground operation may display its cached
+history immediately. `OpenedChat.historyDeferred` is transient response metadata,
+never a persisted authorization. The renderer waits for an idle event before reading
+provider history and refreshing failed image URLs. A passive workspace read instead
+queues the open behind that read because it emits no foreground completion event.
+The backend rechecks foreground ownership after reading the cache, so a lease that
+has already ended cannot unnecessarily defer hydration.
+
+Pending opens are shared per API/scope/topic. A deferred response does not update the
+session list again or mark its images verified, preventing a render/request loop.
+An idle-event generation counter covers completion arriving before the deferred IPC
+response: exactly one retry is scheduled after that response releases its attempt.
+Background completion preserves selected tabs and unsent drafts. Unit tests exercise
+the real operation gate with held Studio and workspace reads; native tests hold the
+provider grant and order deferred/idle responses explicitly.
+
 An asset-specific conversation keeps its original target. If the current storage index
 no longer contains that asset, sending fails before an inference turn, transcript change,
 or project edit. It never silently becomes the broader library conversation. The asset
@@ -46,6 +62,14 @@ a saved receipt. Read-only conversations do not receive edit receipts. Existing 
 without receipt metadata remains valid. Undo removes the receipt with its corresponding
 turn, using the same stored checkpoints.
 
+The live saved receipt also triggers the concise **Changes saved.** toast requested
+for script synchronization. `renderer/app/receipt-toasts.ts` consumes only complete,
+application-owned saved receipts with changed files and deduplicates their session/ID
+pair across event resubscriptions. It never infers success from provider prose or an
+activity-done event. Read-only answers, helpers, failed turns, and no-change receipts
+produce no success toast. Loading persisted history does not toast again, and dismissing
+the toast does not remove the independent receipt or its expandable file diffs.
+
 `domain/messages.ts` supplies two English app-owned message IDs in a separate i18next
 namespace; this keeps receipts localizable without treating arbitrary agent text as UI
 strings. The broader localization boundary remains the work described in
@@ -58,8 +82,12 @@ deterministic agent. It covers direct and fallback commits, multiple repositorie
 unchanged and reversed edits, persistence/restart/undo, and failure without a false success
 claim. `tests/git.test.ts` covers immutable comparisons, literal filenames, binary changes,
 renames, deletions, and rejection of revision arguments that are not full SHAs.
-`tests/e2e/chat-receipt.spec.ts` supplies a separate renderer regression for the keyed
-summary and expandable diff beside untouched agent prose.
+`tests/e2e/chat-receipt.spec.ts` supplies separate renderer regressions for the keyed
+summary, expandable diff beside untouched agent prose, success toast, duplicate delivery,
+reloaded receipt history, and suppression for unsuccessful/no-change work. Its dedicated
+IPC fixture models persisted history independently of the live event stream; real disk
+durability is covered by the application suite. The 12 receipt-consumer and real-Git
+application cases pass; the expanded native toast cases await the coordinated rebuild.
 
 On 2026-09-23 the focused Git, application, recovery, receipt, and storage suites passed
 54 tests. The production build and three actual Electron chat/receipt regressions passed;

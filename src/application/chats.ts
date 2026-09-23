@@ -3,6 +3,7 @@ import { undoChat } from './chat-undo';
 import { openChatSession } from './chat-history';
 import { repositoryHeads, turnReceipt } from './turn-receipt';
 import type { MediaPort } from '../domain/media';
+import type { OpenedChat } from '../domain/api';
 import type { AgentPort, AgentRunInput } from '../domain/agent';
 import { AgentError } from '../domain/agent';
 import type { AppEvent, ChatMessage, ChatRequest, ChatSession, Scope, Settings } from '../domain/models';
@@ -44,12 +45,13 @@ export class Chats {
       /* Persist even when the window has closed. */
     }
   }
-  async open(input: { scope: Scope; topic: string; title: string }): Promise<ChatSession> {
-    if (this.gate.busy) {
+  async open(input: { scope: Scope; topic: string; title: string }): Promise<OpenedChat> {
+    const foregroundBusy = () => this.gate.busy && !this.gate.readingWorkspace;
+    if (foregroundBusy()) {
       const existing = (await this.store.sessions(input.scope)).find(
         (session) => session.topic === input.topic && session.open,
       );
-      if (existing) return existing;
+      if (existing && foregroundBusy()) return { ...existing, historyDeferred: true };
     }
     return this.gate.run('open-chat', () => this.openUnlocked(input));
   }

@@ -1,5 +1,5 @@
 import { Check, CircleAlert, LoaderCircle } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { scopeKey } from '../../../domain/defaults';
 import type { DependencyCheck } from '../../../domain/models';
@@ -9,18 +9,32 @@ import { diagnosticText, messageText } from '../../app/diagnostics';
 import { Split } from '../../shared/Split';
 import { formatPercent } from '../../shared/format';
 import { ChatPane } from '../chat/ChatPane';
+import { OwnedRequest } from '../../shared/owned-request';
+
+interface CheckProgress {
+  key: string;
+  checks: DependencyCheck[];
+  progress: number;
+  current: string;
+  currentLabel?: AppMessage;
+}
 
 export function Checks({ video, onReady }: { video: boolean; onReady: () => void }) {
   const { t, i18n } = useTranslation();
   const { api, workspace, reload, run, busy, setChatTarget, setToast } = useApp();
-  const [checks, setChecks] = useState<DependencyCheck[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [progress, setProgress] = useState(0);
-  const [current, setCurrent] = useState('Codex');
-  const [currentLabel, setCurrentLabel] = useState<AppMessage>();
+  const [feedback, setFeedback] = useState<CheckProgress>({
+    key: '',
+    checks: [],
+    progress: 0,
+    current: 'Codex',
+  });
+  const [settled, setSettled] = useState('');
   const [attempt, setAttempt] = useState(0);
   const [repair, setRepair] = useState(false);
-  const [validated, setValidated] = useState(false);
+  const [validated, setValidated] = useState('');
+  const pending = useRef(new OwnedRequest<DependencyCheck[]>());
+  const delivered = useRef('');
+  const readyDelivered = useRef('');
   const brandId = workspace?.scope.brandId;
   const videoId = workspace?.scope.videoId;
   const clipId = workspace?.scope.clipId;
@@ -28,6 +42,12 @@ export function Checks({ video, onReady }: { video: boolean; onReady: () => void
     () => (brandId ? { brandId, videoId: videoId ?? null, clipId: clipId ?? null } : null),
     [brandId, videoId, clipId],
   );
+  const requestKey = JSON.stringify([scope ? scopeKey(scope) : null, video, attempt]);
+  const { checks, progress, current, currentLabel } =
+    feedback.key === requestKey
+      ? feedback
+      : { checks: [], progress: 0, current: 'Codex', currentLabel: undefined };
+  const loading = settled !== requestKey;
 
   useEffect(
     () =>
@@ -38,44 +58,56 @@ export function Checks({ video, onReady }: { video: boolean; onReady: () => void
           (event.scope ? scopeKey(event.scope) : '') !== (scope ? scopeKey(scope) : '')
         )
           return;
-        setChecks(event.checks);
-        setProgress(event.progress);
-        setCurrent(event.current);
-        setCurrentLabel(event.currentLabel);
+        setFeedback({
+          key: requestKey,
+          checks: event.checks,
+          progress: event.progress,
+          current: event.current,
+          ...(event.currentLabel ? { currentLabel: event.currentLabel } : {}),
+        });
       }),
-    [api, scope, video],
+    [api, scope, video, requestKey],
   );
   useEffect(() => {
     let cancelled = false;
-    void api
-      .checks({ scope, video })
-      .then(async (value) => {
-        if (scope && value.every((check) => check.status === 'ready')) await reload(scope);
-        if (cancelled) return;
-        setChecks(value);
-        setValidated(true);
-        setProgress(1);
+    const request = pending.current.get(api, requestKey, async () => {
+      const value = await api.checks({ scope, video });
+      if (scope && value.every((check) => check.status === 'ready')) await reload(scope);
+      return value;
+    });
+    void request
+      .then((value) => {
+        if (cancelled || delivered.current === requestKey) return;
+        delivered.current = requestKey;
+        setFeedback({ key: requestKey, checks: value, progress: 1, current: '' });
+        setValidated(requestKey);
         if (attempt > 0 && value.some((check) => check.status !== 'ready')) setToast(t('checkStillMissing'));
       })
       .catch((error: unknown) => {
-        if (!cancelled)
+        if (!cancelled && delivered.current !== requestKey) {
+          delivered.current = requestKey;
           void run(() => Promise.reject(error instanceof Error ? error : new Error(String(error))));
+        }
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setSettled(requestKey);
       });
     return () => {
       cancelled = true;
     };
-  }, [api, scope, video, attempt, reload, run, setToast, t]);
+  }, [api, scope, video, attempt, requestKey, reload, run, setToast, t]);
   const ready =
-    !loading && validated && checks.length > 0 && checks.every((check) => check.status === 'ready');
+    !loading &&
+    validated === requestKey &&
+    checks.length > 0 &&
+    checks.every((check) => check.status === 'ready');
   useEffect(() => {
-    if (ready) {
+    if (ready && readyDelivered.current !== requestKey) {
+      readyDelivered.current = requestKey;
       setChatTarget(null);
       onReady();
     }
-  }, [ready, onReady, setChatTarget]);
+  }, [ready, requestKey, onReady, setChatTarget]);
   const content = (
     <div className="page">
       <div className="check-list">
@@ -154,11 +186,7 @@ export function Checks({ video, onReady }: { video: boolean; onReady: () => void
               type="button"
               disabled={busy}
               onClick={() => {
-                setLoading(true);
-                setValidated(false);
-                setProgress(0);
-                setChecks([]);
-                setAttempt(attempt + 1);
+                setAttempt((value) => value + 1);
               }}
             >
               {t('retry')}

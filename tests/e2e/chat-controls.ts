@@ -3,6 +3,7 @@ import type { AppEvent } from '../../src/domain/models';
 
 export interface ChatControlAction {
   event?: AppEvent;
+  persistEvent?: boolean;
   reload?: boolean;
   failSend?: boolean;
   discard?: 'success' | 'failure';

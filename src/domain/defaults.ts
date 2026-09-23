@@ -1,5 +1,8 @@
 import type { Packaging, Settings } from './models';
 import { defaultLocale } from './locales';
+// Persisted initial project data uses English independently of the interface locale.
+export const defaultImportedClipName = 'Imported clip';
+export const defaultImportedVideoName = 'Imported video';
 export const defaultSettings: Settings = {
   locale: defaultLocale,
   chat: { model: 'gpt-6-astra', reasoning: 'medium', fast: false },

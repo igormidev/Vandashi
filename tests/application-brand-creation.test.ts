@@ -19,13 +19,17 @@ it('checks the real Git executable before brand writes and permits a clean retry
   const check = vi.spyOn(fixture.git, 'checkAvailable').mockImplementation(() => missing.checkAvailable());
   const create = vi.spyOn(fixture.store, 'createBrand');
   const input = { parentPath: fixture.root, name: 'First Brand' };
-  await expect(fixture.api.createBrand(input)).rejects.toThrow('Git is unavailable');
+  for (let attempt = 0; attempt < 2; attempt++)
+    await expect(fixture.api.createBrand(input)).rejects.toMatchObject({
+      diagnostic: { kind: 'app', message: { id: 'gitUnavailable' } },
+    });
   expect(create).not.toHaveBeenCalled();
   expect(await readdir(fixture.root)).toEqual(before);
   expect((await fixture.store.getState()).brands).toHaveLength(1);
   check.mockRestore();
   const created = await fixture.api.createBrand(input);
   expect(create).toHaveBeenCalledOnce();
+  expect(create).toHaveBeenCalledWith(input);
   expect(created.name).toBe(input.name);
   expect((await fixture.store.getState()).brands).toHaveLength(2);
 });

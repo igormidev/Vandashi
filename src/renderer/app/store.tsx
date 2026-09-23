@@ -4,9 +4,10 @@ import type { DesktopApi } from '../../domain/api';
 import type { AppState, ChatActivity, ModelInfo, Scope, Workspace } from '../../domain/models';
 import i18n from '../i18n';
 import { scopeKey } from '../../domain/defaults';
-import { diagnosticText, errorText } from './diagnostics';
+import { diagnosticText, errorText, messageText } from './diagnostics';
 import { diagnosticFromError } from '../../domain/diagnostics';
 import { rememberBrand } from './brand-summary';
+import { ReceiptToasts } from './receipt-toasts';
 
 interface ChatTarget {
   topic: string;
@@ -58,6 +59,7 @@ export function AppProvider({ api, children }: { api: DesktopApi; children: Reac
   const [models, setModels] = useState<ModelInfo[]>([]);
   const [activity, setActivity] = useState<ChatActivity | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const receiptToasts = useRef(new ReceiptToasts());
   const [chatTarget, setChatTarget] = useState<ChatTarget | null>(null);
   const run = useCallback(async <T,>(task: () => Promise<T>): Promise<T | undefined> => {
     try {
@@ -134,6 +136,8 @@ export function AppProvider({ api, children }: { api: DesktopApi; children: Reac
   useEffect(
     () =>
       api.onEvent((event) => {
+        const receipt = receiptToasts.current.consume(event);
+        if (receipt) setToast(messageText(receipt));
         if (event.type === 'activity')
           setActivity((current) =>
             ['done', 'error'].includes(event.activity.phase)

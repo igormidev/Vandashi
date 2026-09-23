@@ -88,6 +88,13 @@ resolver with existing file permissions; it exposes no directory grant or extra 
 Local session JSON and Markdown paths alone cannot authorize provider files. Selected-chat
 hydration restores verified grants after restart without eagerly reading every open chat.
 
+An open-chat response can carry transient `historyDeferred` metadata while another
+foreground lease owns the provider. Cached content remains visible but does not refresh
+artifact capabilities. The renderer retries on idle, including an idle event delivered
+before the cached IPC response. It does not persist that flag or select a conversation
+from background hydration. Passive workspace reads have no idle notification, so an
+open waits behind their lease and then verifies provider history normally.
+
 `desktop/media-handler.ts` authorizes each media request and streams through Electron's
 file fetch. It supplies HTTP byte-range status and size metadata explicitly: Electron's
 file fetch can return a sliced body with status 200 and no range headers, which makes
@@ -114,6 +121,18 @@ reattaches to one pending promise when development StrictMode replays an effect.
 Cancellation aborts only that request, interrupts Codex only during its description
 turn, and waits for worker/evidence cleanup before releasing the global operation
 lease. Late events and cancellation IDs cannot target the next asset in a queue.
+
+## Renderer operation ownership
+
+`renderer/shared/owned-request.ts` retains a component's logical request across React
+development effect replay, including its settled result. It is not a global operation
+cache and does not bypass the application gate. API identity, scope, retry attempt,
+and preview revision determine when a new request starts; stale effect subscribers
+cannot publish results. Workspace checks include their single successful refresh in
+the shared promise and unlock only after its final result. Commit confirmations pin
+the opening scope, revision, and summary, preserving reviewed text through passive
+workspace refreshes. Native regressions use the actual Vite development renderer,
+prove StrictMode replay, and hold gated responses so duplicate requests would fail.
 
 ## Localization
 

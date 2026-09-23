@@ -2,7 +2,9 @@ import { ArrowRight, Clapperboard, FolderPlus, HardDrive, Plus } from 'lucide-re
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Workspace } from '../../../domain/models';
+import { diagnosticFromBridge, type Diagnostic } from '../../../domain/diagnostics';
 import { useApp } from '../../app/store';
+import { diagnosticText } from '../../app/diagnostics';
 import { Empty, InfoTip, Modal } from '../../shared/ui';
 
 export function Home({ onOpen }: { onOpen: (workspace: Workspace) => void }) {
@@ -12,26 +14,36 @@ export function Home({ onOpen }: { onOpen: (workspace: Workspace) => void }) {
   const [name, setName] = useState('');
   const [folder, setFolder] = useState('');
   const [loading, setLoading] = useState(false);
+  const [failure, setFailure] = useState<Diagnostic | null>(null);
+  const [createdId, setCreatedId] = useState<string | null>(null);
   const chooseLocation = () => {
     void run(async () => {
       const value = await api.chooseDirectory();
       if (value) {
         setFolder(value);
         setName('');
+        setFailure(null);
+        setCreatedId(null);
         setCreating(true);
       }
     });
   };
   const create = async () => {
-    if (name.trim().length < 3 || !folder) return;
+    if (loading || name.trim().length < 3 || !folder) return;
     setLoading(true);
-    await run(async () => {
-      const brand = await api.createBrand({ name: name.trim(), parentPath: folder });
+    try {
+      const id = createdId ?? (await api.createBrand({ name: name.trim(), parentPath: folder })).id;
+      // A saved brand whose workspace failed to open must be reopened, never created twice.
+      setCreatedId(id);
       await refresh();
-      onOpen(await api.openBrand(brand.id));
+      onOpen(await api.openBrand(id));
+      setFailure(null);
       setCreating(false);
-    });
-    setLoading(false);
+    } catch (error) {
+      setFailure(diagnosticFromBridge(error));
+    } finally {
+      setLoading(false);
+    }
   };
   return (
     <main className="home">
@@ -115,7 +127,7 @@ export function Home({ onOpen }: { onOpen: (workspace: Workspace) => void }) {
               </span>
               <input
                 id="brand-name"
-                disabled={loading}
+                disabled={loading || createdId !== null}
                 value={name}
                 onChange={(event) => {
                   setName(event.target.value);
@@ -127,6 +139,23 @@ export function Home({ onOpen }: { onOpen: (workspace: Workspace) => void }) {
                 autoComplete="off"
               />
             </label>
+            {failure && (
+              <div className="field-error" role="alert">
+                <p>{diagnosticText(failure)}</p>
+                {failure.kind === 'app' && failure.message.id === 'gitUnavailable' && (
+                  <button
+                    className="button small"
+                    type="button"
+                    disabled={loading}
+                    onClick={() => {
+                      void run(() => api.openExternal('https://git-scm.com/downloads'));
+                    }}
+                  >
+                    {t('installHelp')}
+                  </button>
+                )}
+              </div>
+            )}
           </div>
           <div className="modal-actions">
             <button
@@ -144,7 +173,7 @@ export function Home({ onOpen }: { onOpen: (workspace: Workspace) => void }) {
               type="submit"
               disabled={!folder || name.trim().length < 3 || loading}
             >
-              {t(loading ? 'loading' : 'create')}
+              {t(loading ? 'loading' : failure ? 'retry' : 'create')}
             </button>
           </div>
         </form>

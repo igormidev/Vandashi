@@ -1,35 +1,44 @@
 import { Clapperboard } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useApp } from '../../app/store';
 import { errorText } from '../../app/diagnostics';
 import { Empty, Loading } from '../../shared/ui';
+import { OwnedRequest } from '../../shared/owned-request';
+import type { StudioInfo } from '../../../domain/models';
 
 export function ManualPage() {
   const { t } = useTranslation();
-  const { workspace, api, run, busy } = useApp();
+  const { workspace, api, setToast, busy } = useApp();
+  const pending = useRef(new OwnedRequest<StudioInfo>());
+  const reported = useRef('');
   const [studio, setStudio] = useState({ key: '', url: '', error: '' });
   const [attempt, setAttempt] = useState(0);
   const brandId = workspace?.scope.brandId;
   const videoId = workspace?.scope.videoId;
   const clipId = workspace?.scope.clipId;
-  const key = `${brandId ?? ''}/${videoId ?? ''}/${clipId ?? ''}`;
+  const key = JSON.stringify([brandId, videoId, clipId, attempt]);
   useEffect(() => {
     if (!brandId || !videoId) return;
     let disposed = false;
-    void run(async () => {
-      try {
-        const opened = await api.startStudio({ brandId, videoId, clipId: clipId ?? null });
+    void pending.current
+      .get(api, key, () => api.startStudio({ brandId, videoId, clipId: clipId ?? null }))
+      .then((opened) => {
         if (!disposed) setStudio({ key, url: opened.url, error: '' });
-      } catch (failure) {
-        if (!disposed) setStudio({ key, url: '', error: errorText(failure) });
-        throw failure;
-      }
-    });
+      })
+      .catch((failure: unknown) => {
+        if (disposed) return;
+        const error = errorText(failure);
+        setStudio({ key, url: '', error });
+        if (reported.current !== key) {
+          reported.current = key;
+          setToast(error);
+        }
+      });
     return () => {
       disposed = true;
     };
-  }, [api, brandId, videoId, clipId, key, attempt, run]);
+  }, [api, brandId, videoId, clipId, key, setToast]);
   if (studio.key === key && studio.url)
     return (
       <iframe

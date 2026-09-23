@@ -7,6 +7,9 @@ export class OperationGate {
   get busy(): boolean {
     return this.owner !== null;
   }
+  get readingWorkspace(): boolean {
+    return this.owner === 'workspace-read';
+  }
   assertIdle(): void {
     if (this.busy) throw new AppFault({ id: 'appOperationBusy' });
   }

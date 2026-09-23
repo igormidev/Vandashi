@@ -79,6 +79,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install --yes ffmpeg xvfb
       - run: npm ci
+      - name: Install Linux browser runtime libraries
+        if: runner.os == 'Linux'
+        run: npx playwright install-deps chromium
       - name: Check source coverage for installed native components
         run: npm run sources:check
       - name: Verify architecture, types, lint, tests, and build
@@ -93,6 +96,24 @@ jobs:
         run: npm run licenses:generate
       - name: Package the desktop app
         run: npx electron-builder --publish never
+      - name: Restore pinned rendering browser
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: release/smoke-cache/browser
+          key: packaged-browser-${{ runner.os }}-${{ runner.arch }}-152.0.7977.30
+      - name: Restore speech model files for checksum verification
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: release/smoke-cache/models
+          key: speech-model-${{ runner.os }}-${{ hashFiles('src/infrastructure/media/speech-model.json') }}
+      - name: Prepare the packaged runtime and exact media tool paths
+        run: node scripts/prepare-packaged-smoke.mjs
+      - name: Verify packaged Studio, render, and local speech without an account
+        if: runner.os != 'Linux'
+        run: npx vitest run tests/media-package.test.ts tests/media-speech-package.test.ts --maxWorkers=1 --reporter=default --reporter=json --outputFile=test-results/packaged-smoke.json
+      - name: Verify packaged Studio, render, and local speech on Linux
+        if: runner.os == 'Linux'
+        run: xvfb-run --auto-servernum npx vitest run tests/media-package.test.ts tests/media-speech-package.test.ts --maxWorkers=1 --reporter=default --reporter=json --outputFile=test-results/packaged-smoke.json
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: Vandashi-${{ runner.os }}-${{ runner.arch }}

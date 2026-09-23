@@ -96,10 +96,17 @@ export async function probeMedia(
 export function requiredDoctorChecks(output: string): DependencyCheck[] {
   const report = doctorSchema.parse(JSON.parse(output) as unknown);
   // Docker, Whisper, music and TTS are optional; doctor.ok includes them and is NOT a gate.
-  return ['Node.js', 'FFmpeg', 'FFprobe', 'Chrome'].map((name) => {
+  const dependencies = [
+    { name: 'Node.js', label: { id: 'mediaNodeLabel' } },
+    { name: 'FFmpeg', label: { id: 'mediaFfmpegLabel' } },
+    { name: 'FFprobe', label: { id: 'mediaFfprobeLabel' } },
+    { name: 'Chrome', label: { id: 'mediaChromeLabel' } },
+  ] as const;
+  return dependencies.map(({ name, label }) => {
     const check = report.checks.find((candidate) => candidate.name === name);
     return {
       id: `media-${name.toLowerCase().replace(/[^a-z]/g, '')}`,
+      label,
       status: check?.ok ? 'ready' : 'missing',
       detail: check?.detail ?? `${name} could not be verified.`,
       ...(check
@@ -133,6 +140,7 @@ export async function checkMediaDependencies(
     ).trim();
     record({
       id: 'hyperframes',
+      label: { id: 'mediaHyperframesLabel' },
       status: 'ready',
       detail: `Hyperframes ${version} · Studio included`,
       diagnostic: { kind: 'app', message: { id: 'mediaStudioIncluded', params: { version } } },
@@ -152,7 +160,7 @@ export async function checkMediaDependencies(
       status: 'error',
       detail: error instanceof Error ? error.message : String(error),
       diagnostic: diagnosticFromError(error),
-      ...(checks.length > 0 ? { label: { id: 'mediaEnvironmentLabel' as const } } : {}),
+      label: { id: checks.length > 0 ? 'mediaEnvironmentLabel' : 'mediaHyperframesLabel' },
       repairPrompt: `Restore the Vandashi bundled Hyperframes ${HYPERFRAMES_VERSION} dependency. Verify Node.js 22 or newer, then run hyperframes doctor --json.`,
       helpUrl: 'https://hyperframes.heygen.com/quickstart',
     });

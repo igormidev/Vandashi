@@ -56,6 +56,11 @@ export const mediaMessagesEn = {
   mediaSkillMissing: 'The Hyperframes agent skill has not been found in the configured Codex skill folders.',
   mediaSkillLabel: 'Hyperframes skill',
   mediaEnvironmentLabel: 'Video environment',
+  mediaHyperframesLabel: 'Hyperframes',
+  mediaNodeLabel: 'Node.js',
+  mediaFfmpegLabel: 'FFmpeg',
+  mediaFfprobeLabel: 'FFprobe',
+  mediaChromeLabel: 'Chrome',
   mediaBridgeSaveHttp:
     'Studio could not save an edit (HTTP {{status}}). Resolve the save error in the editor before leaving.',
   mediaBridgeSaveConnection:

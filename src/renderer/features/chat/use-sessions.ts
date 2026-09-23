@@ -20,7 +20,10 @@ export function useSessions(scope: Scope) {
     cacheSelection(scopeKey(scope), selected);
   }, [scope, selected]);
   const opened = useRef(new Set<string>());
+  const targetOpened = useRef<typeof chatTarget>(null);
   const hydrationAttempts = useRef(new Set<string>());
+  const idleGeneration = useRef(0);
+  const [hydrationRetry, setHydrationRetry] = useState(0);
   const mounted = useRef(true);
   useEffect(() => {
     mounted.current = true;
@@ -83,6 +86,7 @@ export function useSessions(scope: Scope) {
           title: chatTarget.title,
         });
         if (disposed) return;
+        targetOpened.current = chatTarget;
         setSessions((current) => {
           const existing = current.find((entry) => entry.id === result.id);
           const updated = mergeSession(result, {
@@ -91,8 +95,13 @@ export function useSessions(scope: Scope) {
           });
           return [updated, ...current.filter((entry) => entry.id !== result.id)];
         });
-        opened.current.add(result.id);
-        mediaHydrated(result.id);
+        if (result.historyDeferred) {
+          opened.current.delete(result.id);
+          hydrationAttempts.current.delete(result.id);
+        } else {
+          opened.current.add(result.id);
+          mediaHydrated(result.id);
+        }
         setSelected(result.id);
         setFailed(false);
         setLoading(false);
@@ -110,7 +119,7 @@ export function useSessions(scope: Scope) {
   }, [api, chatTarget, mediaHydrated, run, scope]);
   useEffect(() => {
     if (
-      chatTarget ||
+      (chatTarget && targetOpened.current !== chatTarget) ||
       busy ||
       !selected ||
       opened.current.has(selected) ||
@@ -120,10 +129,18 @@ export function useSessions(scope: Scope) {
     const session = sessions.find((entry) => entry.id === selected && entry.open);
     if (!session) return;
     hydrationAttempts.current.add(session.id);
+    const idleAtStart = idleGeneration.current;
     void run(async () => {
       try {
         const result = await openConversation(api, { scope, topic: session.topic, title: session.title });
         if (!mounted.current) return;
+        if (result.historyDeferred) {
+          // The operation's idle event retries this read. Updating sessions here would
+          // create an immediate request loop before that event reaches the renderer.
+          hydrationAttempts.current.delete(result.id);
+          if (idleGeneration.current !== idleAtStart) setHydrationRetry((value) => value + 1);
+          return;
+        }
         opened.current.add(result.id);
         mediaHydrated(result.id);
         setSessions((current) =>
@@ -140,7 +157,7 @@ export function useSessions(scope: Scope) {
         throw error;
       }
     });
-  }, [api, busy, chatTarget, mediaHydrated, run, scope, selected, sessions]);
+  }, [api, busy, chatTarget, hydrationRetry, mediaHydrated, run, scope, selected, sessions]);
   useEffect(
     () =>
       api.onEvent((event) => {
@@ -157,8 +174,10 @@ export function useSessions(scope: Scope) {
             ),
           );
         }
-        if (event.type === 'activity' && ['done', 'error'].includes(event.activity.phase))
+        if (event.type === 'activity' && ['done', 'error'].includes(event.activity.phase)) {
+          idleGeneration.current++;
           void run(() => refresh(true));
+        }
       }),
     [api, refresh, run],
   );

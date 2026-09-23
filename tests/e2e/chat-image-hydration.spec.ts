@@ -56,3 +56,81 @@ for (const initiallyOffline of [false, true]) {
     await expect(page.getByRole('dialog', { name: 'Generated image', exact: true })).toBeVisible();
   });
 }
+
+test('a chat opened during Studio startup hydrates its cached history when idle without losing the draft', async ({
+  desktopApp,
+  page,
+}) => {
+  const path = join(process.cwd(), 'build/icon.png');
+  await desktopApp.evaluate(({ dialog }, selected) => {
+    dialog.showOpenDialog = () => Promise.resolve({ canceled: false, filePaths: [selected] });
+  }, path);
+  const url = await page.evaluate(async () => {
+    if (!window.vandashi) throw new Error('Missing preload');
+    const [selected] = await window.vandashi.chooseFiles('images');
+    if (!selected) throw new Error('Missing selected image');
+    return window.vandashi.mediaUrl(selected);
+  });
+  await installImageHydrationFixture(desktopApp, path, url, 'studio');
+  await page.reload();
+  await expect(page.locator('.chat-tab.active')).toContainText('Second chat');
+  await page.getByRole('navigation').getByRole('button', { name: 'Creation workspace', exact: true }).click();
+  await expect.poll(async () => (await imageHydrationStatus(desktopApp)).studioPending).toBe(true);
+  await page.getByRole('button', { name: 'AI chat', exact: true }).click();
+  await expect(page.locator('.chat-tab.active')).toContainText('Creation workspace');
+  await expect.poll(async () => (await imageHydrationStatus(desktopApp)).cachedOpens).toBe(1);
+  await expect(page.getByText('Image unavailable', { exact: true })).toHaveCount(2);
+  expect((await imageHydrationStatus(desktopApp)).pending).toBe(false);
+  const opens = (await imageHydrationStatus(desktopApp)).opens;
+  await desktopApp.evaluate(({ ipcMain }) => {
+    ipcMain.emit('vandashi:image-studio-release');
+  });
+  await expect.poll(async () => (await imageHydrationStatus(desktopApp)).pending).toBe(true);
+  const draft = page.getByRole('textbox', { name: 'AI chat', exact: true });
+  await draft.fill('Retain this while the provider history loads');
+  await releaseImageHistory(desktopApp, true);
+  const generated = page.getByRole('img', { name: 'Generated image', exact: true });
+  await expect(generated).toBeVisible();
+  await expect.poll(() => generated.evaluate((element: HTMLImageElement) => element.naturalWidth)).toBe(1024);
+  await expect(page.getByRole('img', { name: 'Saved thumbnail', exact: true })).toBeVisible();
+  await expect(page.getByText('Image unavailable', { exact: true })).toHaveCount(0);
+  await expect(draft).toHaveText('Retain this while the provider history loads');
+  await expect(page.locator('.chat-tab.active')).toContainText('Creation workspace');
+  expect((await imageHydrationStatus(desktopApp)).opens).toBe(opens + 1);
+});
+
+test('history retries once when the idle event arrives before its deferred response', async ({
+  desktopApp,
+  page,
+}) => {
+  const path = join(process.cwd(), 'build/icon.png');
+  await desktopApp.evaluate(({ dialog }, selected) => {
+    dialog.showOpenDialog = () => Promise.resolve({ canceled: false, filePaths: [selected] });
+  }, path);
+  const url = await page.evaluate(async () => {
+    if (!window.vandashi) throw new Error('Missing preload');
+    const [selected] = await window.vandashi.chooseFiles('images');
+    if (!selected) throw new Error('Missing selected image');
+    return window.vandashi.mediaUrl(selected);
+  });
+  await installImageHydrationFixture(desktopApp, path, url, 'late-idle');
+  await page.reload();
+  const draft = page.getByRole('textbox', { name: 'AI chat', exact: true });
+  await expect.poll(async () => (await imageHydrationStatus(desktopApp)).cachedOpens).toBe(1);
+  await expect(draft).toBeDisabled();
+  await desktopApp.evaluate(({ ipcMain }) => {
+    ipcMain.emit('vandashi:image-hydration-idle');
+  });
+  await expect(draft).toBeEnabled();
+  await draft.fill('Keep this draft through the delayed cached response');
+  expect((await imageHydrationStatus(desktopApp)).opens).toBe(1);
+  await releaseImageHistory(desktopApp, true);
+  await expect.poll(async () => (await imageHydrationStatus(desktopApp)).opens).toBe(2);
+  await expect.poll(async () => (await imageHydrationStatus(desktopApp)).pending).toBe(true);
+  await expect(page.getByText('Image unavailable', { exact: true })).toHaveCount(2);
+  await releaseImageHistory(desktopApp, true);
+  await expect(page.getByRole('img', { name: 'Generated image', exact: true })).toBeVisible();
+  await expect(page.getByRole('img', { name: 'Saved thumbnail', exact: true })).toBeVisible();
+  await expect(draft).toHaveText('Keep this draft through the delayed cached response');
+  expect((await imageHydrationStatus(desktopApp)).opens).toBe(2);
+});

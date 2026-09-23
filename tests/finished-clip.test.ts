@@ -52,7 +52,13 @@ describe('finished clip import', () => {
     const clip = await app.api.importFinishedClip(app.input);
     const scope = { ...app.scope, clipId: clip.id };
     if (!clip.renderedPath) throw new Error('Imported media missing');
-    expect(clip).toMatchObject({ origin: 'imported', ratio: '9:16', start: 0, end: 12 });
+    expect(clip).toMatchObject({
+      name: 'Finished portrait',
+      origin: 'imported',
+      ratio: '9:16',
+      start: 0,
+      end: 12,
+    });
     expect(await readFile(clip.renderedPath)).toEqual(original);
     expect(await readFile(app.sourcePath)).toEqual(original);
     expect(await readdir(clip.path)).not.toContain('index.html');
@@ -133,7 +139,6 @@ describe('finished clip import', () => {
   it('removes unpublished files on copy validation or Git failure and permits retry', async () => {
     const app = await setup();
     const directory = join(app.path, 'clips');
-    vi.spyOn(Date, 'now').mockReturnValue(123456789);
     app.media.probeMedia.mockResolvedValueOnce({
       width: 1080,
       height: 1920,
@@ -150,8 +155,8 @@ describe('finished clip import', () => {
     expect(await readdir(directory)).toEqual([]);
     commit.mockRestore();
     const clip = await app.api.importFinishedClip(app.input);
-    expect(clip.name).toBe('imported-123456789');
-    expect(await readdir(directory)).toEqual(['imported-123456789']);
+    expect(clip.name).toBe('Finished portrait');
+    expect(await readdir(directory)).toEqual(['Finished portrait']);
     expect((await app.git.status(clip.path)).dirty).toBe(false);
   });
 
@@ -184,8 +189,7 @@ describe('finished clip import', () => {
     'preserves external files inserted during import (validation fails: %s)',
     async (fail) => {
       const app = await setup();
-      const destination = join(app.path, 'clips', 'imported-7654321');
-      vi.spyOn(Date, 'now').mockReturnValue(7654321);
+      const destination = join(app.path, 'clips', 'Finished portrait');
       app.media.probeMedia.mockResolvedValueOnce({
         width: 1080,
         height: 1920,
@@ -207,7 +211,7 @@ describe('finished clip import', () => {
       expect(await readFile(join(destination, 'script.md'), 'utf8')).toBe('External work must survive');
       expect(await readdir(destination)).toEqual(['script.md']);
       expect((await app.store.openWorkspace(app.scope)).clips).toEqual([]);
-      expect(await readdir(join(app.path, 'clips'))).toEqual(['imported-7654321']);
+      expect(await readdir(join(app.path, 'clips'))).toEqual(['Finished portrait']);
     },
   );
 

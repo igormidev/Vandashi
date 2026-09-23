@@ -1,4 +1,5 @@
 import { AppFault } from '../../domain/diagnostics';
+import { importedMediaFilename } from '../../domain/import-names';
 import { constants, type Stats } from 'node:fs';
 import { copyFile, lstat, mkdir, mkdtemp, readdir, rm, rmdir, stat } from 'node:fs/promises';
 import { basename, join } from 'node:path';
@@ -49,9 +50,15 @@ export async function initializeImportedVideo(
   const source = await lstat(input.sourcePath);
   if (!source.isFile() || source.isSymbolicLink() || assetKind(input.sourcePath) !== 'video')
     throw new AppFault({ id: 'storageVideoFileRequired' });
-  const filename = safeName(basename(input.sourcePath));
+  const filename = safeName(importedMediaFilename(basename(input.sourcePath)));
   const destination = await containedPath(directory, safeName(input.name));
-  await mkdir(destination); // Reserve this name; never adopt an existing directory.
+  try {
+    await mkdir(destination); // Reserve this name; never adopt an existing directory.
+  } catch (error) {
+    if (errorCode(error) === 'EEXIST')
+      throw new AppFault({ id: 'storageImportNameCollision', params: { path: destination } });
+    throw error;
+  }
   const reserved = await lstat(destination);
   let staging: string | undefined;
   let stagingIdentity: Pick<Stats, 'dev' | 'ino'> | undefined;

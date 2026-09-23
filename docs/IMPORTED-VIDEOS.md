@@ -10,4 +10,14 @@ Import reserves a new project name without adopting existing folders. A hidden t
 
 The copied video remains Git-tracked. Imported freshness compares the actual media's SHA-256, cached by size/mtime/ctime. Unrelated packaging or shared-asset changes do not invent a need to render a nonexistent composition. Publishing still requires a clean workspace. Editing the imported source's asset description/tags uses its sidecar and preserves video bytes; deleting media referenced by the project manifest is blocked. An external byte change invalidates the upload-ready media.
 
+Finished clips use the same publication and byte-preservation boundary, accept 9:16
+or square media, and open direct playback and packaging without a composition. Their
+names derive from the selected filename. Portable sanitization preserves normalized
+Unicode while removing invalid path characters and reserved device names, with UTF-16
+and UTF-8 bounds. Existing files, directories, and symlinks occupy a name, including
+case and normalization equivalents; collisions receive readable numbered suffixes.
+The exclusive publication runs once. An external reservation race fails explicitly
+instead of retrying after a possibly partial publication. Top-level imports keep the
+user-entered project name; their copied media filename receives the same sanitization.
+
 `tests/finished-video.test.ts` exercises the application, real temporary storage and Git, including copy failure cleanup, grants, aspect ratios, source deletion/reopen, unchanged media bytes, metadata edits, guarded source deletion and media freshness. `tests/e2e/finished-video.spec.ts` covers the renderer's Videos-to-unsent-upload flow with deterministic chat responses, and separately exercises actual desktop IPC, native grants, FFprobe and storage. Native test execution is tracked with the release verification; test source alone is not a claim of execution.

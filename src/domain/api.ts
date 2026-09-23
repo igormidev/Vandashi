@@ -28,6 +28,9 @@ export interface CreatedClip {
   generation: { status: 'started' } | { status: 'failed'; diagnostic: Diagnostic; prompt: string };
 }
 
+/** Transient response metadata; deferred history has not refreshed provider artifact grants. */
+export type OpenedChat = ChatSession & { historyDeferred?: true };
+
 export interface DesktopApi {
   getState(): Promise<AppState>;
   chooseDirectory(): Promise<string | null>;
@@ -45,7 +48,7 @@ export interface DesktopApi {
   models(): Promise<ModelInfo[]>;
   settings(settings: Settings): Promise<void>;
   sessions(scope: Scope): Promise<ChatSession[]>;
-  openChat(input: { scope: Scope; topic: string; title: string }): Promise<ChatSession>;
+  openChat(input: { scope: Scope; topic: string; title: string }): Promise<OpenedChat>;
   closeChat(id: string): Promise<void>;
   resetChat(id: string): Promise<ChatSession>;
   sendChat(request: ChatRequest): Promise<void>;

@@ -34,6 +34,12 @@ Media playback regressions must exercise the production protocol with real nativ
 
 Provider image capabilities come only from completed Codex items or freshly verified provider history. Never grant access from renderer Markdown or local session metadata alone, and never broaden access to a Codex-home or temporary directory. Revalidate the exact canonical artifact before every read.
 
+Cached open-chat responses during a foreground operation are transiently marked as
+history-deferred. Do not treat them as verified provider history or persist the flag.
+Retry on idle without changing selection or drafts, and handle idle arriving before
+the deferred response. Silent workspace reads must queue hydration rather than defer
+it to a foreground event that will never arrive.
+
 An uncertain AI start must await process shutdown before file recovery or lease release. Preserve uncertain edits; never restore staged files merely because the start acknowledgement was lost. History recovery must preserve app receipts and verified undo boundaries.
 
 Keep UI editing locked through workspace refreshes, not only the preceding operation.
@@ -46,5 +52,12 @@ ID. Reattach to pending work across development StrictMode effect replay; never 
 a duplicate operation and abandon its cancellation handle. Retain the operation lease
 until processes stop and temporary evidence is disposed. Preserve the inspected
 source hash through review and reject changed source bytes before importing metadata.
+
+Gated mount operations (workspace checks, Studio startup, commit suggestions) retain
+their owned promise across effect replay. Key requests by scope and explicit retry;
+include source revision when a preview requires refresh. Keep shared refresh work in
+the promise and deliver UI effects only to the current subscriber. A commit dialog
+owns the draft that opened it; passive workspace snapshots must not regenerate or
+overwrite its reviewed title and description. Verify replay with development React.
 
 Structural changes require a separate read-only agent to check whether the landing page and screenshots are still accurate. Do not add claims for unfinished features. Every agent reads the original brief. Final audits must be independent and section-specific.

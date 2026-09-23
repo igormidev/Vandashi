@@ -96,8 +96,8 @@ test('brand creation locks its input and preserves its name after failure before
   await finishModalOperation(desktopApp, 'failure');
   await expect(name).toBeEnabled();
   await expect(name).toHaveValue('Delayed Stories');
-  await expect(page.getByRole('status')).toContainText('The operation failed; please retry.');
-  await dialog.getByRole('button', { name: 'Create', exact: true }).click();
+  await expect(dialog.getByRole('alert')).toContainText('The operation failed; please retry.');
+  await dialog.getByRole('button', { name: 'Check again', exact: true }).click();
   await expectPendingModal(desktopApp, page, dialog, 'createBrand');
   await finishModalOperation(desktopApp, 'success');
   await expect(dialog).not.toBeVisible();

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ChatMessage } from '../src/domain/models';
 import { AgentError } from '../src/domain/agent';
 import { mergeThreadHistory } from '../src/application/chat-history';
@@ -17,6 +17,86 @@ function message(id: string, turnId: string, role: ChatMessage['role'], text: st
 }
 
 describe('persisted Codex history recovery', () => {
+  it('waits for a silent workspace read instead of returning history that has no idle event to retry it', async () => {
+    await app.api.sendChat(app.request);
+    await app.idle();
+    app.agent.readThread.mockClear();
+    const read = app.store.openWorkspace.bind(app.store);
+    let release = () => {};
+    const snapshot = vi.spyOn(app.store, 'openWorkspace').mockImplementationOnce(async (scope) => {
+      await new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      return read(scope);
+    });
+    const reading = app.api.openWorkspace(app.scope);
+    await vi.waitFor(() => {
+      expect(snapshot).toHaveBeenCalledOnce();
+    });
+    let opened = false;
+    const opening = app.api
+      .openChat({ scope: app.scope, topic: 'creation', title: 'Creation' })
+      .then((value) => {
+        opened = true;
+        return value;
+      });
+    try {
+      // Complete a storage queue round trip before checking that chat still waits on the read lease.
+      await app.store.sessions(app.scope);
+      await new Promise<void>((resolve) => {
+        setImmediate(resolve);
+      });
+      expect(opened).toBe(false);
+      expect(app.agent.readThread).not.toHaveBeenCalled();
+    } finally {
+      release();
+      await reading;
+    }
+    expect((await opening).historyDeferred).toBeUndefined();
+    expect(app.agent.readThread).toHaveBeenCalledExactlyOnceWith('thread');
+  });
+
+  it('labels cached content during Studio startup and hydrates provider history after the gate is released', async () => {
+    await app.api.sendChat(app.request);
+    await app.idle();
+    const saved = await app.store.getSession(app.session.id);
+    app.agent.readThread.mockClear();
+    let release = () => {};
+    app.media.startStudio.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          release = () => {
+            resolve({
+              url: 'http://127.0.0.1:3000',
+              previewUrl: 'http://127.0.0.1:3000/preview/index.html',
+              projectPath: app.path,
+            });
+          };
+        }),
+    );
+    const studio = app.api.startStudio(app.scope);
+    try {
+      await vi.waitFor(() => {
+        expect(app.media.startStudio).toHaveBeenCalledOnce();
+      });
+      const cached = await app.api.openChat({ scope: app.scope, topic: 'creation', title: 'Creation' });
+      expect(cached.historyDeferred).toBe(true);
+      expect(cached.messages).toEqual(saved.messages);
+      expect(app.agent.readThread).not.toHaveBeenCalled();
+      expect(await app.store.getSession(app.session.id)).toEqual(saved);
+    } finally {
+      release();
+      await studio;
+    }
+    const recovered = message('recovered-during-startup', 'turn-1', 'assistant', 'Recovered provider final');
+    app.agent.readThread.mockResolvedValue({ id: 'thread', turnIds: ['turn-1'], messages: [recovered] });
+    const hydrated = await app.api.openChat({ scope: app.scope, topic: 'creation', title: 'Creation' });
+    expect(hydrated.historyDeferred).toBeUndefined();
+    expect(hydrated.messages).toContainEqual(recovered);
+    expect(app.agent.readThread).toHaveBeenCalledExactlyOnceWith('thread');
+    expect(await app.store.getSession(app.session.id)).not.toHaveProperty('historyDeferred');
+  });
+
   it('recovers missing finals and image outputs, preserves receipts/user IDs, and keeps undo boundaries correct', async () => {
     await app.api.sendChat(app.request);
     await app.idle();

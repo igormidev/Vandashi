@@ -80,7 +80,7 @@ export class Dependencies {
       }
     }
     if (video) {
-      update('Hyperframes');
+      update('Hyperframes', false, { id: 'mediaHyperframesLabel' });
       const mediaChecks = await this.media.checks((check) => {
         checks.push(check);
         update(check.id, false, check.label);

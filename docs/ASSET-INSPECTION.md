@@ -46,10 +46,17 @@ A real macOS ARM64 application package was built with the worker under its produ
 resource path. `tests/media-speech-package.test.ts` passed against that package with
 Finder's minimal PATH, verifying English/Portuguese subject matter and timestamps,
 unchanged input bytes, timeout, and explicit cancellation. The installed application
-used its bundled ONNX Runtime native binding. Reproduce with
-`VANDASHI_PACKAGED_APP=/path/to/Vandashi.app/Contents/MacOS/Vandashi`,
-`VANDASHI_SPEECH_MODEL_PATH=/path/to/verified/whisper-base-model`, and
-`VANDASHI_SPEECH_FIXTURES=/path/to/synthetic/fixtures` while running that test.
+used its bundled ONNX Runtime native binding. The current test now uses the
+repository's two [licensed, reproducible recordings](../tests/fixtures/speech/README.md),
+which passed again against a fresh unsigned macOS ARM64 package built from the
+verified 2026-09-23 12:25:20 output. That run completed in 6.91 seconds, verified the
+bundled ARM64 native binding and adjacent dylib, and kept all 40 frozen build files
+unchanged. Reproduce with
+`VANDASHI_PACKAGED_APP=/path/to/Vandashi.app/Contents/MacOS/Vandashi` and optionally
+`VANDASHI_SPEECH_MODEL_CACHE=/path/to/model-cache-root` while running that test.
+The cache root contains `whisper-base-q8/<revision>/`; every cached file is verified
+through the production loader. See [packaged verification](PACKAGED-VERIFICATION.md)
+for the account-free Windows/Linux/macOS CI wiring and its current evidence limits.
 
 Windows and Linux execution remain separate, unverified runtime checks. On upgrades,
 recheck language handling, tensor outputs, tokenizer token IDs, generation settings,

@@ -3,6 +3,7 @@ import type { DependencyCheck } from '../src/domain/models';
 import { applicationFixture, type ApplicationFixture } from './application-fixture';
 import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { requiredDoctorChecks } from '../src/infrastructure/media/diagnostics';
 
 let app: ApplicationFixture;
 beforeEach(async () => {
@@ -15,20 +16,32 @@ afterEach(async () => {
 
 it('streams check progress, keeps diagnostics, and validates the installed skill with Codex', async () => {
   const mediaChecks: DependencyCheck[] = [
-    'hyperframes',
-    'media-nodejs',
-    'media-ffmpeg',
-    'media-ffprobe',
-    'media-chrome',
-    'skill',
-  ].map((id) => ({
-    id,
-    status: id === 'skill' ? 'missing' : 'ready',
-    detail: id,
-    ...(id === 'skill' ? { label: { id: 'appHyperframesSkillReady' } as const } : {}),
-    repairPrompt: null,
-    helpUrl: null,
-  }));
+    {
+      id: 'hyperframes',
+      label: { id: 'mediaHyperframesLabel' },
+      status: 'ready',
+      detail: '',
+      repairPrompt: null,
+      helpUrl: null,
+    },
+    ...requiredDoctorChecks(
+      JSON.stringify({
+        checks: ['Node.js', 'FFmpeg', 'FFprobe', 'Chrome'].map((name) => ({
+          name,
+          ok: true,
+          detail: 'Raw vendor detail',
+        })),
+      }),
+    ),
+    {
+      id: 'skill',
+      label: { id: 'mediaSkillLabel' },
+      status: 'missing',
+      detail: '',
+      repairPrompt: null,
+      helpUrl: null,
+    },
+  ];
   app.media.checks.mockImplementationOnce((onCheck) => {
     mediaChecks.forEach((check) => onCheck?.(check));
     return Promise.resolve(mediaChecks);
@@ -54,9 +67,15 @@ it('streams check progress, keeps diagnostics, and validates the installed skill
   );
   expect(progress[0]?.progress).toBe(0);
   expect(progress.at(-1)?.progress).toBe(1);
-  expect(progress.find((event) => event.current === 'skill')?.currentLabel).toEqual({
-    id: 'appHyperframesSkillReady',
+  expect(progress.find((event) => event.current === 'Hyperframes')?.currentLabel).toEqual({
+    id: 'mediaHyperframesLabel',
   });
+  for (const check of mediaChecks) {
+    expect(check.label).toBeDefined();
+    expect(progress.find((event) => event.current === check.id)?.currentLabel).toEqual(check.label);
+    expect(checks.find((result) => result.id === check.id)?.label).toEqual(check.label);
+    expect(progress.at(-1)?.checks.find((result) => result.id === check.id)?.label).toEqual(check.label);
+  }
 });
 
 it('continues local diagnostics when Codex is unavailable and never reports success', async () => {

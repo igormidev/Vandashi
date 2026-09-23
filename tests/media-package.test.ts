@@ -8,27 +8,25 @@ import { expect, it } from 'vitest';
 import { z } from 'zod';
 import { parseMediaProbe } from '../src/infrastructure/media/diagnostics';
 import { resolveMediaBinary } from '../src/infrastructure/media/binaries';
+import { packagedEnvironment } from './package-environment';
 
 const execute = promisify(execFile);
 const executablePath = process.env['VANDASHI_PACKAGED_APP'];
+const required = process.env['VANDASHI_REQUIRE_PACKAGED_SMOKE'] === '1';
 
-it.skipIf(!executablePath)(
+it.skipIf(!executablePath && !required)(
   'runs bundled Studio and a real video render from a packaged Electron app with a desktop-launcher PATH',
   async () => {
     if (!executablePath) throw new Error('Set VANDASHI_PACKAGED_APP to the packaged executable.');
+    if (required && process.env['VANDASHI_PACKAGE_AGENT_SMOKE'] === '1')
+      throw new Error('CI packaged verification must not use a Codex account.');
     const directory = await mkdtemp(join(tmpdir(), 'vandashi-package-test-'));
     let desktop: ElectronApplication | undefined;
     let studioUrl = '';
     try {
-      const environment = Object.fromEntries(
-        Object.entries(process.env).filter(
-          (entry): entry is [string, string] =>
-            typeof entry[1] === 'string' && entry[0] !== 'ELECTRON_RUN_AS_NODE',
-        ),
-      );
+      const environment = packagedEnvironment();
       environment['VANDASHI_USER_DATA'] = join(directory, 'settings');
       environment['ELECTRON_RENDERER_URL'] = '';
-      if (process.platform !== 'win32') environment['PATH'] = '/usr/bin:/bin:/usr/sbin:/sbin';
       desktop = await _electron.launch({ executablePath, env: environment, timeout: 30_000 });
       const packaged = await desktop.evaluate(({ app }) => ({
         packaged: app.isPackaged,

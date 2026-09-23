@@ -88,4 +88,9 @@ Hyperframes' media metadata endpoint reports codec/color information; it does **
 
 Build an isolated unsigned macOS development bundle with `CSC_IDENTITY_AUTO_DISCOVERY=false npx electron-builder --dir --mac --arm64 --config.directories.output=/tmp/vandashi-package-smoke --publish never` after `npm run build`. Then set `VANDASHI_PACKAGED_APP` to its `Contents/MacOS/Vandashi` executable and run `npx vitest run tests/media-package.test.ts`. Add `VANDASHI_PACKAGE_AGENT_SMOKE=1` to include an actual Codex script synchronization. This uses an isolated user-data directory and disposable project, verifies bundled native resources and Electron-as-Node, exercises Studio writes and flush, checks real MP4 dimensions/duration and red title pixels, then verifies its server stops. Linux and Windows packaged runs remain separate platform verification requirements.
 
+The desktop CI matrix now invokes the account-free package checks after packaging,
+with pinned browser installation and explicit Git/media tool paths. See
+[packaged verification](PACKAGED-VERIFICATION.md) for exact checks, model/fixture
+provenance, and the distinction between configured jobs and observed platform results.
+
 The smoke test uses the published CLI and real local rendering. It loads the Studio bundle, reads the runtime preview, saves an edit through the vendor API, renders MP4, probes actual dimensions/duration, and verifies the server stops on disposal.

@@ -1,0 +1,31 @@
+{
+  "dataset": "PolyAI/minds14",
+  "revision": "40ce77cb32a384e4d50a568e1ec39ac804019d33",
+  "license": "CC-BY-4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+  "attribution": "PolyAI, MInDS-14: Multilingual Intent Detection from Spoken Data (2021)",
+  "fixtures": [
+    {
+      "file": "english.wav",
+      "config": "en-US",
+      "row": 0,
+      "path": "en-US~JOINT_ACCOUNT/602ba55abb1e6d0fbce92065.wav",
+      "language": "en",
+      "transcription": "I would like to set up a joint account with my partner",
+      "expected": ["joint account", "partner"],
+      "bytes": 86758,
+      "sha256": "0f56f001f964d2288851a5e4063781cb5793d25f1b4fd9b55607e79873b4b20c"
+    },
+    {
+      "file": "portuguese.wav",
+      "config": "pt-PT",
+      "row": 5,
+      "path": "pt-PT~CASH_DEPOSIT/response_16.wav",
+      "language": "pt",
+      "transcription": "Olá bom dia estou a ligar porque eu gostava de saber como é que posso fazer para depositar dinheiro por favor",
+      "expected": ["depositar", "dinheiro"],
+      "bytes": 62182,
+      "sha256": "2dbd646281491cc5e6f00443776e0d48f1f80f8a371a55c91a4b22bc8eb9e6f6"
+    }
+  ]
+}

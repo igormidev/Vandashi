@@ -6,10 +6,14 @@ import { useApp } from '../../app/store';
 import { errorText } from '../../app/diagnostics';
 import { Empty, IconButton } from '../../shared/ui';
 import { formatPercent } from '../../shared/format';
+import { OwnedRequest } from '../../shared/owned-request';
+import type { StudioInfo } from '../../../domain/models';
 
 export function Preview({ compact = false }: { compact?: boolean }) {
   const { t, i18n } = useTranslation();
-  const { workspace, api, run, busy, dirty } = useApp();
+  const { workspace, api, run, busy, dirty, setToast } = useApp();
+  const pending = useRef(new OwnedRequest<StudioInfo>());
+  const reported = useRef('');
   const mount = useRef<HTMLDivElement>(null);
   const [preview, setPreview] = useState({ key: '', url: '', error: '' });
   const [attempt, setAttempt] = useState(0);
@@ -20,29 +24,35 @@ export function Preview({ compact = false }: { compact?: boolean }) {
   const clipId = workspace?.scope.clipId;
   const revision = workspace?.revision;
   const key = `${brandId ?? ''}/${videoId ?? ''}/${clipId ?? ''}/${revision ?? ''}`;
-  const url = preview.key === key ? preview.url : '';
-  const error = preview.key === key ? preview.error : '';
+  const requestKey = JSON.stringify([key, attempt]);
+  const url = preview.key === requestKey ? preview.url : '';
+  const error = preview.key === requestKey ? preview.error : '';
   useEffect(() => {
     if (!brandId || !videoId) return;
     let disposed = false;
-    void run(async () => {
-      try {
-        const studio = await api.startStudio({ brandId, videoId, clipId: clipId ?? null });
+    void pending.current
+      .get(api, requestKey, () => api.startStudio({ brandId, videoId, clipId: clipId ?? null }))
+      .then((studio) => {
         if (!disposed)
           setPreview({
-            key,
+            key: requestKey,
             url: `${studio.previewUrl}${studio.previewUrl.includes('?') ? '&' : '?'}v=${encodeURIComponent(revision ?? '')}`,
             error: '',
           });
-      } catch (failure) {
-        if (!disposed) setPreview({ key, url: '', error: errorText(failure) });
-        throw failure;
-      }
-    });
+      })
+      .catch((failure: unknown) => {
+        if (disposed) return;
+        const error = errorText(failure);
+        setPreview({ key: requestKey, url: '', error });
+        if (reported.current !== requestKey) {
+          reported.current = requestKey;
+          setToast(error);
+        }
+      });
     return () => {
       disposed = true;
     };
-  }, [api, brandId, videoId, clipId, revision, key, attempt, run]);
+  }, [api, brandId, videoId, clipId, revision, requestKey, setToast]);
   useEffect(() => {
     if (!mount.current || !url) return;
     const player = document.createElement('hyperframes-player');

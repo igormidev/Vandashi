@@ -1,20 +1,43 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useApp } from '../../app/store';
 import { Modal } from '../../shared/ui';
 import { errorText } from '../../app/diagnostics';
+import { OwnedRequest } from '../../shared/owned-request';
+import { scopeKey } from '../../../domain/defaults';
+import type { Scope } from '../../../domain/models';
 
-export function CommitDialog({
-  onSave,
-  onClose,
-  summary = '',
-}: {
+interface CommitDialogProps {
   onSave: (commit: { title: string; body: string }) => Promise<void>;
   onClose: () => void;
   summary?: string;
-}) {
+}
+
+export function CommitDialog(props: CommitDialogProps) {
+  const { workspace } = useApp();
+  if (!workspace) return null;
+  return (
+    <CommitFields
+      key={scopeKey(workspace.scope)}
+      {...props}
+      scope={workspace.scope}
+      revision={workspace.revision}
+    />
+  );
+}
+
+function CommitFields({
+  onSave,
+  onClose,
+  summary = '',
+  scope,
+  revision,
+}: CommitDialogProps & { scope: Scope; revision: string }) {
   const { t } = useTranslation();
-  const { api, workspace, run } = useApp();
+  const { api, run } = useApp();
+  // This confirmation belongs to the draft that opened it, not later passive workspace snapshots.
+  const [input] = useState(() => ({ scope: { ...scope }, summary, revision }));
+  const pending = useRef(new OwnedRequest<{ title: string; body: string }>());
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [loading, setLoading] = useState(true);
@@ -22,9 +45,10 @@ export function CommitDialog({
   const [generationError, setGenerationError] = useState<string | null>(null);
   useEffect(() => {
     let disposed = false;
-    if (!workspace) return;
-    void api
-      .suggestCommit({ scope: workspace.scope, summary })
+    void pending.current
+      .get(api, JSON.stringify(input), () =>
+        api.suggestCommit({ scope: input.scope, summary: input.summary }),
+      )
       .then((value) => {
         if (!disposed) {
           setGenerationError(null);
@@ -41,7 +65,7 @@ export function CommitDialog({
     return () => {
       disposed = true;
     };
-  }, [api, workspace, summary]);
+  }, [api, input]);
   return (
     <Modal
       title={t('commitDialog')}

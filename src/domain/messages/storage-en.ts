@@ -17,6 +17,8 @@ export const storageMessagesEn = {
   storageProjectFilesPreserved:
     'The project could not be published. Files in {{path}} were preserved. Inspect that folder or choose a different name before retrying.',
   storageProjectExists: 'A project folder with this name already exists. Choose another name.',
+  storageImportNameCollision:
+    'The import destination already exists: {{path}}. Nothing was overwritten. Select the file again or choose another project name.',
   storageProjectPreparationChanged: 'The project preparation folder changed. Its files were preserved.',
   storageCreatedVideoUnavailable:
     'The video was created at {{path}}, but could not be opened. Return to the video list and open it again.',

@@ -1,4 +1,5 @@
 import { AppFault } from '../domain/diagnostics';
+import { importedClipName } from '../domain/import-names';
 import type { MediaPort, MediaProbe } from '../domain/media';
 import type { Scope } from '../domain/models';
 import type { StoragePort } from '../domain/storage';
@@ -18,7 +19,7 @@ export async function importFinishedClip(
   const original = await media.probeMedia(input.sourcePath);
   const ratio = finishedClipRatio(original);
   return store.importClip(
-    { ...input, name: `imported-${String(Date.now())}`, ratio, duration: original.duration },
+    { ...input, name: importedClipName(input.sourcePath), ratio, duration: original.duration },
     async (path) => {
       const copy = await media.probeMedia(path);
       if (

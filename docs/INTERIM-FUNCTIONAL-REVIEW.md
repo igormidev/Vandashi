@@ -11,7 +11,7 @@ appropriate native verification. Existing real integration evidence is recorded 
 
 ### F01 — Failed brand creation leaves an unusable reserved name
 
-**Status: implemented; real filesystem/Git regressions pass, native recheck pending.**
+**Status: implemented; real filesystem/Git regressions, fresh native creation, and native recovery cases pass.**
 
 `Home.create` calls `createBrand` before workspace checks. `ProjectStore.createBrand`
 creates the visible brand directory and documents before initializing its two Git
@@ -153,7 +153,7 @@ from the summary. The native brand-edit scenario also checks its saved Home name
 
 ### F06 — Dot-prefixed project names become undiscoverable
 
-**Status: implemented; filesystem regressions pass, native invalid-name recheck pending.**
+**Status: implemented; filesystem regressions and native invalid-name recheck pass.**
 
 `safeName` allows names such as `.draft`, and ordinary video/clip creation uses it
 without rejecting leading dots. Project discovery skips every dot-prefixed
@@ -172,7 +172,7 @@ validation and remain available.
 
 ### F07 — Development effect replay duplicates gated startup operations
 
-**Status: pending implementation.**
+**Status: implemented; four request-ownership unit cases and seven development native regressions pass.**
 
 Read-only review found duplicate mount requests in workspace checks, composition preview,
 manual Studio startup, and commit-message generation under React development StrictMode.
@@ -182,24 +182,118 @@ commit after an unrelated refresh. Reattach to owned pending operations and veri
 an actual development renderer; the production bundle does not replay these effects.
 The asset-inspection variant is already fixed and passes its development regression.
 
+Checks, Preview (main composition and clip), ManualPage, and CommitDialog now reuse
+a component-owned request through replay. Scope, explicit retry, and preview revision
+start new work; only the active subscriber delivers its result. Checks reload once
+after the final successful result and do not unlock on an intermediate ready event.
+The commit modal captures its opening input rather than depending on the whole live
+workspace, so passive refreshes preserve reviewed title/body text. The original
+failure evidence above is retained; the corrected native assertions passed together
+in the actual development renderer (seven tests, 9.4 seconds).
+
+`tests/owned-request.test.ts` verifies shared completion/refresh, retained failures and
+explicit retry, API/scope/revision isolation, and late abandoned completion. The actual
+Vite-development tests in `tests/e2e/startup-development.spec.ts` prove effect replay
+and hold the first response while rejecting duplicates as busy. They cover checks,
+main and clip previews, manual Studio, passive commit refresh, and commit dialogs in
+brand, packaging, shared assets, and video assets. They do not claim real Hyperframes
+or Codex execution; those integrations have separate live and packaged verification.
+
 ### F08 — First-brand missing-Git recovery has no installation action
 
-**Status: pending implementation.**
+**Status: implemented; 17 focused unit/storage/diagnostic tests and three native regressions pass.**
 
 Brand creation now checks Git safely before writing, but Home still reports a missing
 executable only through a toast. The user needs concise installation help and a retry
 that preserves the selected parent and name. Checks with no workspace currently exclude
 Git; this must be addressed without weakening the creation preflight.
 
+Home now retains the native-selected parent and editable name after a failed create,
+shows the typed diagnostic inline, and offers the official Git installation guide
+only for `gitUnavailable`. Check again repeats the existing backend creation preflight;
+no new scope-free checks or API contract is required. External errors remain verbatim
+and also leave retry available. A saved brand whose workspace failed to open is retained
+by ID, so retry reopens it rather than attempting duplicate creation.
+
+`tests/application-brand-creation.test.ts` checks repeated missing-executable failures
+before storage is called, unchanged files and registry, and successful same-input retry.
+`tests/e2e/brand-recovery.spec.ts` covers retained form values, the official help action,
+a locked pending retry, raw external errors that must not be classified by English
+wording, and recovery after the brand was saved. The native fixture retains production
+directory grants, real storage/Git, and IPC error transport; only prerequisite failures,
+retry timing, and account-dependent readiness are controlled. All three native cases pass.
+
 ### F09 — Chat opened while another operation runs can skip provider hydration
 
-**Status: pending implementation.**
+**Status: implemented; seven real-Git/history tests and four native image-hydration regressions pass.**
 
 The backend returns a cached open session while its operation gate is busy. The renderer
 currently marks that response as fully hydrated, so opening Creation chat during Studio
 startup may retain stale history and unavailable generated images after startup completes.
 Distinguish cached content from verified provider history and retry hydration when idle,
 without stealing selection or replacing an unsent draft.
+
+The `OpenedChat` response now marks cached foreground-busy history with a transient
+`historyDeferred` flag. Storage never persists it. The renderer leaves that session
+eligible for provider hydration once idle; verified history alone advances its image
+generation and retries failed media authorization. Silent workspace-read leases are
+awaited rather than deferred, and foreground ownership is rechecked after cache I/O.
+Deferred background responses avoid updating sessions, preventing a request loop. A
+captured idle-event generation also covers completion arriving before the deferred
+response without losing the retry. Background work never selects a tab or changes
+its composer draft.
+
+An independent read-only re-review found the original problem and two ordering
+hazards resolved. `tests/chat-history.test.ts` holds real operation-gate leases for
+foreground Studio and passive workspace reads. The native image-hydration suite
+adds Studio-busy and late-idle response ordering to the existing delayed/offline
+provider-grant cases; all four native cases pass.
+
+### F10 — Imported clips receive opaque timestamp names
+
+**Status: implemented; 51 focused naming/import/publication tests and actual repeated native import pass.**
+
+Actual manual import displayed names such as `imported-1790175523765`, because the
+application generated an epoch-based folder name instead of using the chosen file.
+This obscured the source in the clip library and release review described at brief
+L598–604, despite the user having selected a recognizable finished video.
+
+Imports now derive the display/folder name from the source filename without its
+extension. Sanitization preserves Unicode, normalizes equivalent character forms,
+removes invalid path characters, handles reserved device names, and bounds both
+UTF-16 length and UTF-8 bytes without splitting code points. Empty names use an
+exported English project-data default. The copied media filename is also portable;
+the original source and copied media bytes remain unchanged.
+
+Storage chooses a free readable ordinal (`Name`, `Name (2)`) before calling the
+exclusive writer once. Existing files, directories, and symlinks occupy names,
+including case/normalization equivalents. A raced reservation receives a typed
+collision diagnostic; partial publication failures are never automatically retried
+under another name. Existing publication ownership and preservation guards remain.
+
+`tests/import-names.test.ts` covers sanitization, fallback names, Unicode/length
+boundaries, and ordinal suffixes. `tests/finished-clip-names.test.ts` uses real files
+and Git for repeated imports, occupied names, unchanged media, and an external
+reservation race. Existing finished-media/publication regressions cover failed-copy
+cleanup and preservation of external files during publication. The actual native picker
+produced `Final city` and `Final city (2)` with clean independent repositories and
+matching original/copied media hashes; see the manual verification journal.
+
+### Follow-up — Dependency labels and verified completion feedback
+
+Actual native checking displayed internal media IDs despite the existing typed
+label boundary. The Hyperframes diagnostic producer now supplies human labels for
+Hyperframes, Node.js, FFmpeg, FFprobe, and the rendering browser in success and
+failure rows; progress carries the same descriptor. Eleven focused tests pass.
+External version, path, and provider details remain unchanged.
+
+The brief also requests a toast after script synchronization. The renderer now
+shows the existing localized saved-change message only for a newly delivered,
+verified application receipt with changed files, after final history persistence.
+The receipt stays in the conversation. Receipt IDs suppress duplicate events;
+history loading, no-change turns, read-only replies, helper completion, and failures
+do not announce saved changes. Twelve focused unit/storage tests and both native
+receipt scenarios pass. No backend success boundary was weakened.
 
 ## Coverage and remaining acceptance
 

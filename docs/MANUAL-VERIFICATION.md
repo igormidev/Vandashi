@@ -111,6 +111,94 @@ This records observed behavior, including defects still being worked on. It is n
   imported MP3 metadata, waveform decoding and Chromium playback. This does not claim
   a fresh manual walkthrough or successful publication to a platform account.
 
+## 2026-09-23 — Current-build image history and finished-clip walkthrough
+
+- Reopened `the-hidden-city` in the real app after a fresh launch. The saved thumbnail
+  conversation loaded both the provider-generated bitmap and the local Markdown
+  thumbnail automatically; no Retry action was used. Opening the generated image
+  displayed the complete tower/city artwork in the image inspector.
+- Selected the previously rendered 1080×1920 four-second clip through the native
+  file picker in YouTube Shorts → Choose a clip → Import a video. The new imported
+  clip appeared in the library and opened directly into packaging with native video
+  playback; composition editing stayed unavailable as intended.
+- Played the clip to its four-second endpoint, edited its short title to
+  “A hidden city — finished excerpt,” reviewed a real Luna-generated commit message,
+  and saved. Commit `731de8e` follows import `58b90b7`; the independent clip repository
+  is clean and its YAML contains the reviewed title. No platform upload was initiated.
+- This walkthrough exposed the opaque imported timestamp used as the clip name.
+  A separate follow-up replaces that default with the source filename and safe,
+  readable collision handling; the observations above used the prior default.
+
+## 2026-09-23 — Fresh brand and composition creation
+
+- Created **Recovery Studio** through Home using the native parent-folder picker.
+  The app opened the new brand and its individual taste guides. The identity and
+  shared-assets repositories have clean initial commits `527feba` and `0bb9ad8`.
+- Created **Fresh canvas**, selected landscape 16:9, and completed the actual
+  Codex/Git/Hyperframes prerequisite checks. The video repository contains the
+  prepared composition, vendor animation runtime, packaging, script, and asset
+  directories; commits `208bf6d` and `255f1e5` are clean.
+- Opened Creation workspace. Its live Hyperframes preview rendered **Fresh canvas**
+  with a ten-second duration, and version history showed both creation commits.
+  This verifies the successful native publication path. Injected failure, retry,
+  and preservation cases are established separately by filesystem and native tests.
+
+## 2026-09-23 — Startup, brand recovery, and deferred image hydration
+
+- The focused native run passed all three first-brand recovery cases, all four
+  provider-image hydration cases, and imported-clip playback/packaging. The three
+  initial development-startup failures used stale test labels. After correcting
+  those selectors, all seven development React cases passed in a separate run.
+- Development tests prove StrictMode replay with held requests, verify a single
+  prerequisite/Studio/commit operation, and retain a manually reviewed commit
+  through a passive workspace refresh. Shared commit UI is exercised in Brand,
+  Packaging, Shared assets, Video assets, and Manual editing.
+- Image tests cover delayed grants, offline retry, opening a cached Creation
+  conversation during Studio startup, and idle arriving before the deferred IPC
+  response. They assert one subsequent provider read, restored images, and retained
+  draft/selection. Brand recovery uses the production bridge, directory grants,
+  filesystem, and Git with controlled prerequisite/open failures.
+- In the actual app, submitting `.draft` in the New video form showed the invalid
+  name diagnostic and retained the form value. Cancelling returned to the unchanged
+  video list. Filesystem verification confirmed no hidden `.draft` project existed.
+
+## 2026-09-23 — Readable finished-clip names
+
+- Imported the same four-second 1080×1920 `Final city.mp4` twice through the actual
+  native picker. The app showed **Final city** and then **Final city (2)** in the
+  corresponding upload review, preserving both entries and the earlier clips.
+- Their independent repositories are clean at `4e2e7fe` and `e05a20d`. Both copied
+  media files and the selected original have SHA-256
+  `476613d948c5714102320e5d533d8b75cfa34db7a0398a443b5ddb936e879acf`.
+- No upload ran. The destination is still unconfigured, and Open upload chat
+  remains disabled with the existing destination guidance.
+
+## 2026-09-23 — Full startup checkpoint and fresh packaged integrations
+
+- The source gate passed strict types, zero-warning lint, formatting, architecture
+  (205 modules, 878 dependencies), production build, and 453 tests. Thirteen
+  opt-in or platform-specific tests were skipped and are not claimed as passed.
+- The full native Electron run passed 80 of 81 scenarios. Its remaining assertion
+  expected the old brand-error toast/Create button; the redesigned dialog retains
+  an inline alert and Check again action. Updating those expectations yielded a
+  passing four-case modal rerun. All 81 scenarios are verified across those runs,
+  rather than claimed as one uninterrupted green run.
+- Both saved-receipt regressions pass: the new toast accompanies a durable receipt,
+  survives dismissal independently, and is not repeated from duplicate events or
+  history reload. No-change/read-only/helper/failure events do not show success.
+- Built a fresh unsigned macOS ARM64 application from the verified output. All
+  40 production output files match their packaged copies byte for byte. The actual
+  bundled speech worker passed both licensed English/Portuguese fixtures, native
+  binding checks, model checksums, timestamps, source preservation, cancellation,
+  and timeout in 6.91 seconds.
+- The fresh packaged Studio integration then passed in 46.21 seconds using a
+  desktop-style PATH containing `/usr/bin` Git and OS directories, with explicit
+  media/browser paths. It loaded bundled Studio, persisted and flushed real edits,
+  used the real Codex harness to synchronize the script, rendered H.264 output,
+  verified dimensions/duration and decoded red title pixels, and stopped its
+  owned server on exit. This was the production packaged runtime with real
+  integrations, exercised by the integration harness rather than a manual UI claim.
+
 ## Automated integration evidence
 
 - Real Codex live tests cover sandboxed read-only execution, conversation persistence/resume/fork, and final-answer structured output after a read tool.
