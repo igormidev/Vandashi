@@ -478,3 +478,88 @@ it successfully as clean commit `c9a4539`. The persisted sidecar records the rev
 metadata and successful embedded storage. Copy image displayed its success feedback;
 Preview's New from Clipboard opened the actual 1672×941 city image. The temporary
 unsaved Preview document was closed after verification.
+
+The current package's Creation history copied the complete `c9a4539` SHA; pasting into
+an unsent chat draft verified the exact value, then the draft was cleared. Native chat
+pickers attached the owned city PNG and English MP3. A real Astra/Medium turn imported
+both into Fresh canvas's local `video_assets/`, left shared assets unchanged, added both
+canonical `@[title](<absolute path>)` mentions to `script.md`, and saved clean commit
+`249f5d5`. Working/Stop and conflicting navigation/editor locks remained visible.
+The script accurately recorded the dim image's five-second fade and narration treatment.
+
+The subsequent render displayed percentage progress and saved `cd58659`. FFprobe confirms
+40 seconds of 1920×1080 H.264 plus AAC audio. Clips and Launch were disabled before the
+current export and enabled afterward. Opening Clips showed its empty state; New clip ran
+visible prerequisites, then accepted square 1:1 and an exact 0–5-second range. Play selection
+displayed actual city/circle/title motion with the square framing guide. Confirming creation
+immediately showed “Creating your clip…” and locked global navigation through handoff.
+
+The square AI handoff continued in the same visible conversation and saved `3114dd8`.
+It exposed a real completion race: the idle clip Preview retained “Another operation is
+running” until Check again. Explicit retry loaded the composition immediately; this is
+a reopened source finding, not a passing automatic-refresh result. The app's Render action
+then exported the five-second square clip successfully (`b3e6ef4`); parent HEAD remained
+`cd58659` with a clean index/worktree.
+
+Launch opened after the valid export. Choose a clip → Import a video used the native
+picker to import the owned four-second portrait MP4 as `city-drop`. Its review correctly
+required a destination URL and browser before Open upload chat could enable. No upload
+was attempted. Back in Clips, selecting the imported item played the actual portrait
+title-card video through 0:04. Its Edit packaging page identified it as Imported.
+Direct navigation from that imported clip opened parent Creation with Fresh canvas's
+40-second script and 16:9 preview; repeating the route to Manual opened actual parent
+Studio at `#project/Fresh%20canvas`. Both parent capabilities remained available.
+
+Two CUA Finder drags of the selected disposable MP4 produced no application drop event;
+this does not establish native drag/drop acceptance. The subsequent library lifecycle
+walkthrough uses the native picker and remains explicitly distinct from that open check.
+
+The native library picker inspected six frames of the four-second MP4, showed
+“Understanding your asset…”, and proposed accurate title-card metadata. The reviewed
+title “Disposable city clip” saved as `7955303`; its inspector played through 0:04.
+The folder-scoped Assets chat then received the owned SVG logo through its native picker.
+Its real AI turn read brand/visual guidance, checked references, created two tagged SVG
+assets under `video_assets/details/`, and deleted only the unused local MP4 and sidecar.
+Commit `39d45d8` contains exactly those six paths; composition and the separate imported
+clip stayed unchanged, and the repository was clean. The library refreshed automatically
+and cleared the deleted selection. Browsing details showed both SVGs; inspector metadata
+described the transparent 1920×1080 frame accurately. Description search `inset` returned
+one asset; tag search `frame-kit` returned both nested assets.
+
+## Fresh packaged Preview completion and Undo
+
+The reviewed Preview/chat startup correction was built into the unsigned package at
+`/tmp/vandashi-preview-final-package/`. Both live package integrations passed without skips;
+the package manifest identifies the exact frozen output separately from HEAD `40c97dd`.
+Root opened it with the original isolated manual profile. Fresh canvas's actual render
+showed percentage progress and completed as `0d7fe3b` before new clip creation.
+
+New clip “Clear square” used 1:1 and the 0–5-second opening. The real Astra turn kept
+Creating/Working feedback and conflicting navigation locked throughout publication and
+generation. Completion retained its exact original instruction and conversation, showed
+Changes saved, and automatically opened the current Preview without Check again, a busy
+error, or an error toast. Playback advanced from 0:00 to 0:05; the actual image, animated
+mint circle and “A circle begins” title were visible. The clip committed `f740db9` and
+the parent remained `0d7fe3b`; identity/shared repositories were unchanged and all clean.
+Evidence: `/tmp/vandashi-preview-completion-manual.json`.
+
+Before any subsequent render/manual save, Revert last change → Continue restored the
+clip's original source tree through commit `d76ec87`, preserved `f740db9` at an owned
+`refs/vandashi/backups/` ref, and forked the actual Codex conversation to its empty
+pre-first-turn boundary. The visible transcript became empty and Undo disabled. All six
+participating repositories were clean and their trees matched their checkpoint baselines;
+the five unaffected HEADs stayed unchanged. The original provider thread was retained.
+Evidence: `/tmp/vandashi-clear-square-session-before-undo.json` and
+`/tmp/vandashi-current-package-undo.json`.
+
+For unavailable-history recovery, root copied only registry/session data into
+`/tmp/vandashi-undo-missing-boundary-profile`, retained the real Northstar conversation,
+and changed only its copied latest checkpoint to a nonexistent provider thread UUID.
+The copied checkpoint used current clean identity/shared HEADs for both before/after,
+so it could not restore old project content. No actual provider history was deleted.
+After native startup hydrated the real conversation, Undo → Continue showed the actual
+Codex “no rollout found for thread id” error and retained the confirmation for retry.
+Cancel returned to the unchanged visible conversation and amber logo. Exact comparison
+showed the entire hydrated session unchanged and both repositories' HEADs, trees and
+tracked file bytes unchanged and clean. Evidence: `/tmp/vandashi-undo-missing-before.json`
+and `/tmp/vandashi-undo-missing-result.json`. The copied-profile app was then closed.

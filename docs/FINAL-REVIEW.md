@@ -24,7 +24,7 @@ the next cross-platform run is in progress.
 | --- | ------------------------------- | ------- | ---------------------------------- | --------------- |
 | 1   | The idea.                       | 1–18    | /root/final_idea_review            | source-accepted |
 | 2   | General structure               | 19–22   | /root/final_general_review         | source-accepted |
-| 3   | Git structure                   | 23–105  | /root/final_git_review             | needs-evidence  |
+| 3   | Git structure                   | 23–105  | /root/final_git_review             | accepted-macos  |
 | 4   | Tech stack and architecture     | 106–122 | /root/final_architecture_review    | source-accepted |
 | 5   | Linter and architecture         | 123–130 | /root/final_linter_review          | source-accepted |
 | 6   | Agent markdown file             | 131–137 | /root/final_agent_docs_review      | source-accepted |
@@ -37,15 +37,15 @@ the next cross-platform run is in progress.
 | 13  | Brand page (first initial tab)  | 180–248 | /root/final_brand_editor_review    | accepted-macos  |
 | 14  | Other                           | 249–262 | /root/final_other_review           | accepted-macos  |
 | 15  | AI Chat                         | 263–367 | /root/final_chat_review            | needs-evidence  |
-| 16  | Video Workspace Page            | 368–383 | /root/final_video_workspace_review | source-accepted |
+| 16  | Video Workspace Page            | 368–383 | /root/final_video_workspace_review | accepted-macos  |
 | 17  | Video Pre-page                  | 384–391 | /root/final_video_prepage_review   | accepted-macos  |
 | 18  | Video Pre-page: Validation      | 392–425 | /root/final_validation_review      | accepted-macos  |
 | 19  | Video Pre-page: Onboarding Form | 426–435 | /root/final_onboarding_review      | accepted-macos  |
 | 20  | Packaging Page                  | 436–457 | /root/final_packaging_review       | needs-evidence  |
-| 21  | Creation workspace              | 458–522 | /root/final_creation_review        | needs-evidence  |
+| 21  | Creation workspace              | 458–522 | /root/final_creation_review        | accepted-macos  |
 | 22  | Manual video editing            | 523–533 | /root/final_manual_edit_review     | accepted-macos  |
 | 23  | Asset creation                  | 534–553 | /root/final_assets_review          | needs-evidence  |
-| 24  | Clips creation                  | 554–578 | /root/final_clips_review           | source-accepted |
+| 24  | Clips creation                  | 554–578 | /root/final_clips_review           | accepted-macos  |
 | 25  | Launch Suite (Video Release)    | 579–605 | /root/final_launch_review          | needs-evidence  |
 | 26  | UI                              | 606–623 | /root/final_ui_review              | source-accepted |
 | 27  | Translation                     | 624–651 | /root/final_translation_review     | source-accepted |
@@ -362,3 +362,52 @@ but exposed eight locale tests depending on an absent Codex CLI. Their model-dis
 fixture now isolates that external prerequisite while retaining real Settings persistence
 and native dialogs; all eight corrected cases pass locally. The current matrix needs
 a rerun with this test-only correction.
+
+Checkpoint `40c97dd` contains only test portability corrections after the package/source
+checkpoint. Both commits passed the actual staged full gate (834 passed, 13 opt-in
+skips, zero static warnings/errors, both builds) and were pushed. The Windows corrections
+retain exact parent-ledger assertions after path normalization and a bounded real-Git
+clip reconciliation wait. The two focused suites pass 13/13. Fresh CI is in progress.
+
+Section 21 accepted the complete current macOS Creation evidence after independently
+checking the imported media, canonical script references, final render and native line-ending
+regressions. Native Finder drop remains a separate Chat/Assets acceptance item.
+
+Section 16 accepted its complete current macOS tab and imported-clip→parent navigation
+sweep. A separate real clip completion exposed an automatic Preview startup conflict:
+manual Retry worked, but first startup raced passive chat hydration. The source correction
+and held-startup native regressions are in progress under Creation/Clips.
+
+The pushed `40c97dd` Linux job passed 834 unit/integration cases, 209 native cases and
+both packaged integrations, then uploaded installers. Pages passed its 58 catalog and
+312 browser cases and deployed. Windows/macOS were still running at this observation;
+these jobs do not validate the newer uncommitted Preview correction.
+
+The original Architecture, Creation and Clips reviewers accepted the startup correction
+and its 48 focused unit /16 native evidence. Actual fresh-package completion remains
+the last check for this correction. Assets accepted ASSET-03/11/12 after the real folder
+AI and video-inspector walkthrough; native drops and referenced rename/delete remain open.
+
+The fresh package passed both actual integration cases with no skips. Root repeated real
+initial square-clip generation: the exact conversation remained visible, Preview opened
+automatically without Retry/busy error, and playback reached 0:05. All participating
+repositories stayed clean and the parent was unchanged. The original Clips reviewer
+accepted this macOS evidence. A subsequent immediate Undo restored the exact baseline
+trees, forked the conversation to its correct empty initial boundary and retained the
+generated commit in a backup ref. Missing-provider-boundary acceptance remains separate.
+
+Landing's same reviewer accepted the startup changes without new screenshots or product
+copy; only SITE.md's motion description needed the already-present clipboard indicator.
+
+Creation's same reviewer accepted the new automatic Preview macOS evidence. Git's same
+reviewer accepted both current successful Undo and the isolated unavailable-provider
+boundary check: the latter preserved the complete session and exact repository bytes.
+
+The `40c97dd` desktop matrix finished with Linux green, macOS 207/209 native cases, and
+Windows timing out after its successful 831-pass/16-skip unit gate and a partial native
+run. Two macOS cases and one Windows case reloaded before initial window loading settled;
+a separate Windows thirteen-guide save exceeded its five-second observation timeout.
+The desktop startup correction now preserves a successful same-URL replacement while
+retaining real failures. Fixtures await full initial load; the thirteen-file observation
+has twenty seconds, and only Windows's job budget increases to sixty minutes. Windows
+latency remains a hypothesis until the next complete matrix; no tests were removed.

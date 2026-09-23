@@ -51,7 +51,8 @@ export const test = base.extend<DesktopFixtures>({
       uncaught.push(error.message);
     });
     page.on('dialog', () => undefined); // Native Electron owns beforeunload confirmation.
-    await page.waitForLoadState('domcontentloaded');
+    // A fixture reload must not abort main's still-pending initial window.loadURL and quit the app.
+    await page.waitForLoadState('load');
     await use(page);
     expect(uncaught, 'The desktop renderer must not raise uncaught JavaScript errors.').toEqual([]);
   },

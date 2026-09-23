@@ -26,6 +26,9 @@ Only one AI operation runs globally. Dirty manual drafts block AI and navigation
 Acquire the operation lease before Studio/render workspace preflight and imported-video
 checks. Even a workspace read can repair YAML or synchronize files; wrappers must not
 perform that read before delegating to the already-gated application method.
+Conversation hydration and Studio startup serialize with each other after workspace
+reads, rechecking ownership when they wake. This narrow startup coordination must not
+queue competing AI edits or duplicate Studio requests behind an active operation.
 
 Video-library reads also repair YAML. Coalesce them per brand, wait for active work,
 and retain the silent workspace-read lease through storage completion. Distinguish loading,
@@ -86,7 +89,10 @@ Gated mount operations (workspace checks, Studio startup, commit suggestions) re
 their owned promise across effect replay. Key requests by scope and explicit retry;
 key preview startup by the provider-adopted workspace snapshot, including unchanged
 source revisions after a stopped watcher. Do not independently reread the workspace
-from Preview while the provider adopts its refresh. Keep shared refresh work in
+from Preview while the provider adopts its refresh. Serialize each Preview instance's
+startup promises through actual IPC settlement and skip superseded snapshots before
+dispatch. An obsolete failure must not poison the latest attempt or generate a toast.
+Keep shared refresh work in
 the promise and deliver UI effects only to the current subscriber. A commit dialog
 owns the draft that opened it; passive workspace snapshots must not regenerate or
 overwrite its reviewed title and description. Verify replay with development React.
@@ -115,6 +121,11 @@ any lossless web encoding in `docs/SITE.md`. Never replace real screenshots with
 Clipboard permissions default to denied. Only sanitized writes from the exact top-level
 app document may pass the production permission handlers. Keep reads, unknown permissions,
 other windows, and embedded Studio frames denied; test native history and both asset consumers.
+
+A native Reload can supersede the first renderer navigation. Keep startup pending until
+that replacement successfully loads the exact authorized renderer URL. Do not turn an
+aborted request into success without observed replacement navigation, and preserve genuine
+load failures and window-close cleanup.
 
 Manual asset and workspace saves retain owned file backups and exact Git index entries before writing.
 Writer receipts identify exact intended bytes before installation; never adopt post-write reads as

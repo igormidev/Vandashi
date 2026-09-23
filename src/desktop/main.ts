@@ -33,6 +33,7 @@ import { DesktopStudioHost } from './studio-host';
 import { STUDIO_BRIDGE_FLUSH, STUDIO_BRIDGE_INSTALL } from '../infrastructure/media/studio-bridge';
 import { AppFault, failureEnvelope } from '../domain/diagnostics';
 import { installRendererPermissions } from './renderer-permissions';
+import { loadInitialRenderer } from './renderer-load';
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -226,10 +227,10 @@ async function createWindow(): Promise<void> {
     });
     if (choice === 1) event.preventDefault();
   });
-  await window.loadURL(rendererUrl);
   window.on('closed', () => {
     mainWindow = null;
   });
+  await loadInitialRenderer(window.webContents, rendererUrl);
 }
 void app
   .whenReady()

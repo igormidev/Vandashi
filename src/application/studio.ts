@@ -22,7 +22,7 @@ export class Studio {
     private readonly flushStudio?: (url: string) => Promise<void>,
   ) {}
   async start(scope: Scope) {
-    return this.gate.run('studio-open', async () => {
+    return this.gate.runStartup('studio-open', async () => {
       if (!scope.videoId) throw new AppFault({ id: 'appOpenVideo' });
       // Opening storage may repair YAML or synchronize assets, so preflight owns the same lease.
       if ((await this.store.openWorkspace(scope)).video?.origin === 'imported')

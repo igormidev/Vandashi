@@ -41,6 +41,13 @@ export class OperationGate {
       this.idleWaiters.clear();
     };
   }
+  async runStartup<T>(owner: 'open-chat' | 'studio-open', task: () => Promise<T>): Promise<T> {
+    const other = owner === 'open-chat' ? 'studio-open' : 'open-chat';
+    // The completed workspace mounts both consumers. Serialize their passive startup work,
+    // including when both first waited behind a workspace read; edits still fail immediately.
+    while (this.owner === 'workspace-read' || this.owner === other) await this.waitUntilIdle();
+    return this.run(owner, task);
+  }
   async run<T>(owner: string, task: () => Promise<T>, announce = true): Promise<T> {
     // Focus-triggered snapshots may already be reading when a native picker returns.
     // Finish that passive read before accepting foreground work; never queue behind another edit.

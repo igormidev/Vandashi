@@ -53,3 +53,51 @@ describe('foreground work after passive workspace reads', () => {
     expect(gate.busy).toBe(false);
   });
 });
+
+describe('conversation and Studio startup after completion', () => {
+  it.each(['open-chat', 'studio-open'] as const)(
+    'serializes %s and the other startup when both arrive during a workspace refresh',
+    async (firstOwner) => {
+      const gate = new OperationGate();
+      const finishRead = gate.acquire('workspace-read', false);
+      let finishFirst: (() => void) | undefined;
+      let secondStarted = false;
+      const first = gate.runStartup(
+        firstOwner,
+        () => new Promise<void>((resolve) => (finishFirst = resolve)),
+      );
+      const second = gate.runStartup(firstOwner === 'open-chat' ? 'studio-open' : 'open-chat', () => {
+        secondStarted = true;
+        return Promise.resolve('Ready');
+      });
+      expect(finishFirst).toBeUndefined();
+      finishRead();
+      await Promise.resolve();
+      expect(finishFirst).toBeTypeOf('function');
+      expect(secondStarted).toBe(false);
+      finishFirst?.();
+      await first;
+      await expect(second).resolves.toBe('Ready');
+      expect(gate.busy).toBe(false);
+    },
+  );
+
+  it.each(['open-chat', 'studio-open'] as const)(
+    '%s still rejects duplicate startups and active AI operations',
+    async (owner) => {
+      const gate = new OperationGate();
+      let starts = 0;
+      const start = () => {
+        starts++;
+        return Promise.resolve();
+      };
+      const finishSame = gate.acquire(owner);
+      await expect(gate.runStartup(owner, start)).rejects.toThrow('Another operation');
+      finishSame();
+      const finishChat = gate.acquire('active-turn');
+      await expect(gate.runStartup(owner, start)).rejects.toThrow('Another operation');
+      finishChat();
+      expect(starts).toBe(0);
+    },
+  );
+});

@@ -18,8 +18,8 @@ They use alternating image proportions instead of a repeated card grid.
 The design applies the researched
 [Anthropic frontend-design guidance](https://github.com/anthropics/skills/blob/main/skills/frontend-design/SKILL.md)
 and [Vercel interface guidelines](https://github.com/vercel-labs/web-interface-guidelines/blob/main/command.md).
-Headlines use sentence case; copy names actual product behavior. The only motion
-is user-driven scrolling and a short modal backdrop transition, with reduced-motion
+Headlines use sentence case; copy names actual product behavior. Motion is limited to
+user-driven scrolling, a short modal backdrop transition, and the clipboard loading indicator, with reduced-motion
 support. Small screens stack the stories and can open and pan a full-size screenshot.
 Screenshot dialogs return focus and support Escape, keyboard arrows, and touch scrolling.
 

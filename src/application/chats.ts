@@ -51,7 +51,7 @@ export class Chats {
       );
       if (existing && foregroundBusy()) return { ...existing, historyDeferred: true };
     }
-    return this.gate.run('open-chat', () => this.openUnlocked(input));
+    return this.gate.runStartup('open-chat', () => this.openUnlocked(input));
   }
   withSession<T>(
     input: { scope: Scope; topic: string; title: string },

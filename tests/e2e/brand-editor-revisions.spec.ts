@@ -160,7 +160,8 @@ test('all taste guides save through the strict desktop API and survive a rendere
     .getByRole('textbox', { name: 'What changed', exact: true })
     .fill('Use concrete, clear examples.');
   await dialog.getByRole('button', { name: 'Save changes', exact: true }).click();
-  await expect(dialog).not.toBeVisible();
+  // This commits thirteen real files; Windows CI Git latency can exceed the default five seconds.
+  await expect(dialog).not.toBeVisible({ timeout: 20_000 });
   await expect(
     page.locator('.savebar').getByRole('button', { name: 'Save changes', exact: true }),
   ).toBeDisabled();

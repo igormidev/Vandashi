@@ -73,6 +73,13 @@ editable chat retry, or an Open clip recovery action if hydration fails; it neve
 If final video hydration fails after publication, its diagnostic explicitly identifies the saved path
 and directs the user back to the video list. It does not suggest repeating creation with that name.
 
+After completion, conversation hydration and Studio startup can mount together. The gate's
+narrow `runStartup` path serializes `open-chat` against `studio-open`, including when both
+waited behind a silent workspace read. It rechecks the current owner after each wait;
+active AI, other mutations and duplicate startups still reject. Hydration retains its
+existing cached-history deferral during foreground work. Studio preflight always holds
+the lease before storage can repair or synchronize files.
+
 Renderer-local preferences retain the selected conversation and unsent text/read-mode drafts across view changes and restarts. External-file selection grants are owned by the desktop process, not persisted as arbitrary trusted paths. Pane sizing saves merge the latest settings so resizing one workspace cannot erase another workspace's saved width. Settings for chat, commit messages, asset descriptions, chapters, and script synchronization are separate.
 
 Renderer navigation claims a provider-owned transaction synchronously before asynchronous
@@ -192,7 +199,11 @@ development effect replay, including its settled result. It is not a global oper
 cache and does not bypass the application gate. API identity, scope, and retry attempt
 determine when a new request starts; preview startup uses the provider's adopted
 workspace snapshot identity so unchanged-revision completions restart stopped watchers
-without a competing independent workspace read. Stale effect subscribers
+without a competing independent workspace read. Each Preview instance serializes its
+startup promises through actual IPC settlement, independently of activity-event timing.
+Before dispatch it skips any snapshot already superseded by a newer one. A previous
+failure releases the startup queue without suppressing the current request's diagnostic;
+obsolete subscribers cannot display an error or toast. Stale effect subscribers
 cannot publish results. Workspace checks include their single successful refresh in
 the shared promise and unlock only after its final result. Commit confirmations pin
 the opening scope, revision, and summary, preserving reviewed text through passive
@@ -359,3 +370,13 @@ conflicting or malformed replies continue to block flush.
 Dependency checks carry the original typed diagnostic and a separate typed recovery
 message. The renderer translates both independently, preserving parameters and raw
 provider details without converting an app-owned cause into English-only external text.
+
+## Initial renderer navigation
+
+The desktop load helper observes the first main-frame navigation before calling loadURL.
+If native Reload supersedes it, only the exact ERR_ABORTED/-3 rejection plus an observed
+replacement can keep startup pending. Success requires that replacement to finish at the
+authorized renderer URL. Other URLs, genuine initial/replacement failures, stopped loading
+and destroyed contents remain failures; temporary listeners are removed on settlement.
+Window-close cleanup is registered before loading. The native regression holds an actual
+initial resource, reloads through Electron's normal action and releases the replacement.

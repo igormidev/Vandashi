@@ -132,7 +132,7 @@ They do not validate subsequent final-audit changes or replace manual installati
 resizing checks of the eventual delivered artifacts. Current-state package verification
 remains part of final delivery.
 
-## Current local package — 0784307
+## Historical local package — 0784307
 
 A fresh unsigned macOS ARM64 package was prepared without rebuilding the frozen current
 output. All 288 packaged output files match SHA256 hashes and source output modification
@@ -147,5 +147,101 @@ All test-owned processes exited. Evidence is under
 `/tmp/vandashi-current-package-0784307/`, with the log at
 `/tmp/vandashi-current-package-0784307-live-smoke.log`. Root separately opened the same
 package and verified native Vandashi identity, retained history and actual YAML recovery.
-Current cross-platform workflow 35913950753 remains in progress; the local result does
-not replace its Windows/Linux verification or final installer checks.
+Cross-platform workflow 35913950753 was still in progress when this checkpoint was
+recorded. That historical status is not a statement about the workflow's current result;
+the local evidence does not replace Windows/Linux verification or final installer checks.
+
+## Fresh local package — preview startup fixes
+
+On 2026-09-23, the unsigned macOS ARM64 package at
+`/tmp/vandashi-preview-final-package/mac-arm64/Vandashi.app/Contents/MacOS/Vandashi`
+was tested with the reviewed preview-startup fixes still in the working tree. HEAD was
+`40c97dd48b3f69853ce4e3ae98a869b781055029`, whose change was test portability; it did
+not contain those application fixes. This evidence therefore identifies the frozen
+working-tree build, not a package built from committed `40c97dd` source alone.
+The fixes included Preview startup serialization and conversation/Studio startup
+coordination in the application layer.
+
+The package reused the production output recorded in
+`/tmp/vandashi-preview-race-build.log`, without a rebuild during verification.
+All 288 packaged output files (12,833,050 bytes) matched the current `out` SHA-256
+hashes. Source output hashes and modification times remained unchanged after the
+tests. Six required Studio, CLI, GSAP, sharp and ARM64 ONNX resource paths were present;
+all five shipped license/notice files matched their source bytes. The native executable
+was ARM64, and its bundle identifier, executable and icon entries resolved correctly.
+The dependency graph was unchanged. Packaging is recorded in
+`/tmp/vandashi-preview-final-package-unsigned.log`; the exact output hashes and resource
+checks are in `/tmp/vandashi-preview-final-package/frozen-input.json` and
+`/tmp/vandashi-preview-final-package/input-verification.log`.
+
+The run reused the verified speech cache and explicit tool paths from the `0784307`
+checkpoint, overriding only the executable and live-test flags:
+
+```sh
+source /tmp/vandashi-current-package-0784307/smoke-environment.sh
+VANDASHI_PACKAGED_APP=/tmp/vandashi-preview-final-package/mac-arm64/Vandashi.app/Contents/MacOS/Vandashi \
+  VANDASHI_REQUIRE_PACKAGED_SMOKE=0 VANDASHI_PACKAGE_AGENT_SMOKE=1 \
+  npx vitest run tests/media-package.test.ts tests/media-speech-package.test.ts \
+  --maxWorkers=1 --reporter=default --reporter=json \
+  --outputFile=/tmp/vandashi-preview-final-package/live-smoke.json
+```
+
+Both suites and both tests passed with zero skips and exit code 0 in 51.74 seconds.
+Actual bundled Studio, pending-edit flush, live Codex script synchronization and real
+rendering passed in 48.16 seconds. English/Portuguese CPU speech, source preservation,
+timestamp checks, timeout and cancellation passed in 3.15 seconds. The retained H.264
+MP4 was independently probed as 1920×1080 and 0.400000 seconds; its extracted frame
+was visually inspected and shows the red “Flushed manual edit persisted” title.
+The retained synchronized script describes that title and timing. The Studio-server
+cleanup assertion passed, and no owned packaged app/Studio processes remained.
+
+The run log, machine-readable results and checked summary are respectively
+`/tmp/vandashi-preview-final-package/live-smoke.log`, `live-smoke.json` and
+`live-smoke-verification.json` in the same directory. Actual fixture artifacts are
+retained under `live-artifacts/`, including `script.md`, `render-frame.png` and
+`renders/Packaged composition_2026-09-23_17-57-33.mp4`. This establishes packaged
+macOS integration for the frozen working-tree output; it does not establish a Windows
+or Linux run, signed distribution, installer acceptance or CI result for those fixes.
+
+## CI follow-up — `40c97dd`
+
+The exact committed revision `40c97dd48b3f69853ce4e3ae98a869b781055029` completed
+[desktop run 35917027752](https://github.com/igormidev/Vandashi/actions/runs/35917027752)
+with a failure on 2026-09-23. This is separate from the working-tree package above.
+
+| Job            | Observed result                                                                                                                                                                                                                                           |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Native sources | Passed: 395 native payloads and 704 archive files verified.                                                                                                                                                                                               |
+| Linux          | Full gate passed: 834 tests passed, 13 opt-in skips. All 209 Electron cases and both packaged Studio/render and CPU speech/ONNX tests passed.                                                                                                             |
+| macOS          | Full gate passed: 834 tests passed, 13 opt-in skips. Electron: 207 passed, two failed during initial fixture reload. Packaging did not run.                                                                                                               |
+| Windows        | Full gate passed: 831 tests passed, 16 platform/opt-in skips, including both prior portability corrections. The 30-minute job deadline canceled the Electron step after 145 passed, two failed and 62 unrun. Packaging and diagnostic upload did not run. |
+
+The retained artifacts are
+[native sources](https://github.com/igormidev/Vandashi/actions/runs/35917027752/artifacts/10776070281),
+[Linux X64 installers](https://github.com/igormidev/Vandashi/actions/runs/35917027752/artifacts/10775937010),
+and [macOS failure diagnostics](https://github.com/igormidev/Vandashi/actions/runs/35917027752/artifacts/10775918532).
+The Linux artifact is 532,465,879 bytes, with SHA-256
+`e193a71d391ce609935b1c2f789f6d4ec85b6c9bfa2b3766c63e4f5cec5d1134`.
+Logs and downloaded macOS traces are retained locally under
+`/tmp/vandashi-ci-40c97dd.eUeTsm/`.
+
+Both macOS failures and one Windows failure occur at the first `page.reload()` after
+the test fixture exposed `DOMContentLoaded`, before initial loading necessarily finished.
+The macOS traces show process loss 53–62 ms after that reload, not a test timeout.
+The fixture now waits for `load`; a separate desktop startup fix and deterministic
+native regression cover an actual early native Reload. Native verification of these
+changes is pending at this entry. Genuine load failures must remain failures.
+
+The remaining Windows failure is the five-second observation of a native save of all
+13 taste documents. Without a timeout artifact, slow Git is a hypothesis rather than
+a verified cause. That specific observation now allows 20 seconds while retaining
+file-content, clean-Git and restart assertions. The Windows job budget is now 60 minutes:
+the observed unit step alone took 17.4 minutes, followed by 10 minutes of partial native
+testing. No tests are skipped or automatically retried by these changes. A fresh Windows
+run is required before accepting either correction.
+
+[Pages run 35917027797](https://github.com/igormidev/Vandashi/actions/runs/35917027797)
+passed at the same SHA: 58 unit tests, 312 browser tests and successful deployment to
+[the public site](https://igormidev.github.io/Vandashi/). Its uploaded
+[Pages artifact](https://github.com/igormidev/Vandashi/actions/runs/35917027797/artifacts/10776180579)
+does not establish desktop acceptance.

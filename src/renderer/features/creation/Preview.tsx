@@ -13,7 +13,9 @@ import type { StudioInfo } from '../../../domain/models';
 export function Preview({ compact = false }: { compact?: boolean }) {
   const { t, i18n } = useTranslation();
   const { workspace, api, run, busy, dirty, setToast } = useApp();
-  const pending = useRef(new OwnedRequest<StudioInfo>());
+  const pending = useRef(new OwnedRequest<StudioInfo | undefined>());
+  const startup = useRef<Promise<StudioInfo | undefined>>(Promise.resolve(undefined));
+  const currentRequest = useRef<object | null>(null);
   const reported = useRef<object | null>(null);
   const mount = useRef<HTMLDivElement>(null);
   const [preview, setPreview] = useState<{ request: object | null; url: string; error: Diagnostic | null }>({
@@ -32,11 +34,20 @@ export function Preview({ compact = false }: { compact?: boolean }) {
   useEffect(() => {
     const { api, workspace } = request;
     if (!workspace?.scope.videoId) return;
+    currentRequest.current = request;
     let disposed = false;
     void pending.current
-      .get(request, 'preview', () => api.startStudio(workspace.scope))
+      .get(request, 'preview', () => {
+        // A refresh can adopt a new snapshot before an older startup settles. Keep one
+        // actual startup in flight, and skip queued snapshots that are already obsolete.
+        const next = startup.current
+          .catch(() => undefined)
+          .then(() => (currentRequest.current === request ? api.startStudio(workspace.scope) : undefined));
+        startup.current = next;
+        return next;
+      })
       .then((studio) => {
-        if (!disposed)
+        if (!disposed && studio)
           setPreview({
             request,
             url: `${studio.previewUrl}${studio.previewUrl.includes('?') ? '&' : '?'}v=${encodeURIComponent(workspace.revision)}`,
@@ -54,6 +65,7 @@ export function Preview({ compact = false }: { compact?: boolean }) {
       });
     return () => {
       disposed = true;
+      if (currentRequest.current === request) currentRequest.current = null;
     };
   }, [request, setToast]);
   useEffect(() => {
