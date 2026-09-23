@@ -659,3 +659,19 @@ Evidence: `/var/folders/_8/nmgh3s5j1gncsykp5dm7vdc40000gn/T/vandashi-prerequisit
 The original prerequisite reviewer accepted this missing-configured-executable,
 official-help and same-process Retry branch. This does not establish a fresh
 installation, new/signed-out login, quota recovery or repository-writable AI repair.
+
+## Native maximized Creation layout — current package
+
+The current package's native zoom action expanded its window beyond the default
+1480×940 to the display's maximum (3024×1898 capture pixels, approximately
+1512×949 logical pixels at 2×). Shared assets retained its complete composer,
+library and inspector. Fresh canvas then passed prerequisites and automatically
+opened its actual Creation preview.
+
+At the original 38/62 split, the script toolbar/editor and Save control, preview
+and playback controls, Render video action and scrollable history remained usable.
+Eight Right-arrow presses on the focused Resize panels control changed its value
+from 38 to 54. A fresh visual check showed correctly wrapped script text, a resized
+16:9 preview, complete playback/history controls and the mint focus-visible divider.
+Eight Left-arrow presses restored 38, and native zoom restored the original window.
+No project content was edited; the app was closed before subsequent native tests.

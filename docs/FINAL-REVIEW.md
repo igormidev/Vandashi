@@ -473,3 +473,20 @@ actual ENOENT, failed Retry, the official setup link and successful same-process
 were observed. Explicit model refresh restored discovery, video checks completed and
 the composition played. All six copied/original repositories remained clean with
 matching HEADs/trees. Fresh installation, login and quota recovery remain unverified.
+
+The original UI reviewer accepted scoped macOS UX-01/03/05 and the existing
+minimum/common-size interaction evidence. Root then maximized the actual current
+package, opened Creation and checked real preview/history/script layout while resizing
+panes by keyboard. The same reviewer accepted UX-06 with no remaining local UI gap.
+macOS bundle identity/icon were independently verified; cross-platform artifacts and
+native Finder drops remain separate acceptance items.
+
+The `0ad090b` Linux CI job passed 854 unit tests, 228 native cases and both packaged
+integrations. Its macOS job passed the unit gate and 226/228 native cases: two attachment
+routing checks resolved the old mounted composer's Attach control before the requested
+conversation finished opening. Traces showed the correct new chat and visible control.
+A held-open local regression reproduced the pinned hidden-node timeout. The test now
+waits for the exact active tab/scope and settled opening before resolving Attach.
+All 12 routing cases passed; the final hardened held-open case passed again. Exact
+session/file assertions and all 11 prior consumer cases remain. Independent review
+accepted this test-only correction; no production source was changed.

@@ -237,12 +237,12 @@ Source: `genesis_prompt.md:L579–L605`.
 
 Source: `genesis_prompt.md:L606–L650`, `L671–L676`, `L711–L712`.
 
-- [ ] UX-01 — App visually follows inspected Hyperframes Studio tokens; chat follows T3; the embedded editor feels part of the same application.
+- [x] UX-01 — App visually follows inspected Hyperframes Studio tokens; chat follows T3; the embedded editor feels part of the same application. Scoped macOS acceptance: [E16](#e16).
 - [ ] UX-02 — Provide a distinct application icon, installed application/window identity, and appropriate platform icon resources.
-- [ ] UX-03 — Keep copy concise: meaningful titles and info-icon tooltips rather than gratuitous subtitles or filler text.
+- [x] UX-03 — Keep copy concise: meaningful titles and info-icon tooltips rather than gratuitous subtitles or filler text. [E16](#e16).
 - [x] UX-04 — Tooltips may use selective bold/emphasis and accessible rich help, with scrolling/images only when useful; no broken media or unreadable decorative text. [E07](#e07).
-- [ ] UX-05 — Horizontal scrollables reach the component edges and keep padding inside the scrolling content, not around the scroll viewport.
-- [ ] UX-06 — Desktop panes remain usable at the native minimum, common sizes, and large windows; focus, keyboard access, dialog dismissal, loading, empty, error, and disabled states are checked.
+- [x] UX-05 — Horizontal scrollables reach the component edges and keep padding inside the scrolling content, not around the scroll viewport. [E16](#e16).
+- [x] UX-06 — Desktop panes remain usable at the native minimum, common sizes, and large windows; focus, keyboard access, dialog dismissal, loading, empty, error, and disabled states are checked. Scoped macOS acceptance: [E16](#e16).
 - [x] I18N-01 — English keyed-string architecture is in place immediately; actual translations start only after app functionality is finished. [E13](#e13).
 - [x] I18N-02 — App and later landing page support English, Japanese, French, Spanish, German, Korean, Brazilian Portuguese, and Italian; unsupported locales fall back to English. [E15](#e15).
 - [x] I18N-03 — Japanese uses natural kanji/kana; Korean uses Hangul. Translation review includes actual UI context, glyph coverage, wrapping, interpolations, and pluralization.
@@ -586,21 +586,33 @@ returned HTTP200 and direct browser interaction verified language selection and 
 full-resolution Clips gallery. README now links the live site. Later final-review fixes
 retain their own acceptance gates; this deployment does not approve final desktop artifacts.
 
+<a id="e16"></a>
+**E16 — Scoped macOS visual and interaction acceptance.**
+The original UI reviewer accepted the inspected Hyperframes/T3 styling, restrained
+copy and tooltips, actual horizontal chat overflow/close/reopen behavior, and the
+minimum/common-size native interaction evidence. The current package's maximized
+Creation walkthrough added the bounded remaining larger-window check: real preview,
+keyboard pane resizing, readable wrapping, full controls and visible focus. The
+reviewer accepted UX-01/03/05/06 without another UI sweep. The macOS bundle names,
+identifier and icon resource were independently checked; final Windows/Linux artifact
+identity remains under UX-02 and platform release acceptance. See the
+[manual journal](MANUAL-VERIFICATION.md) and [same-reviewer record](FINAL-REVIEW.md).
+
 ### Residual acceptance, kept explicit
 
 These rows account for unchecked combined requirements. They distinguish a missing observation
 from a demonstrated defect; they do not ask to rewrite verified behavior or start translation early.
 
-| Unchecked IDs      | Exact remaining acceptance                                                                                                                                                                                                                                                                                                                                                               |
-| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ENG-07, ENG-13     | The `e5548d46` CI checkpoint passed the actual source, native and packaged matrix on all three platforms. The `87b919b` staged gate passed 809 tests and both builds. Verify the final revision and distributed artifacts, native resources, notices and source materials; historical checkpoints do not accept later release changes.                                                   |
-| CHAT-15            | Verify a successful native Finder composer drop through its authorized send. Native picker/default-local and explicit-shared imports, exact materialized copies, clean repositories, next-send/Undo and controlled attachment routing/retention/locks across every shared consumer are accepted. Finder drag initiation is unavailable through current automation.                       |
-| VIDEO-06–08        | Native missing configured Codex executable, failed Retry, official setup help and successful same-process recovery are accepted on macOS; video prerequisites and preview then passed. Fresh installation, signed-out/login and quota recovery remain unverified. Current host tools are outside AI writable roots; only a demonstrated writable target can establish an AI-repair flow. |
-| PACK-05            | Actual platform/account candidate limits remain to verify. Native thumbnail generation, import, reorder, arbitrary candidate count and content-driven filename/reference replacement are accepted on macOS.                                                                                                                                                                              |
-| ASSET-04           | Verify successful native asset-library drops in both consumers, including a differently named byte-identical duplicate. Selected-asset rename/reference repair, blocked referenced deletion, picker, GIF, clipboard, audio/video playback and nested-folder AI/search are accepted on macOS. CUA cannot initiate a native Finder file drag even in a Finder-only control.                |
-| LAUNCH-10–13/16    | Complete authorized test-account publication: browser/account verification, login/account recovery, destination fields/candidate limits, upload/processing monitoring, verified URL/manifest, cancellation/error recovery and lock release. No external upload has occurred.                                                                                                             |
-| UX-01–03, UX-05/06 | Complete independent visual/style, installed icon/identity, concise-copy and all-consumer layout/accessibility review. Minimum/split and several modal/keyboard/tooltip states pass; this is not exhaustive all-screen/size acceptance.                                                                                                                                                  |
-| QA-01–06           | Maintain per-commit checks, then run final-state static/tests and real integration/manual acceptance. Conduct the requested strongest-model/highest-effort independent section review/fix/re-review loops. Verify final artifacts, GitHub push and deployment. Interim audits and historical green checkpoints do not satisfy the final loop.                                            |
+| Unchecked IDs   | Exact remaining acceptance                                                                                                                                                                                                                                                                                                                                                               |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ENG-07, ENG-13  | The `e5548d46` CI checkpoint passed the actual source, native and packaged matrix on all three platforms. The `87b919b` staged gate passed 809 tests and both builds. Verify the final revision and distributed artifacts, native resources, notices and source materials; historical checkpoints do not accept later release changes.                                                   |
+| CHAT-15         | Verify a successful native Finder composer drop through its authorized send. Native picker/default-local and explicit-shared imports, exact materialized copies, clean repositories, next-send/Undo and controlled attachment routing/retention/locks across every shared consumer are accepted. Finder drag initiation is unavailable through current automation.                       |
+| VIDEO-06–08     | Native missing configured Codex executable, failed Retry, official setup help and successful same-process recovery are accepted on macOS; video prerequisites and preview then passed. Fresh installation, signed-out/login and quota recovery remain unverified. Current host tools are outside AI writable roots; only a demonstrated writable target can establish an AI-repair flow. |
+| PACK-05         | Actual platform/account candidate limits remain to verify. Native thumbnail generation, import, reorder, arbitrary candidate count and content-driven filename/reference replacement are accepted on macOS.                                                                                                                                                                              |
+| ASSET-04        | Verify successful native asset-library drops in both consumers, including a differently named byte-identical duplicate. Selected-asset rename/reference repair, blocked referenced deletion, picker, GIF, clipboard, audio/video playback and nested-folder AI/search are accepted on macOS. CUA cannot initiate a native Finder file drag even in a Finder-only control.                |
+| LAUNCH-10–13/16 | Complete authorized test-account publication: browser/account verification, login/account recovery, destination fields/candidate limits, upload/processing monitoring, verified URL/manifest, cancellation/error recovery and lock release. No external upload has occurred.                                                                                                             |
+| UX-02           | Scoped macOS visual, interaction, native window/menu identity and bundle icon acceptance is complete. Verify final Windows/Linux packaged identity/resources with the current release artifacts; source configuration alone is not final artifact evidence.                                                                                                                              |
+| QA-01–06        | Maintain per-commit checks, then run final-state static/tests and real integration/manual acceptance. Conduct the requested strongest-model/highest-effort independent section review/fix/re-review loops. Verify final artifacts, GitHub push and deployment. Interim audits and historical green checkpoints do not satisfy the final loop.                                            |
 
 Native source archives and licensing have separate recorded evidence. Release acceptance still
 requires the actual delivered artifacts to include their corresponding materials. The current
