@@ -10,6 +10,19 @@ for (const locale of availableLocales) {
   }, testInfo) => {
     const text = interfaceCatalogs[locale];
     const native = nativeMessages(locale);
+    // Keep settings persistence and native dialogs real without depending on a runner's Codex account.
+    await desktopApp.evaluate(({ ipcMain }) => {
+      type Invoke = (event: IpcMainInvokeEvent, method: string, args: unknown[]) => unknown;
+      const invoke = (ipcMain as unknown as { _invokeHandlers: Map<string, Invoke> })._invokeHandlers.get(
+        'vandashi:invoke',
+      );
+      if (!invoke) throw new Error('Missing desktop request handler');
+      ipcMain.removeHandler('vandashi:invoke');
+      ipcMain.handle('vandashi:invoke', (event, method: string, args: unknown[]) =>
+        method === 'models' ? [] : invoke(event, method, args),
+      );
+    });
+    await page.reload();
     await desktopApp.evaluate(({ BrowserWindow }) => {
       BrowserWindow.getAllWindows()[0]?.setSize(1200, 720);
     });
@@ -91,3 +104,4 @@ for (const locale of availableLocales) {
     });
   });
 }
+import type { IpcMainInvokeEvent } from 'electron';

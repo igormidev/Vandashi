@@ -131,3 +131,21 @@ These jobs establish real execution on all three platforms at that identified co
 They do not validate subsequent final-audit changes or replace manual installation and
 resizing checks of the eventual delivered artifacts. Current-state package verification
 remains part of final delivery.
+
+## Current local package — 0784307
+
+A fresh unsigned macOS ARM64 package was prepared without rebuilding the frozen current
+output. All 288 packaged output files match SHA256 hashes and source output modification
+times remained unchanged. License generation/native-source checks passed; all eight
+pinned speech-model payloads (79,680,095 bytes) were verified before using the cache.
+
+Both live packaged tests passed with zero skips in 63.99 seconds. Actual Studio/Codex
+synchronization/render took 60.41 seconds; English/Portuguese CPU speech plus cancellation
+and timeout took 3.14 seconds. The retained H.264 render is 1920×1080 and 0.4 seconds; its
+extracted frame shows the flushed red title and the synchronized script describes it.
+All test-owned processes exited. Evidence is under
+`/tmp/vandashi-current-package-0784307/`, with the log at
+`/tmp/vandashi-current-package-0784307-live-smoke.log`. Root separately opened the same
+package and verified native Vandashi identity, retained history and actual YAML recovery.
+Current cross-platform workflow 35913950753 remains in progress; the local result does
+not replace its Windows/Linux verification or final installer checks.

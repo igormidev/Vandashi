@@ -417,3 +417,64 @@ Git and storage to edit all 13 guide controls, save once and reload every persis
 the three-case Brand revision suite passes. The failed manual test draft was discarded
 and the temporary commit helper was restored to GPT-6-Luna/Medium. Actual guide save on
 the next built renderer remains to be repeated.
+
+## Current loading/recovery build — 0784307
+
+The production renderer saved all 13 creative-guide edits in one reviewed real Codex
+commit, `8fc6922`, without the former strict-payload error. Root reloaded the app and
+opened every guide control; each retained its new Northstar preference. The identity
+repository was clean and Save/Discard returned to disabled.
+
+A real GPT-6-Astra/Medium Brand-attributes turn changed the existing 180×120 SVG logo
+background from mint to amber without changing its path or geometry. Working/Stop and
+editor/navigation locks were visible during the turn. The provider reported its Git
+sandbox denial, then the application's commit recovery saved `34c31dc` and displayed
+“Changes saved.” The repository was clean, with exactly the one expected file changed.
+The app immediately displayed the amber triangle logo without a reload.
+
+A new real 16:9 project, Quiet Observatory, passed prerequisites before onboarding,
+created its clean initial repository (`798ffa9`), and entered Packaging after project
+validation. A real read-only Astra turn opened brand configuration and all 13 saved
+guides, confirmed every Northstar preference, and applied the custom long-form script,
+visual identity and title guidance to this new project. Its answer retained concrete
+scientific questions, calm explanations, restrained mint typography and uncluttered
+images; no project files changed. Working/Stop and read-only selection remained visible
+through the turn.
+
+Portrait creation also passed the real prerequisite/onboarding flow: One Quiet Question
+selected 9:16 and created clean initial canvas commit `4e7c7fa`, with 1080×1920 source
+geometry versus Quiet Observatory's 1920×1080. Creation displayed PREVIEW 9:16; Clips
+was absent for the portrait project, and Launch stayed disabled until an export existed.
+
+The actual embedded Studio edited the title to “One Quiet Question — A Clearer Sky”.
+Navigating prompted a source diff. Discard created its safety checkpoint and restored
+the original visible title. Repeating the edit and choosing Save opened the real Codex
+commit suggestion, then locked Close/Cancel/fields with a busy Save action through script
+synchronization. Creation reopened with the edited title and an accurate 10-second
+portrait title-card script. History showed reviewed commit `334699f`; all saved editors
+were clean. A real render then displayed its percentage and kept editing/navigation locked.
+
+## Current packaged recovery — 0784307
+
+The new macOS ARM64 package's 288 output files match the verified build byte for byte.
+Its two live integration cases passed with no skips: actual Studio edit/flush, Codex
+script synchronization, 1920×1080 H.264 render, and English/Portuguese CPU speech with
+cancellation/timeout. Root then opened this packaged executable with the isolated manual
+profile; native window/menu identity is Vandashi and existing conversation history survived.
+
+For a direct YAML recovery check, root backed up the clean Fresh canvas packaging bytes
+and deliberately wrote malformed YAML only in this disposable integration project. The
+packaged video library immediately showed a persistent notice identifying the Git
+restoration and exact `.vandashi-recovery/video_packaging.yml.1790194809878.invalid` path.
+SHA256 checks confirm the original packaging was restored exactly, the malformed bytes
+were preserved exactly in that backup, and Git stayed clean. Video entry then ran the
+normal visible prerequisite sequence.
+
+The same package imported a real PNG through the native video-assets picker. Its
+“Understanding your asset…” phase remained visible while Codex inspected the image;
+Close was disabled and Cancel remained available. The AI proposed an accurate cityscape
+description and tags. Root reviewed the title as “Hidden city reference” and imported
+it successfully as clean commit `c9a4539`. The persisted sidecar records the reviewed
+metadata and successful embedded storage. Copy image displayed its success feedback;
+Preview's New from Clipboard opened the actual 1672×941 city image. The temporary
+unsaved Preview document was closed after verification.

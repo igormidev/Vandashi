@@ -31,19 +31,19 @@ the next cross-platform run is in progress.
 | 7   | Tests                           | 138–141 | /root/final_tests_review           | source-accepted |
 | 8   | Pre-installs                    | 142–148 | /root/final_preinstalls_review     | needs-evidence  |
 | 9   | Organization Listage ( UI )     | 149–156 | /root/final_brand_list_review      | accepted-macos  |
-| 10  | Organization Page ( UI )        | 157–166 | /root/final_brand_workspace_review | needs-evidence  |
-| 11  | Videos listage (second tab)     | 167–175 | /root/final_video_list_review      | needs-evidence  |
+| 10  | Organization Page ( UI )        | 157–166 | /root/final_brand_workspace_review | accepted-macos  |
+| 11  | Videos listage (second tab)     | 167–175 | /root/final_video_list_review      | accepted-macos  |
 | 12  | Shared Asset                    | 176–179 | /root/final_shared_assets_review   | source-accepted |
-| 13  | Brand page (first initial tab)  | 180–248 | /root/final_brand_editor_review    | source-accepted |
-| 14  | Other                           | 249–262 | /root/final_other_review           | source-accepted |
+| 13  | Brand page (first initial tab)  | 180–248 | /root/final_brand_editor_review    | accepted-macos  |
+| 14  | Other                           | 249–262 | /root/final_other_review           | accepted-macos  |
 | 15  | AI Chat                         | 263–367 | /root/final_chat_review            | needs-evidence  |
 | 16  | Video Workspace Page            | 368–383 | /root/final_video_workspace_review | source-accepted |
-| 17  | Video Pre-page                  | 384–391 | /root/final_video_prepage_review   | source-accepted |
-| 18  | Video Pre-page: Validation      | 392–425 | /root/final_validation_review      | source-accepted |
-| 19  | Video Pre-page: Onboarding Form | 426–435 | /root/final_onboarding_review      | source-accepted |
+| 17  | Video Pre-page                  | 384–391 | /root/final_video_prepage_review   | accepted-macos  |
+| 18  | Video Pre-page: Validation      | 392–425 | /root/final_validation_review      | accepted-macos  |
+| 19  | Video Pre-page: Onboarding Form | 426–435 | /root/final_onboarding_review      | accepted-macos  |
 | 20  | Packaging Page                  | 436–457 | /root/final_packaging_review       | needs-evidence  |
 | 21  | Creation workspace              | 458–522 | /root/final_creation_review        | needs-evidence  |
-| 22  | Manual video editing            | 523–533 | /root/final_manual_edit_review     | source-accepted |
+| 22  | Manual video editing            | 523–533 | /root/final_manual_edit_review     | accepted-macos  |
 | 23  | Asset creation                  | 534–553 | /root/final_assets_review          | needs-evidence  |
 | 24  | Clips creation                  | 554–578 | /root/final_clips_review           | source-accepted |
 | 25  | Launch Suite (Video Release)    | 579–605 | /root/final_launch_review          | needs-evidence  |
@@ -340,3 +340,25 @@ and one selected the nonexistent “Reasoning” label instead of the visible �
 Assertions now inspect paragraph boundaries and keep exact outgoing-text checks. All
 eight clip cases pass after correction. Together with the two new Settings cases this
 covers 209 distinct native cases across runs, not a single green combined run.
+
+Checkpoint `0784307` passed the actual staged-snapshot full gate: 834 tests passed,
+13 existing opt-in skips, zero static warnings/errors, 273 modules/1,087 dependencies,
+and both production builds. Sections 4, 5 and 6 accepted the new contracts and local
+gate; section 5 keeps current CI separate. Sections 10 and 11 accepted their direct
+macOS evidence, including the library expansion and keyboard walkthrough.
+
+Sections 13, 14 and 19 accepted the current direct macOS walkthrough: all 13 guides
+saved and reloaded, real AI same-path logo refresh, a new video reading and applying
+custom brand guidance, and real landscape/portrait onboarding with correct dimensions
+and capabilities. The user-requested loading correction is included in these builds.
+
+Sections 18 and 22 accepted the direct current macOS evidence: persistent YAML recovery
+with byte-exact preserved backup, and actual Studio Save/Discard, script synchronization,
+preview and render. The new packaged integration run passed both named cases with no skips.
+
+Section 17 accepted the current macOS prerequisite/onboarding sequence in both ratios
+and existing-project entry. Linux CI at `0784307` passed its 834-test static/build gate
+but exposed eight locale tests depending on an absent Codex CLI. Their model-discovery
+fixture now isolates that external prerequisite while retaining real Settings persistence
+and native dialogs; all eight corrected cases pass locally. The current matrix needs
+a rerun with this test-only correction.

@@ -71,7 +71,7 @@ Source: `genesis_prompt.md:L149–L262`.
 - [x] BRAND-16 — Dirty manual changes enable Save and block AI work. Saving requests an AI commit title/body, shows an editable confirmation, and rejects empty title/body. [E03](#e03).
 - [x] BRAND-17 — If commit-text generation fails, confirmation still opens with empty editable fields. Successful save commits files and disables Save until a further edit. [E03](#e03).
 - [x] BRAND-18 — Entering a brand validates AI availability and repository cleanliness with recovery fallbacks before enabling work. Video-only Hyperframes checks are deferred to the video pre-page. [E03](#e03).
-- [ ] BRAND-19 — Videos tab lists thumbnail when present, identification/title according to the documented decision, and a two-line theme description with an expansion action. Data is read from the packaging schema.
+- [x] BRAND-19 — Videos tab lists thumbnail when present, identification/title according to the documented decision, and a two-line theme description with an expansion action. Data is read from the packaging schema.
 - [x] BRAND-20 — Existing video card opens that workspace via validation; create action starts new-video validation/onboarding. [E03](#e03).
 - [x] BRAND-21 — Shared assets reuse the complete asset feature and interactions with a shared-folder scope, avoiding duplicated feature logic. [E03](#e03).
 
@@ -119,7 +119,7 @@ Source: `genesis_prompt.md:L368–L435`.
 - [ ] VIDEO-07 — AI-repairable problems offer a left-side repair chat with prepared editable instructions; the user sends them explicitly. Chat does not initially occupy the page.
 - [ ] VIDEO-08 — Missing/unavailable Codex, login, or quota access gets an appropriate official setup/login/account action rather than an impossible AI repair button.
 - [x] VIDEO-09 — Validate cleanliness of brand plus video repositories with commit fallback; failure to commit visibly prevents inconsistent entry. [E06](#e06).
-- [ ] VIDEO-10 — Validate packaging schema and recover malformed packaging from the latest compatible Git revision, with a preserved copy of invalid user content and clear recovery feedback.
+- [x] VIDEO-10 — Validate packaging schema and recover malformed packaging from the latest compatible Git revision, with a preserved copy of invalid user content and clear recovery feedback. [E07](#e07).
 - [x] VIDEO-11 — Ensure all shared assets are available to the video/Hyperframes project and mentions on every entry, including assets added after the video was created. [E06](#e06).
 - [x] VIDEO-12 — New-video onboarding offers only 16:9 horizontal and 9:16 vertical, with genuine relevant platform icons, and a required identification name distinct from release title. [E06](#e06).
 - [x] VIDEO-13 — Identification input safely becomes a folder name, including reserved Windows names, traversal, separators, collisions, whitespace, and Unicode handling. [E06](#e06).
@@ -426,8 +426,14 @@ Actual thumbnail generation produced a 1664×936 PNG, metadata and packaging-onl
 second native-picked candidate was reordered and saved using a real generated commit message.
 `storage.test.ts` corrupts YAML, restores the latest valid Git version, preserves the invalid
 backup and checks the typed recovery callback. Periodic reads use stable snapshots during
-editing rather than repairing half-written YAML. Schema recovery satisfies PACK-09; the
-visible entry walkthrough in VIDEO-10 remains pending. Thumbnail rename and actual platform
+editing rather than repairing half-written YAML. Schema recovery satisfies PACK-09.
+In the macOS ARM64 package at `0784307`, deliberately malformed packaging in the
+disposable Fresh canvas project produced a persistent Git-restoration notice identifying
+the exact recovery backup. SHA256 verification confirmed byte-exact restoration of the
+original packaging and preservation of the malformed content; Git remained clean and
+subsequent video entry completed its visible prerequisite sequence. This closes VIDEO-10.
+See [the packaged recovery walkthrough](MANUAL-VERIFICATION.md#current-packaged-recovery--0784307).
+Thumbnail rename and actual platform
 candidate limits remain PACK-04/05 rather than being inferred from the two-image case.
 
 <a id="e08"></a>
@@ -581,10 +587,8 @@ from a demonstrated defect; they do not ask to rewrite verified behavior or star
 | Unchecked IDs              | Exact remaining acceptance                                                                                                                                                                                                                                                                                                                      |
 | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | ENG-07, ENG-13             | The `e5548d46` CI checkpoint passed the actual source, native and packaged matrix on all three platforms. The `87b919b` staged gate passed 809 tests and both builds. Verify the final revision and distributed artifacts, native resources, notices and source materials; historical checkpoints do not accept later release changes.          |
-| BRAND-19                   | Complete video-row thumbnail/identification/theme expansion.                                                                                                                                                                                                                                                                                    |
 | CHAT-03, CHAT-15           | Verify tab ordering/hover close/close-all empty state together and picker plus drag/drop attachments across contexts, including explicit local/shared choice. Existing drafts/mentions/grant tests cover only parts.                                                                                                                            |
 | VIDEO-06–08                | Complete current native missing-dependency retry/failure and official setup/recovery routes. Current host dependencies are outside AI writable roots; retain the prepared-chat contract only for a demonstrated writable repair target, rather than claiming unsupported installation. First-brand missing-Git recovery is separately verified. |
-| VIDEO-10                   | Schema, backup and typed notices pass; perform malformed-packaging entry and inspect the actual feedback/backup without discarding invalid content.                                                                                                                                                                                             |
 | PACK-04/05                 | Generation, import and reorder work. Verify content-driven filename/reference updates and actual leading candidate limits with platform/account capability, rather than prompt instructions alone.                                                                                                                                              |
 | CREATE-04/08, CREATE-14/15 | Locks, refresh, saved-file receipt, history diff display and Unicode script diff work. Verify the history copy-SHA action and line-ending-specific diff behavior. Verify a real visual/audio asset edit records every used asset with the common mention representation, plus attachment import from Creation.                                  |
 | ASSET-03/04/11/12/16       | Complete animated GIF, image clipboard, picker/drop interaction and an actual folder create/import/delete AI turn. Reference-aware deletion and unavailable-asset scope rejection pass; filename rename/reference repair still lacks a complete exercised scenario. Verify supported media rather than assuming every format.                   |
