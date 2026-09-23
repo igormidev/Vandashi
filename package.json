@@ -115,7 +115,16 @@
         "deb"
       ],
       "category": "AudioVideo",
-      "maintainer": "Igor <97634286+igormidev@users.noreply.github.com>"
+      "maintainer": "Igor <97634286+igormidev@users.noreply.github.com>",
+      "extraFiles": [
+        {
+          "from": "build/AppRun",
+          "to": "AppRun"
+        }
+      ]
+    },
+    "appImage": {
+      "executableArgs": []
     },
     "icon": "build/icon.png",
     "extraFiles": [

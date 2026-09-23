@@ -147,6 +147,17 @@ with local receipts and adjusts message boundaries without inventing Git checkpo
 
 Node integration is disabled; context isolation and renderer sandboxing are enabled. IPC validates both the top-level sender and runtime payload. The preload exposes use cases, never shell execution. Media access is rooted in registered project directories and rejects escaping symlinks. External links require an allowed HTTP(S) URL. Hyperframes is isolated from the privileged preload. Native window minimum size is 1200 × 720.
 
+Linux packaging includes the owned `build/AppRun` and an empty AppImage executable-args
+list. The launcher retains AppImage resource paths and forwards arguments without
+electron-builder's sandbox-disabling namespace fallback. A host that cannot supply
+Chromium's sandbox must report the startup failure rather than run unprotected.
+The pinned builder copies this launcher over its generated default; artifact inspection
+checks exact bytes, executable mode and desktop command before CI launches it.
+Playwright explicitly preserves Chromium sandboxing. Packaged checks read the renderer's
+OS-level sandbox metric on macOS/Windows, and Linux seccomp/no-new-privileges state with
+additional filters beyond those inherited from the main process. Ephemeral Ubuntu CI
+uses only exact-binary AppArmor namespace profiles when its system policy requires them.
+
 Picker and native drop events grant access to specific canonical external files for previews and imports. Grants are rechecked before use. The media protocol serves supported media types only with restrictive response policies. Unfinished edits and operations block window unload until a native confirmation; process disposal happens only after the close is accepted.
 
 Codex-generated images have a separate exact-file capability. The adapter learns the actual

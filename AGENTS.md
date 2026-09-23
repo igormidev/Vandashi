@@ -110,6 +110,14 @@ contained image bytes; cache revisions never replace native path authorization.
 
 Structural changes require a separate read-only agent to check whether the landing page and screenshots are still accurate. Do not add claims for unfinished features. Every agent reads the original brief. Final audits must be independent and section-specific.
 
+Keep Chromium's OS sandbox enabled in both distributed launchers and verification.
+Playwright Electron launches must explicitly set `chromiumSandbox: true`; its Linux
+default adds `--no-sandbox`. Inspect the actual AppImage's launcher and desktop entry,
+then run that extracted launcher and verify the renderer's OS sandbox state. Never
+silently disable sandboxing when a host blocks user namespaces. CI may load an exact
+executable AppArmor user-namespace profile on its ephemeral runner; it must not change
+host-wide restrictions. Preserve the owned AppRun's executable Git mode when packaging.
+
 Resolve app-owned chat labels from stable topics at render time. Preserve user clip/asset
 names, unknown historical titles, and all raw content. Persistent failures retain typed
 diagnostics so a language change updates the explanation without restarting the request.

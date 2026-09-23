@@ -26,6 +26,12 @@ In Windows PowerShell, run `$env:ONNXRUNTIME_NODE_INSTALL='skip'` before `npm ci
 
 The pinned Hyperframes CLI, Studio, and player are included in npm dependencies. Its first render also needs FFmpeg, FFprobe, and a supported Chrome runtime. The workspace preparation screen checks these tools and offers the appropriate setup or recovery guide. Install or repair host tools outside Vandashi, then restart it and check again. Existing Codex settings and conversations are preserved.
 
+On Linux, Chromium sandbox support is required. Distributions that restrict unprivileged
+user namespaces may need an administrator-approved AppArmor profile for the exact
+Vandashi executable. The AppImage does not automatically disable sandboxing when that
+support is unavailable. See [packaged verification](docs/PACKAGED-VERIFICATION.md) for
+the launcher contract and CI checks.
+
 ## Create a video
 
 1. Choose a folder and create a brand. Refine its channel details and creative-direction guides.

@@ -12,12 +12,15 @@ import { packagedEnvironment } from './package-environment';
 
 const execute = promisify(execFile);
 const executablePath = process.env['VANDASHI_PACKAGED_APP'];
+const launcherPath = process.env['VANDASHI_PACKAGED_LAUNCHER'];
 const required = process.env['VANDASHI_REQUIRE_PACKAGED_SMOKE'] === '1';
 
 it.skipIf(!executablePath && !required)(
   'runs bundled Studio and a real video render from a packaged Electron app with a desktop-launcher PATH',
   async () => {
     if (!executablePath) throw new Error('Set VANDASHI_PACKAGED_APP to the packaged executable.');
+    if (required && process.platform === 'linux' && !launcherPath)
+      throw new Error('Linux CI must launch the verified AppImage AppRun.');
     if (required && process.env['VANDASHI_PACKAGE_AGENT_SMOKE'] === '1')
       throw new Error('CI packaged verification must not use a Codex account.');
     const directory = await mkdtemp(join(tmpdir(), 'vandashi-package-test-'));
@@ -27,7 +30,12 @@ it.skipIf(!executablePath && !required)(
       const environment = packagedEnvironment();
       environment['VANDASHI_USER_DATA'] = join(directory, 'settings');
       environment['ELECTRON_RENDERER_URL'] = '';
-      desktop = await _electron.launch({ executablePath, env: environment, timeout: 30_000 });
+      desktop = await _electron.launch({
+        executablePath: launcherPath ?? executablePath,
+        chromiumSandbox: true,
+        env: environment,
+        timeout: 30_000,
+      });
       const packaged = await desktop.evaluate(({ app }) => ({
         packaged: app.isPackaged,
         path: app.getAppPath(),
@@ -59,6 +67,32 @@ it.skipIf(!executablePath && !required)(
       expect(sidecar.stdout).toContain('0.8.64');
       const page = await desktop.firstWindow();
       await page.waitForLoadState('domcontentloaded');
+      const protection = await desktop.evaluate(({ app, BrowserWindow }) => {
+        const window = BrowserWindow.getAllWindows()[0];
+        if (!window) throw new Error('Packaged renderer missing');
+        const rendererPid = window.webContents.getOSProcessId();
+        return {
+          browserPid: process.pid,
+          rendererPid,
+          sandboxed: app.getAppMetrics().find((metric) => metric.pid === rendererPid)?.sandboxed,
+          unsafeSwitches: ['no-sandbox', 'disable-setuid-sandbox', 'disable-seccomp-filter-sandbox'].filter(
+            (name) => app.commandLine.hasSwitch(name),
+          ),
+        };
+      });
+      expect(protection.unsafeSwitches).toEqual([]);
+      if (process.platform === 'linux') {
+        const rendererStatus = await readFile(`/proc/${String(protection.rendererPid)}/status`, 'utf8');
+        const browserStatus = await readFile(`/proc/${String(protection.browserPid)}/status`, 'utf8');
+        expect(rendererStatus).toMatch(/^NoNewPrivs:\s+1$/m);
+        expect(rendererStatus).toMatch(/^Seccomp:\s+2$/m);
+        const rendererFilters = /^Seccomp_filters:\s+(\d+)$/m.exec(rendererStatus)?.[1];
+        const browserFilters = /^Seccomp_filters:\s+(\d+)$/m.exec(browserStatus)?.[1];
+        expect(rendererFilters).toBeDefined();
+        expect(browserFilters).toBeDefined();
+        // Inherited container filters alone must not establish renderer sandboxing.
+        expect(Number(rendererFilters)).toBeGreaterThan(Number(browserFilters));
+      } else expect(protection.sandboxed).toBe(true);
       await desktop.evaluate(({ dialog }, selected) => {
         dialog.showOpenDialog = () => Promise.resolve({ canceled: false, filePaths: [selected] });
       }, directory);

@@ -1,0 +1,20 @@
+#!/bin/sh
+set -eu
+
+# The AppImage runtime supplies APPDIR. Also support an extracted AppDir,
+# including an AppRun symlink, without changing the caller's working directory.
+if [ -z "${APPDIR:-}" ]; then
+  vandashi_launcher=$(readlink -f -- "$0") || exit "$?"
+  APPDIR=$(CDPATH= cd -- "${vandashi_launcher%/*}" && pwd -P) || exit "$?"
+fi
+export APPDIR
+
+# Preserve the runtime search paths used by electron-builder's AppImage layout.
+export PATH="${APPDIR}:${APPDIR}/usr/sbin${PATH:+:${PATH}}"
+export XDG_DATA_DIRS="${APPDIR}/usr/share/${XDG_DATA_DIRS:+:${XDG_DATA_DIRS}}:/usr/share/gnome:/usr/local/share/:/usr/share/"
+export LD_LIBRARY_PATH="${APPDIR}/usr/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+export GSETTINGS_SCHEMA_DIR="${APPDIR}/usr/share/glib-2.0/schemas${GSETTINGS_SCHEMA_DIR:+:${GSETTINGS_SCHEMA_DIR}}"
+
+# Let Electron enforce its sandbox requirements and report startup failures.
+# Never infer permission to weaken sandboxing from a host utility or probe.
+exec "$APPDIR/vandashi" "$@"

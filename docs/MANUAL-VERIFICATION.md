@@ -675,3 +675,11 @@ from 38 to 54. A fresh visual check showed correctly wrapped script text, a resi
 16:9 preview, complete playback/history controls and the mint focus-visible divider.
 Eight Left-arrow presses restored 38, and native zoom restored the original window.
 No project content was edited; the app was closed before subsequent native tests.
+
+A later bounded Finder control verified its Retina coordinate mapping through actual
+file selection. Even with corrected coordinates, native drag selected the owned probe
+but did not move it into an owned empty Finder folder; the pointer stayed at the source.
+Filesystem inspection confirmed the source remained and the target stayed empty. Only
+that new probe and empty target were removed. The three original optional-drop fixtures
+remain available. This improves the diagnosis of the automation limit and still does
+not establish application drop success or failure.

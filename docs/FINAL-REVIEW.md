@@ -47,7 +47,7 @@ the next cross-platform run is in progress.
 | 23  | Asset creation                  | 534–553 | /root/final_assets_review          | needs-evidence  |
 | 24  | Clips creation                  | 554–578 | /root/final_clips_review           | accepted-macos  |
 | 25  | Launch Suite (Video Release)    | 579–605 | /root/final_launch_review          | needs-evidence  |
-| 26  | UI                              | 606–623 | /root/final_ui_review              | source-accepted |
+| 26  | UI                              | 606–623 | /root/final_ui_review              | accepted-macos  |
 | 27  | Translation                     | 624–651 | /root/final_translation_review     | source-accepted |
 | 28  | Landing page                    | 652–670 | /root/final_landing_review         | source-accepted |
 | 29  | Responsibility                  | 671–677 | /root/final_responsiveness_review  | source-accepted |
@@ -490,3 +490,29 @@ waits for the exact active tab/scope and settled opening before resolving Attach
 All 12 routing cases passed; the final hardened held-open case passed again. Exact
 session/file assertions and all 11 prior consumer cases remain. Independent review
 accepted this test-only correction; no production source was changed.
+
+That `0ad090b` run is now terminal. Windows passed its 851-test gate (16 platform/opt-in
+skips), all 228 native cases and both packaged runtime tests, then uploaded its installer.
+Linux and native-source verification also passed; Pages passed 58 catalog and 312 browser
+cases and deployed. macOS's two corrected attachment waits were the only desktop failures.
+The test correction is not inferred from a rerun of old tests: `c44545f` contains the
+explicit readiness fix and added held-open regression, and passed the complete immutable
+staged gate (854 tests, 13 opt-in skips, zero static-analysis issues and both builds).
+Subsequent app-name/verification documentation does not change runtime inputs. The next
+CI run must validate the corrected test suite; its authoritative result belongs to that
+exact pushed revision in GitHub Actions.
+
+Final artifact-resource inspection independently verified the actual `0ad090b`
+Windows installer/application identity and seven icon sizes, plus Linux AppImage/Debian
+desktop identity and byte-identical 1024px icons. It also found a separate AppImage
+sandbox defect in both its desktop arguments and generated launcher. The correction
+replaces that launcher with owned source, removes the default argument and verifies
+the extracted artifact before executing its real Studio/render flow. Playwright's
+implicit Linux sandbox override is now explicitly disabled, with OS-level assertions
+added. The strengthened macOS packaged test passed; final Linux execution remains
+part of the next exact-revision CI run. Historical functional results are retained
+without claiming they verified Linux sandboxing.
+The independent follow-up reviewer accepted the bounded launcher, artifact verifier,
+exact-path CI profile and OS-level assertion changes with no actionable findings.
+Landing claims and screenshots remain accurate. All 41 focused launcher/policy tests
+passed; native Linux verification remains explicitly pending until the new CI run.

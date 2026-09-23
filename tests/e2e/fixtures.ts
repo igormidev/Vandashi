@@ -30,6 +30,7 @@ export const test = base.extend<DesktopFixtures>({
     environment.ELECTRON_RENDERER_URL = rendererUrl;
     const application = await _electron.launch({
       args: [join(process.cwd(), 'out/main/index.js')],
+      chromiumSandbox: true,
       env: environment,
       timeout: 30_000,
     });

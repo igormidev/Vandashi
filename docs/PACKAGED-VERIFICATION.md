@@ -1,8 +1,9 @@
 # Packaged desktop verification
 
 The desktop workflow builds installers for its native macOS, Windows and Linux
-runners, then tests the unpacked application produced by that same build before
-uploading installers. Development Electron tests and successful installer creation
+runners, then tests their packaged runtime before uploading installers. Linux checks
+and launches the actual extracted AppImage; macOS/Windows use the unpacked application
+produced by the same build. Development Electron tests and successful installer creation
 alone do not establish that the packaged native resources work.
 
 ## Account-free CI boundary
@@ -12,7 +13,17 @@ It resolves Git, FFmpeg and FFprobe to absolute paths, installs Chrome headless 
 **152.0.7977.30** using Hyperframes' locked Puppeteer dependency, and records tool
 versions. The browser pin must still match Hyperframes 0.8.64's managed revision.
 Linux installs Chromium's system libraries with Playwright and runs the GUI check
-under Xvfb. No sandbox flags or application security settings are relaxed.
+under Xvfb. `prepare-linux-package.mjs` extracts the single generated AppImage, verifies
+the exact owned launcher and desktop command, and selects its native binary and AppRun.
+Both Electron launch sites explicitly set `chromiumSandbox: true`. When Ubuntu restricts
+user namespaces, `prepare-linux-sandbox.mjs` loads a profile for only the exact test
+binary on the ephemeral Actions runner; host-wide AppArmor settings remain unchanged.
+
+Historical Linux runs before this correction used Playwright's implicit `--no-sandbox`
+default. Their Studio/render/speech results remain functional evidence, but the earlier
+statement that no sandbox flags were added was incorrect. They do not establish OS
+sandbox acceptance. The `0ad090b` AppImage also contained two independent builder-created
+sandbox-disabling paths, described in the artifact follow-up below.
 
 The helper writes validated UTF-8 values to GitHub's environment file. The subsequent
 test step runs:
@@ -34,6 +45,10 @@ speech worker run through the packaged Electron executable in Node mode.
 
 ## Observable checks
 
+- The renderer is sandboxed at the OS level. macOS/Windows report this through the
+  renderer's `ProcessMetric.sandboxed`; Linux must show seccomp filtering, no new
+  privileges and more seccomp filters than its browser parent. The main command line
+  must not contain sandbox-disabling switches. Missing evidence fails the check.
 - Studio loads from bundled resources, persists a real edit, drains a delayed
   pending write, and renders a real H.264 MP4. The test probes dimensions/duration,
   inspects decoded red title pixels, verifies the current export, and checks that
@@ -67,6 +82,17 @@ command above. Explicit `HYPERFRAMES_BROWSER_PATH`, `HYPERFRAMES_FFMPEG_PATH` an
 `HYPERFRAMES_FFPROBE_PATH` values can select installed tools. Linux requires a display
 or the same `xvfb-run --auto-servernum` prefix as CI. Windows environment values can
 be assigned with PowerShell's `$env:NAME='value'` syntax.
+
+Linux CI additionally requires `VANDASHI_PACKAGED_LAUNCHER` to identify the verified
+extracted `AppRun`. For local AppImage reproduction, run `prepare-linux-package.mjs`
+and use the two paths it prints; an existing unpacked native binary remains valid for
+local runtime-only testing. The launcher never changes system policy or adds unsafe
+flags. Ubuntu's [user-namespace policy](https://documentation.ubuntu.com/release-notes/24.04/)
+may require an administrator to approve the exact application through AppArmor.
+Packaging uses ordinary file copies: `USE_HARD_LINKS=true` or an inherited `VITEST`
+environment makes the pinned builder reject the existing generated AppRun with
+`EEXIST`, rather than silently shipping that default. Run standalone packaging without
+those test/hardlink environment variables.
 
 On 2026-09-23, a fresh unsigned macOS ARM64 package was created from the verified
 12:25:20 production build, without rebuilding or modifying `out`. All 40 output
@@ -343,3 +369,67 @@ in 27.8 seconds with that hydration precondition, preserving all prior assertion
 Evidence: `/tmp/vandashi-creation-selector-red.log` and
 `/tmp/vandashi-creation-selector-green.log`. The independent reviewer accepted the
 correction; no production source or package input changes are involved.
+
+## CI follow-up — `0ad090b`
+
+[Desktop run 35926614889](https://github.com/igormidev/Vandashi/actions/runs/35926614889)
+completed on 2026-09-23. Linux passed 854 unit tests (13 opt-in skips), all 228 Electron
+cases and both packaged runtime checks. Windows passed 851 unit tests (16 platform/opt-in
+skips), all 228 Electron cases and both packaged checks. Windows completed within its
+60-minute job budget; its native suite took 15.2 minutes. Actual packaged Studio/render
+and CPU speech/ONNX tests passed on both platforms without a Codex account.
+
+macOS passed the full unit/static/build gate and 226 native cases. Two newly added
+attachment-routing tests resolved the previous chat's mounted button before asynchronous
+selection finished; the button then became hidden. Their diagnostics show the correct
+new conversation and visible Attach control. Packaging was skipped after those failures.
+The test-only readiness correction is in `c44545f`, with a deterministic held-open RED,
+12 passing routing cases and a passing final hardened regression. No production source
+or frozen package input changed; a fresh exact-revision CI run remains required.
+
+Native-source verification passed for 395 payloads and 705 archive files. Retained
+artifacts and upload-reported SHA-256 digests:
+
+- [Linux X64](https://github.com/igormidev/Vandashi/actions/runs/35926614889/artifacts/10780126636),
+  `bef54f3f281281c30691ea388f7f3e1322123b2a2e6810b25d1c6fc1e6c2112a`.
+- [Windows X64](https://github.com/igormidev/Vandashi/actions/runs/35926614889/artifacts/10781305456),
+  `f1d8a9526e16049ed4dd4862d24096971829db5de30e5f08067e2799079d9fa0`.
+- [Native sources](https://github.com/igormidev/Vandashi/actions/runs/35926614889/artifacts/10779566097),
+  `0758d84ca2ccae1c11333ba50ddabfb927e7b237071bc41c7211e59cb4796c0a`.
+- [macOS diagnostics](https://github.com/igormidev/Vandashi/actions/runs/35926614889/artifacts/10780425698),
+  `3b5f71cf829ac2961c11dbf9813f934428e01e89b7ee7f763787d79582848488`.
+
+The [Pages run](https://github.com/igormidev/Vandashi/actions/runs/35926615008) passed
+58 catalog and 312 browser cases, then deployed the exact revision. Full terminal
+snapshots, six job logs and artifact metadata are retained under
+`/tmp/vandashi-ci-0ad090b.oiG15O/`. These results preserve the distinction between the
+two successful platform packages and the failed macOS test run.
+
+## Artifact inspection and sandbox correction
+
+Read-only inspection of the actual `0ad090b` installers verified Vandashi identity
+and icon resources: Windows's NSIS installer and shipped executable both contain
+the seven matching mint-V icon sizes (16–256px); Linux AppImage and Debian include
+the correct desktop name/icon/window class and a 1024px icon byte-identical to
+`build/icon.png`. This is artifact-resource evidence, not an installed Windows/Linux
+desktop-shell walkthrough. Installer hashes and extracted metadata remain in
+`/tmp/vandashi-artifact-identity-0ad090b/`.
+
+The same inspection exposed an AppImage defect: its desktop entry supplied
+`--no-sandbox`, while its separate AppRun wrapper also added that switch after a
+failed namespace probe. Electron's [sandbox documentation](https://www.electronjs.org/docs/latest/tutorial/sandbox#disabling-chromiums-sandbox-testing-only)
+confirms that this disables Chromium's OS sandbox even when renderer preferences
+specify `sandbox: true`. The owned launcher and empty AppImage argument list remove
+both automatic paths. The new artifact verifier rejects the exact old extracted
+AppImage. Functional launcher tests cover unavailable/failed namespace probes, exact
+arguments, paths with spaces, runtime environment, native failure propagation and
+the installed builder's actual copy behavior.
+
+The strengthened macOS package test passed against the unchanged local runtime at
+`/tmp/vandashi-final-attachments-package/mac-arm64/Vandashi.app`: OS sandbox metric,
+bundled Studio, delayed save flush, real H.264 render, decoded pixels and server
+cleanup all passed in 13.43 seconds. Evidence is
+`/tmp/vandashi-sandbox-macos-smoke.json` and its companion log. This account-free check
+does not replace the separately recorded real-Codex walkthrough. The new Linux
+launcher, exact-path CI policy and packaged sandbox checks require the next native
+Linux run; the historical artifacts and frozen package manifest remain unchanged.
