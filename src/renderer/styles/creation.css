@@ -1,0 +1,184 @@
+.creation-right {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+.preview-section {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+.preview-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.preview-heading .spacer {
+  flex: 1;
+}
+.preview-stage {
+  aspect-ratio: 16/9;
+  background: #050505;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 210px;
+}
+.preview-stage.vertical {
+  aspect-ratio: auto;
+  height: 330px;
+}
+.player-mount {
+  width: 100%;
+  height: 100%;
+}
+.preview-stage .empty {
+  min-height: 0;
+  padding: 20px;
+}
+.preview-section.compact {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.preview-section.compact .preview-stage {
+  flex: 1;
+}
+.history {
+  padding: 20px 25px;
+}
+.history-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.commit {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+.commit-heading {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.commit-heading > svg {
+  color: var(--accent);
+}
+.commit-heading h3 {
+  flex: 1;
+  font-size: 12px;
+}
+.commit-meta {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px;
+  color: var(--faint);
+  margin: 8px 0 11px;
+}
+.commit p {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+.script-pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 20px;
+  background: var(--panel);
+}
+.script-file {
+  color: var(--faint);
+  font-size: 10px;
+  margin-bottom: 15px;
+}
+.script-editor {
+  flex: 1;
+  border: 0;
+  resize: none;
+  padding: 0;
+  background: transparent;
+  font-family: 'Geist Mono', monospace;
+  font-size: 12px;
+  line-height: 2;
+  outline: none;
+}
+.script-editor:focus-visible {
+  outline: none;
+}
+.script-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 12px 17px;
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+}
+.script-actions .spacer {
+  flex: 1;
+}
+.script-diff {
+  max-height: 340px;
+  overflow: auto;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 16px;
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  line-height: 1.8;
+  margin: 0 0 20px;
+}
+.studio-frame {
+  flex: 1;
+  width: 100%;
+  border: 0;
+  min-height: 0;
+}
+.thumbnail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.thumbnail > img {
+  width: 100%;
+  aspect-ratio: 16/9;
+  object-fit: cover;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.thumbnail .toolbar {
+  margin-top: 6px;
+}
+
+.creation-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+.creation-panel[hidden] {
+  display: none;
+}
+
+.script-file {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.script-file .spacer {
+  flex: 1;
+}
+.script-file .icon-button {
+  width: 24px;
+  height: 24px;
+}

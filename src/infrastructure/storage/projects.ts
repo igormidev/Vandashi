@@ -1,0 +1,249 @@
+import { randomUUID } from 'node:crypto';
+import { mkdir, readFile, readdir, realpath } from 'node:fs/promises';
+import { join } from 'node:path';
+import { emptyPackaging, tasteFiles } from '../../domain/defaults';
+import { initialScript, tasteTemplates } from '../../domain/templates';
+import type { Brand, Clip, Scope, VideoSummary } from '../../domain/models';
+import type { GitPort, NewClip, RecoveryListener } from '../../domain/storage';
+import type { AssetStore } from './assets';
+import { atomicWrite, containedPath, exists, safeName } from './files';
+import type { Registry } from './registry';
+import { brandConfigSchema, packagingSchema, videoRecordSchema, type VideoRecord } from './schemas';
+import { readYaml, writeYaml } from './yaml-files';
+
+const ignore =
+  '.vandashi-recovery/\n.vandashi-write-*\nnode_modules/\noutput/\n.thumbnails/\nrenders/\n.cache/\n.transcode-cache/\n.waveform-cache/\n.DS_Store\n';
+
+export class ProjectStore {
+  constructor(
+    readonly registry: Registry,
+    readonly git: GitPort,
+    readonly assets: AssetStore,
+    private readonly onRecovery?: RecoveryListener,
+  ) {}
+
+  async brand(id: string): Promise<Brand> {
+    const summary = (await this.registry.state()).brands.find((item) => item.id === id);
+    if (!summary) throw new Error('This brand is not registered.');
+    const path = await realpath(summary.path);
+    const identity = await containedPath(path, 'brand_identity');
+    const config = await readYaml(identity, 'brand_config.yml', brandConfigSchema, this.git, this.onRecovery);
+    return { ...summary, name: config.name, path, config };
+  }
+
+  async createBrand(input: { parentPath: string; name: string }): Promise<Brand> {
+    const name = safeName(input.name, 3);
+    const parent = await realpath(input.parentPath);
+    const path = await containedPath(parent, name);
+    await mkdir(path); // Exclusive: an existing folder must never be adopted or overwritten.
+    const brand: Brand = {
+      id: randomUUID(),
+      name,
+      path,
+      lastOpened: new Date().toISOString(),
+      config: { name, description: '', image: '', platforms: {} },
+    };
+    const identity = join(path, 'brand_identity');
+    const shared = join(path, 'shared_assets');
+    await Promise.all([identity, shared, join(path, 'videos')].map(async (directory) => mkdir(directory)));
+    await writeYaml(identity, 'brand_config.yml', brand.config);
+    for (const file of tasteFiles) await atomicWrite(join(identity, file), tasteTemplates[file]);
+    await atomicWrite(join(identity, '.gitignore'), ignore);
+    await atomicWrite(join(shared, '.gitignore'), ignore);
+    await this.git.init(identity);
+    await this.git.commit(
+      identity,
+      'Create brand identity',
+      'Initialize brand configuration and editable creative taste guides.',
+    );
+    await this.git.init(shared);
+    await this.git.commit(
+      shared,
+      'Create shared asset library',
+      'Initialize the reusable asset library for this brand.',
+    );
+    await this.registry.update((state) => ({
+      ...state,
+      brands: [
+        ...state.brands,
+        {
+          id: brand.id,
+          name,
+          path,
+          lastOpened: brand.lastOpened,
+        },
+      ],
+      lastBrandId: brand.id,
+    }));
+    return brand;
+  }
+
+  private async records(directory: string): Promise<{ path: string; record: VideoRecord }[]> {
+    const result: { path: string; record: VideoRecord }[] = [];
+    if (!(await exists(directory))) return result;
+    for (const entry of await readdir(directory, { withFileTypes: true })) {
+      if (!entry.isDirectory() || entry.isSymbolicLink() || entry.name.startsWith('.')) continue;
+      const path = await containedPath(directory, entry.name);
+      if (!(await exists(join(path, '.vandashi.yml')))) continue;
+      result.push({
+        path,
+        record: await readYaml(path, '.vandashi.yml', videoRecordSchema, this.git, this.onRecovery),
+      });
+    }
+    return result;
+  }
+
+  private async summary(path: string, record: VideoRecord): Promise<VideoSummary> {
+    let renderedPath = record.renderedPath;
+    if (renderedPath !== null) renderedPath = await containedPath(path, renderedPath);
+    if (
+      renderedPath !== null &&
+      (!(await exists(renderedPath)) ||
+        record.renderedRevision !== (await this.git.contentRevision(path)) ||
+        (await this.git.status(path)).paths.some(
+          (file) => !['.vandashi.yml', 'video_packaging.yml', 'launch.yml'].includes(file),
+        ))
+    )
+      renderedPath = null;
+    return {
+      id: record.id,
+      brandId: record.brandId,
+      name: record.name,
+      path,
+      ratio: record.ratio,
+      updatedAt: record.updatedAt,
+      renderedPath,
+      packaging: await readYaml(path, 'video_packaging.yml', packagingSchema, this.git, this.onRecovery),
+    };
+  }
+
+  async listVideos(brandId: string): Promise<VideoSummary[]> {
+    const brand = await this.brand(brandId);
+    const records = await this.records(await containedPath(brand.path, 'videos'));
+    const videos: VideoSummary[] = [];
+    for (const { path, record } of records) {
+      if (record.brandId !== brandId || record.parentVideoId !== undefined)
+        throw new Error('The video manifest has an invalid brand relationship.');
+      videos.push(await this.summary(path, record));
+    }
+    return videos.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  }
+
+  async video(scope: Scope): Promise<VideoSummary | null> {
+    if (scope.videoId === null) {
+      if (scope.clipId !== null) throw new Error('A clip must belong to a video.');
+      return null;
+    }
+    const parent = (await this.listVideos(scope.brandId)).find((item) => item.id === scope.videoId);
+    if (!parent) throw new Error('This video no longer exists.');
+    if (scope.clipId === null) return parent;
+    const clip = (await this.clips(parent)).find((item) => item.id === scope.clipId);
+    if (!clip) throw new Error('This clip no longer exists.');
+    return clip;
+  }
+
+  async clips(video: VideoSummary): Promise<Clip[]> {
+    const clips: Clip[] = [];
+    for (const { path, record } of await this.records(await containedPath(video.path, 'clips'))) {
+      if (
+        record.parentVideoId !== video.id ||
+        record.brandId !== video.brandId ||
+        record.start === undefined ||
+        record.end === undefined
+      ) {
+        throw new Error('The clip manifest has an invalid parent relationship.');
+      }
+      clips.push({
+        ...(await this.summary(path, record)),
+        parentVideoId: video.id,
+        start: record.start,
+        end: record.end,
+      });
+    }
+    return clips;
+  }
+
+  private async initialize(path: string, record: VideoRecord, sharedRoot: string): Promise<void> {
+    for (const folder of ['thumbnails', 'video_assets', 'clips']) await mkdir(join(path, folder));
+    await writeYaml(path, '.vandashi.yml', record);
+    await writeYaml(path, 'video_packaging.yml', emptyPackaging());
+    await writeYaml(path, 'launch.yml', []);
+    await atomicWrite(join(path, 'script.md'), initialScript);
+    await atomicWrite(join(path, '.gitignore'), `${ignore}clips/\n`);
+    await this.assets.syncShared(sharedRoot, join(path, 'video_assets'));
+    await this.git.init(path);
+    await this.git.commit(
+      path,
+      `Create ${record.parentVideoId ? 'clip' : 'video'}: ${record.name}`,
+      'Initialize packaging, script, asset folders, and release state.',
+    );
+  }
+
+  async createVideo(input: { brandId: string; name: string; ratio: '16:9' | '9:16' }): Promise<Scope> {
+    const brand = await this.brand(input.brandId);
+    const name = safeName(input.name);
+    const path = await containedPath(brand.path, join('videos', name));
+    await mkdir(path);
+    const record: VideoRecord = {
+      id: randomUUID(),
+      brandId: brand.id,
+      name,
+      ratio: input.ratio,
+      updatedAt: new Date().toISOString(),
+      renderedPath: null,
+    };
+    await this.initialize(path, record, await containedPath(brand.path, 'shared_assets'));
+    return { brandId: brand.id, videoId: record.id, clipId: null };
+  }
+
+  async createClip(input: NewClip): Promise<Clip> {
+    const parent = await this.video({ ...input.scope, clipId: null });
+    if (parent?.ratio !== '16:9') throw new Error('Clips require a horizontal parent video.');
+    if (
+      !Number.isFinite(input.start) ||
+      !Number.isFinite(input.end) ||
+      input.start < 0 ||
+      input.end <= input.start
+    )
+      throw new Error('Choose a valid clip range.');
+    const brand = await this.brand(input.scope.brandId);
+    const name = safeName(input.name);
+    const path = await containedPath(parent.path, join('clips', name));
+    await mkdir(path);
+    const record: VideoRecord = {
+      id: randomUUID(),
+      brandId: brand.id,
+      name,
+      ratio: input.ratio,
+      updatedAt: new Date().toISOString(),
+      renderedPath: null,
+      parentVideoId: parent.id,
+      start: input.start,
+      end: input.end,
+    };
+    await this.initialize(path, record, await containedPath(brand.path, 'shared_assets'));
+    return {
+      ...(await this.summary(path, record)),
+      parentVideoId: parent.id,
+      start: input.start,
+      end: input.end,
+    };
+  }
+
+  async documents(
+    brand: Brand,
+    video: VideoSummary | null,
+  ): Promise<{ path: string; name: string; content: string; kind: 'taste' | 'script' }[]> {
+    const documents: { path: string; name: string; content: string; kind: 'taste' | 'script' }[] = [];
+    const identity = await containedPath(brand.path, 'brand_identity');
+    for (const name of tasteFiles) {
+      const path = await containedPath(identity, name);
+      documents.push({ path, name, content: await readFile(path, 'utf8'), kind: 'taste' });
+    }
+    if (video) {
+      const path = await containedPath(video.path, 'script.md');
+      documents.push({ path, name: 'script.md', content: await readFile(path, 'utf8'), kind: 'script' });
+    }
+    return documents;
+  }
+}

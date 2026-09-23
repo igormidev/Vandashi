@@ -1,0 +1,132 @@
+{
+  "name": "vandashi",
+  "version": "0.1.0",
+  "description": "A local-first, AI-driven video studio powered by Codex and Hyperframes.",
+  "private": true,
+  "type": "module",
+  "main": "out/main/index.js",
+  "author": "Igor",
+  "license": "MIT",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --fix --max-warnings 0",
+    "architecture": "depcruise src --config .dependency-cruiser.cjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "check": "npm run format:check && npm run typecheck && npm run lint && npm run architecture && npm test && npm run build",
+    "prepare": "node scripts/install-hooks.mjs",
+    "package": "npm run check && npm run licenses:generate && electron-builder",
+    "package:dir": "npm run build && npm run licenses:generate && electron-builder --dir",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "licenses:generate": "node scripts/generate-notices.mjs"
+  },
+  "dependencies": {
+    "@fontsource/geist": "^5.2.8",
+    "@fontsource/geist-mono": "^5.2.8",
+    "@hyperframes/player": "0.8.64",
+    "@radix-ui/react-dialog": "^1.1.15",
+    "@radix-ui/react-tooltip": "^1.2.8",
+    "@tiptap/core": "3.31.3",
+    "@tiptap/pm": "3.31.3",
+    "@tiptap/react": "3.31.3",
+    "@tiptap/starter-kit": "3.31.3",
+    "@tiptap/suggestion": "3.31.3",
+    "diff": "^8.0.2",
+    "exiftool-vendored": "^38.1.0",
+    "gsap": "3.15.0",
+    "hyperframes": "0.8.64",
+    "i18next": "^25.6.0",
+    "lucide-react": "^0.468.0",
+    "node-id3": "^0.2.9",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "react-i18next": "^16.2.0",
+    "react-markdown": "^10.1.0",
+    "simple-icons": "^15.18.0",
+    "yaml": "^2.8.1",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "@playwright/test": "^1.56.1",
+    "@types/node": "^24.10.0",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "@vitejs/plugin-react": "^5.1.0",
+    "adm-zip": "0.6.1",
+    "dependency-cruiser": "^17.1.0",
+    "electron": "^44.4.5",
+    "electron-builder": "^26.15.3",
+    "electron-vite": "^5.0.0",
+    "eslint": "^9.39.0",
+    "eslint-plugin-i18next": "^6.1.5",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "prettier": "3.9.9",
+    "tar": "7.5.22",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.70.1",
+    "vite": "^7.3.0",
+    "vitest": "^4.0.6"
+  },
+  "build": {
+    "asar": false,
+    "appId": "com.vandashi.studio",
+    "productName": "Vandashi",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "out/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.video",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "AudioVideo"
+    },
+    "icon": "build/icon.png",
+    "extraFiles": [
+      {
+        "from": "LICENSE",
+        "to": "LICENSE"
+      },
+      {
+        "from": "THIRD_PARTY_NOTICES.md",
+        "to": "THIRD_PARTY_NOTICES.md"
+      },
+      {
+        "from": "node_modules/electron/dist/LICENSE",
+        "to": "LICENSE.electron.txt"
+      },
+      {
+        "from": "node_modules/electron/dist/LICENSES.chromium.html",
+        "to": "LICENSES.chromium.html"
+      },
+      {
+        "from": "build/THIRD_PARTY_LICENSES.txt",
+        "to": "THIRD_PARTY_LICENSES.txt"
+      }
+    ]
+  }
+}

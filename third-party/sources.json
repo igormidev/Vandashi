@@ -1,0 +1,247 @@
+{
+  "version": 1,
+  "extras": [
+    {
+      "file": "third-party/T3-Code-LICENSE.txt",
+      "source": "https://github.com/pingdotgg/t3code/blob/f5ef0ddb90a8c36584e181b1913e7b8a5df30ffc/LICENSE",
+      "sha256": "935d8f2af0c703f9c39517ee57cc4930b19d02d533be930b63f0e82f93614b43"
+    },
+    {
+      "file": "third-party/Codex-LICENSE.txt",
+      "source": "https://github.com/openai/codex/blob/0b23f365f8dc24eeb6c1cf6fc2da7292621b4ba1/LICENSE",
+      "sha256": "d17f227e4df5da1600391338865ce0f3055211760a36688f816941d58232d8dc"
+    },
+    {
+      "file": "third-party/Codex-NOTICE.txt",
+      "source": "https://github.com/openai/codex/blob/0b23f365f8dc24eeb6c1cf6fc2da7292621b4ba1/NOTICE",
+      "sha256": "9d71575ecfd9a843fc1677b0efb08053c6ba9fd686a0de1a6f5382fd3c220915"
+    },
+    {
+      "file": "third-party/Simple-Icons-DISCLAIMER.md",
+      "source": "npm:simple-icons@15.22.0/DISCLAIMER.md",
+      "sha256": "351f58ed7756a1e87ec0565dbd94531fdaa41e59279d990a6a17253923d37512"
+    }
+  ],
+  "packages": {
+    "hyperframes@0.8.64": {
+      "reason": "The published CLI archive declares Apache-2.0 but omits its root license file; copied from the inspected matching source checkout.",
+      "files": [
+        {
+          "file": "third-party/Hyperframes-LICENSE.txt",
+          "source": "https://github.com/heygen-com/hyperframes/blob/ed75203cb6aa597269b9821fa293b4e9ad40b7ba/LICENSE",
+          "sha256": "4259155fb06f127687ee7b0a8a3682d45132db0f2da26cbc0b7a2d1e796436b8"
+        }
+      ]
+    },
+    "puppeteer-core@25.11.0": {
+      "reason": "Published archive omits the license file. Source revision is the gitHead returned by the npm registry for this exact version.",
+      "files": [
+        {
+          "file": "third-party/puppeteer-core-LICENSE.txt",
+          "source": "https://raw.githubusercontent.com/puppeteer/puppeteer/043cd46e594b39ea77343e221a59724183448059/LICENSE",
+          "sha256": "a27ca07269b3518550b2e83aed13eadd7d14d924b5864e14889b40cf227530ca"
+        }
+      ]
+    },
+    "@puppeteer/browsers@3.2.2": {
+      "reason": "Published archive omits the license file. Source revision is the gitHead returned by the npm registry for this exact version.",
+      "files": [
+        {
+          "file": "third-party/puppeteer-browsers-LICENSE.txt",
+          "source": "https://raw.githubusercontent.com/puppeteer/puppeteer/88b517ab3beb4a237b541cd18ada98ba43de71a7/LICENSE",
+          "sha256": "a27ca07269b3518550b2e83aed13eadd7d14d924b5864e14889b40cf227530ca"
+        }
+      ]
+    },
+    "exiftool-vendored.pl@13.59.2": {
+      "reason": "The npm wrapper is MIT; the bundled ExifTool 13.59 source is separately under the same terms as Perl. Preserve the Artistic alternative and actual source/patch provenance.",
+      "files": [
+        {
+          "file": "third-party/Perl-Artistic.txt",
+          "source": "https://raw.githubusercontent.com/Perl/perl5/v5.40.0/Artistic",
+          "sha256": "dd90d4f42e4dcadf5a7c09eea0189d93c7b37ae560c91f0f6d5233ed3b9292a2"
+        },
+        {
+          "file": "third-party/ExifTool-README.txt",
+          "source": "npm:exiftool-vendored.pl@13.59.2/bin/README",
+          "sha256": "e13005e5431c89910feba2309710d844f1bf4fd97df1236284e6475161bc14da"
+        },
+        {
+          "file": "third-party/ExifTool-vendor-manifest.json",
+          "source": "npm:exiftool-vendored.pl@13.59.2/vendor-manifest.json",
+          "sha256": "62b62b1aefb08460c5a36fbd93ca1aa47ecadfb459d72bdeac52d69ecbe02c73"
+        },
+        {
+          "file": "third-party/ExifTool-stdin-eof.patch",
+          "source": "npm:exiftool-vendored.pl@13.59.2/patches/exiftool-stdin-eof.patch",
+          "sha256": "7e4df36220197d623af77e0b8cef298c07ee10183f99efbb69789d1084802bb2"
+        }
+      ]
+    },
+    "fontkit@2.0.4": {
+      "reason": "This exact npm archive supplies an MIT declaration in its README and package metadata, but no full license or copyright notice. Both original records and the unmodified SPDX MIT standard template are retained; template placeholders are not an invented attribution.",
+      "files": [
+        {
+          "file": "third-party/fontkit-README.md",
+          "source": "npm:fontkit@2.0.4/README.md",
+          "sha256": "8a1cf12d8ae7277f047c3000af7677927f2da9243627223ba5715d40df4979d6"
+        },
+        {
+          "file": "third-party/fontkit-package.json",
+          "source": "npm:fontkit@2.0.4/package.json",
+          "sha256": "49c60605b92316a5d5fe57b9a3bca8950ad9a8beab1cb633d6f29862d1bd163d"
+        },
+        {
+          "file": "third-party/MIT-standard-template.txt",
+          "source": "https://raw.githubusercontent.com/spdx/license-list-data/v3.26.0/text/MIT.txt",
+          "sha256": "6d7c9e9d7d12c8d3753bdb24417b84819ba4d6c2f025c37948113d86dc81eef9"
+        }
+      ]
+    },
+    "bpm-detective@2.0.5": {
+      "reason": "This exact npm archive supplies an MIT declaration in its README and package metadata, but no full license or copyright notice. Both original records and the unmodified SPDX MIT standard template are retained; template placeholders are not an invented attribution.",
+      "files": [
+        {
+          "file": "third-party/bpm-detective-README.md",
+          "source": "npm:bpm-detective@2.0.5/README.md",
+          "sha256": "a4549400ca509737b7ccf74a896d7b7789b96efb4568a48b1d66e6b92def7ae1"
+        },
+        {
+          "file": "third-party/bpm-detective-package.json",
+          "source": "npm:bpm-detective@2.0.5/package.json",
+          "sha256": "b9e25b937f45999f91480a602ec2105d917dc12788170019a5b1796fbf932317"
+        },
+        {
+          "file": "third-party/MIT-standard-template.txt",
+          "source": "https://raw.githubusercontent.com/spdx/license-list-data/v3.26.0/text/MIT.txt",
+          "sha256": "6d7c9e9d7d12c8d3753bdb24417b84819ba4d6c2f025c37948113d86dc81eef9"
+        }
+      ]
+    },
+    "react-remove-scroll-bar@2.3.8": {
+      "reason": "This exact npm archive supplies an MIT declaration in its README and package metadata, but no full license or copyright notice. Both original records and the unmodified SPDX MIT standard template are retained; template placeholders are not an invented attribution.",
+      "files": [
+        {
+          "file": "third-party/react-remove-scroll-bar-README.md",
+          "source": "npm:react-remove-scroll-bar@2.3.8/README.md",
+          "sha256": "486442209236ffa3893312e508694699a6b8834d30a2f9c083c1f3379983e4f9"
+        },
+        {
+          "file": "third-party/react-remove-scroll-bar-package.json",
+          "source": "npm:react-remove-scroll-bar@2.3.8/package.json",
+          "sha256": "e372f857ce05f266137c65293436b5380fec42ac311e6acb9378ed78b98d75d0"
+        },
+        {
+          "file": "third-party/MIT-standard-template.txt",
+          "source": "https://raw.githubusercontent.com/spdx/license-list-data/v3.26.0/text/MIT.txt",
+          "sha256": "6d7c9e9d7d12c8d3753bdb24417b84819ba4d6c2f025c37948113d86dc81eef9"
+        }
+      ]
+    },
+    "brotli@1.3.3": {
+      "reason": "This exact npm archive supplies an MIT declaration in its README and package metadata, but no full license or copyright notice. Both original records and the unmodified SPDX MIT standard template are retained; template placeholders are not an invented attribution.",
+      "files": [
+        {
+          "file": "third-party/brotli-README.md",
+          "source": "npm:brotli@1.3.3/readme.md",
+          "sha256": "8a8bac543fccf52a64708ff3315ca2be90e3e4c270634df1e4e4b51f0ee9c5d7"
+        },
+        {
+          "file": "third-party/brotli-package.json",
+          "source": "npm:brotli@1.3.3/package.json",
+          "sha256": "387b47d00ea96cab9b4c521629fbcdc7621053ac061812526f3c69700924cef5"
+        },
+        {
+          "file": "third-party/MIT-standard-template.txt",
+          "source": "https://raw.githubusercontent.com/spdx/license-list-data/v3.26.0/text/MIT.txt",
+          "sha256": "6d7c9e9d7d12c8d3753bdb24417b84819ba4d6c2f025c37948113d86dc81eef9"
+        }
+      ]
+    },
+    "dfa@1.2.0": {
+      "reason": "This exact npm archive supplies an MIT declaration in its README and package metadata, but no full license or copyright notice. Both original records and the unmodified SPDX MIT standard template are retained; template placeholders are not an invented attribution.",
+      "files": [
+        {
+          "file": "third-party/dfa-README.md",
+          "source": "npm:dfa@1.2.0/README.md",
+          "sha256": "30bd445925aa53205ff7f9afa6a43e21358fab656e471df6e028431aefc426c7"
+        },
+        {
+          "file": "third-party/dfa-package.json",
+          "source": "npm:dfa@1.2.0/package.json",
+          "sha256": "96c0ce3cc17b34aabd58fd442157766d9e244cba735e54ee4fe10d7841f0460c"
+        },
+        {
+          "file": "third-party/MIT-standard-template.txt",
+          "source": "https://raw.githubusercontent.com/spdx/license-list-data/v3.26.0/text/MIT.txt",
+          "sha256": "6d7c9e9d7d12c8d3753bdb24417b84819ba4d6c2f025c37948113d86dc81eef9"
+        }
+      ]
+    },
+    "gsap@3.15.0": {
+      "reason": "GSAP supplies its custom-license URL and copyright notice in the original distribution header, not a standalone license file. Its full governing terms are at https://gsap.com/standard-license; the custom terms are not replaced by Vandashi MIT.",
+      "files": [
+        {
+          "file": "third-party/GSAP-3.15.0-header.txt",
+          "source": "npm:gsap@3.15.0/dist/gsap.min.js (unchanged leading license comment)",
+          "sha256": "923e7e779eaf1dd09350feafd100aac343cb396e9eec803cdebf6145fa543aa1"
+        }
+      ]
+    },
+    "@esbuild/darwin-arm64@0.25.12": {
+      "reason": "The native package accompanies esbuild at the same version; its license is supplied by the esbuild distribution.",
+      "files": [
+        {
+          "file": "third-party/esbuild-0.25.12-LICENSE.txt",
+          "source": "npm:esbuild@0.25.12/LICENSE.md",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681"
+        }
+      ]
+    },
+    "@img/sharp-libvips-darwin-arm64@1.3.3": {
+      "reason": "Native libvips and its linked libraries have separate terms. Preserve the actual component-license table, precise versions, LGPL3 and GPL3 texts. Source distribution requirements are documented in THIRD_PARTY_NOTICES.md.",
+      "files": [
+        {
+          "file": "third-party/sharp-libvips-darwin-arm64-README.md",
+          "source": "npm:@img/sharp-libvips-darwin-arm64@1.3.3/README.md",
+          "sha256": "47083f1ae7e990f74a56f576bcb8434051cb84ed1982fa57932720869e5147fe"
+        },
+        {
+          "file": "third-party/sharp-libvips-darwin-arm64-versions.json",
+          "source": "npm:@img/sharp-libvips-darwin-arm64@1.3.3/versions.json",
+          "sha256": "adddf5e76ac1cc03b503a17c488b8591dd9eb5ec3faf689a3852d02d1b5fbb10"
+        },
+        {
+          "file": "third-party/LGPL-3.0.txt",
+          "source": "https://raw.githubusercontent.com/gcc-mirror/gcc/releases/gcc-14.2.0/COPYING3.LIB",
+          "sha256": "a853c2ffec17057872340eee242ae4d96cbf2b520ae27d903e1b2fef1a5f9d1c"
+        },
+        {
+          "file": "third-party/GPL-3.0.txt",
+          "source": "https://raw.githubusercontent.com/gcc-mirror/gcc/releases/gcc-14.2.0/COPYING3",
+          "sha256": "8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903"
+        }
+      ]
+    },
+    "@img/sharp-wasm32@0.35.4": {
+      "reason": "The package license expression includes LGPL3 and MIT in addition to the included Apache text; retain GPL3/LGPL3 texts and its component table.",
+      "files": [
+        {
+          "file": "third-party/LGPL-3.0.txt",
+          "source": "https://raw.githubusercontent.com/gcc-mirror/gcc/releases/gcc-14.2.0/COPYING3.LIB",
+          "sha256": "a853c2ffec17057872340eee242ae4d96cbf2b520ae27d903e1b2fef1a5f9d1c"
+        },
+        {
+          "file": "third-party/GPL-3.0.txt",
+          "source": "https://raw.githubusercontent.com/gcc-mirror/gcc/releases/gcc-14.2.0/COPYING3",
+          "sha256": "8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903"
+        },
+        {
+          "file": "third-party/sharp-wasm32-README.md",
+          "source": "npm:@img/sharp-wasm32@0.35.4/README.md",
+          "sha256": "9d7a84ade91e8e50f5dfc303fb53e580e806f6f89bde804e84a01c1b8853fff5"
+        }
+      ]
+    }
+  }
+}

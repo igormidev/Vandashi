@@ -1,0 +1,10 @@
+node_modules
+out
+dist
+release
+coverage
+test-results
+playwright-report
+genesis_prompt.md
+package-lock.json
+third-party

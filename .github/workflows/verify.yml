@@ -1,0 +1,79 @@
+name: Verify and build desktop apps
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  desktop:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      HYPERFRAMES_NO_TELEMETRY: '1'
+      HYPERFRAMES_NO_UPDATE_CHECK: '1'
+      DO_NOT_TRACK: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Install macOS media test tools
+        if: runner.os == 'macOS'
+        run: command -v ffmpeg >/dev/null || brew install ffmpeg
+      - name: Install Windows media test tools
+        if: runner.os == 'Windows'
+        run: choco install ffmpeg --yes --no-progress
+      - name: Install Linux media and display test tools
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes ffmpeg xvfb
+      - run: npm ci
+      - name: Verify architecture, types, lint, tests, and build
+        run: npm run check
+      - name: Test the real Electron renderer
+        if: runner.os != 'Linux'
+        run: npm run test:e2e
+      - name: Test the real Electron renderer on Linux
+        if: runner.os == 'Linux'
+        run: xvfb-run --auto-servernum npm run test:e2e
+      - name: Generate third-party license notices
+        run: npm run licenses:generate
+      - name: Package the desktop app
+        run: npx electron-builder --publish never
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: Vandashi-${{ runner.os }}-${{ runner.arch }}
+          path: |
+            release/*.dmg
+            release/*.zip
+            release/*.exe
+            release/*.AppImage
+            release/*.deb
+          if-no-files-found: error
+          retention-days: 14
+      - name: Save test diagnostics
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: diagnostics-${{ runner.os }}
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: ignore
