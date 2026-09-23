@@ -106,13 +106,11 @@ describe('real Git adapter', () => {
     expect(await readFile(join(directory, 'script.md'), 'utf8')).toBe('# Initial\n');
     expect(await git.head(directory)).not.toBe(latest);
     expect((await git.status(directory)).dirty).toBe(false);
-    const { stdout } = await execute('git', [
-      '-C',
-      directory,
-      'for-each-ref',
-      '--format=%(objectname)',
-      'refs/vandashi/backups/',
-    ]);
+    const { stdout } = await execute(
+      'git',
+      ['-C', directory, 'for-each-ref', '--format=%(objectname)', 'refs/vandashi/backups/'],
+      { env: Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_'))) },
+    );
     expect(stdout.trim()).toBe(latest);
     await writeFile(join(directory, 'script.md'), '# Unsaved');
     await expect(git.restore(directory, latest)).rejects.toThrow('Save current changes');

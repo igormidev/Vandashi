@@ -1,11 +1,37 @@
+import { spawn } from 'node:child_process';
+import type * as ChildProcessModule from 'node:child_process';
+import { once } from 'node:events';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { AgentError } from '../src/domain/agent';
 import { diagnosticFromError } from '../src/domain/diagnostics';
 import { EventReducer } from '../src/infrastructure/codex/events';
 import { CodexTransport, JsonLineDecoder, RpcError } from '../src/infrastructure/codex/transport';
+
+// Observe the real owned process without replacing its streams or event ordering.
+vi.mock('node:child_process', async (importOriginal) => {
+  const actual = await importOriginal<typeof ChildProcessModule>();
+  return { ...actual, spawn: vi.fn(actual.spawn) };
+});
+
+function ownedChild() {
+  const result = vi.mocked(spawn).mock.results.at(-1);
+  const child = result?.type === 'return' ? result.value : undefined;
+  if (!child?.stdin) throw new Error('Expected a real process with piped stdin');
+  return { child, stdin: child.stdin };
+}
+
+function ready(transport: CodexTransport): Promise<void> {
+  return new Promise((resolve) => {
+    const unsubscribe = transport.subscribe((event) => {
+      if (event.method !== 'fixture/ready') return;
+      unsubscribe();
+      resolve();
+    });
+  });
+}
 
 describe('Codex diagnostic provenance', () => {
   it('keeps operational codes while distinguishing app descriptors from identically spelled external prose', () => {
@@ -67,6 +93,141 @@ describe('Codex diagnostic provenance', () => {
           externalDetail: stderr,
         },
       });
+    } finally {
+      await transport.close();
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it('drains a real stdin EPIPE before reporting the later stderr and exit code', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'vandashi-codex-pipe-diagnostic-'));
+    const gate = join(root, 'release');
+    const stderr = '模型 unavailable\nVANDASHI_DIAGNOSTIC_V1:late provider detail\n';
+    const binary = join(root, 'fixture.mjs');
+    await writeFile(
+      binary,
+      `#!/usr/bin/env node
+import { closeSync, existsSync } from 'node:fs';
+closeSync(0);
+process.stdout.write(JSON.stringify({method:'fixture/ready'})+'\\n');
+const timer = setInterval(() => {
+  if (!existsSync(${JSON.stringify(gate)})) return;
+  clearInterval(timer);
+  process.stderr.write(${JSON.stringify(stderr)}, () => process.exit(23));
+}, 5);
+`,
+    );
+    const transport = new CodexTransport(binary, 2_000);
+    const { child, stdin } = ownedChild();
+    const failures: Error[] = [];
+    transport.onFailure((error) => failures.push(error));
+    try {
+      await ready(transport);
+      const pipeError = once(stdin, 'error');
+      let settled = false;
+      const response = transport.initialize().catch((error: unknown) => {
+        settled = true;
+        return error;
+      });
+      const errors: unknown[] = await pipeError;
+      expect(errors[0]).toMatchObject({ code: 'EPIPE' });
+      expect(child.exitCode).toBeNull();
+      expect(settled).toBe(false);
+      expect(failures).toHaveLength(0);
+      await expect(transport.request('model/list', {})).rejects.toMatchObject({ code: 'unavailable' });
+      const closed = transport.close();
+      expect(transport.close()).toBe(closed);
+      await writeFile(gate, 'release');
+      expect(await response).toMatchObject({
+        code: 'unavailable',
+        diagnostic: {
+          kind: 'app',
+          message: { id: 'codexExited', params: { code: '23' } },
+          externalDetail: stderr,
+        },
+      });
+      await closed;
+      expect(child.exitCode).toBe(23);
+      expect(failures).toHaveLength(1);
+    } finally {
+      await transport.close();
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it('waits for final stderr after the process exit event and before stdio close', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'vandashi-codex-exit-diagnostic-'));
+    const gate = join(root, 'release');
+    const stderr = 'Final provider stderr after launcher exit\n';
+    const binary = join(root, 'fixture.mjs');
+    const writer = `import { existsSync } from 'node:fs';
+const timer = setInterval(() => {
+  if (!existsSync(${JSON.stringify(gate)})) return;
+  clearInterval(timer);
+  process.stderr.write(${JSON.stringify(stderr)}, () => process.exit(0));
+}, 5);`;
+    await writeFile(
+      binary,
+      `#!/usr/bin/env node
+import { spawn } from 'node:child_process';
+spawn(process.execPath, ['--input-type=module', '--eval', ${JSON.stringify(writer)}], {stdio:['ignore','ignore',2]});
+process.exit(23);
+`,
+    );
+    const transport = new CodexTransport(binary, 2_000);
+    const { child } = ownedChild();
+    const exited = once(child, 'exit');
+    try {
+      let settled = false;
+      const response = transport.initialize().catch((error: unknown) => {
+        settled = true;
+        return error;
+      });
+      expect((await exited)[0]).toBe(23);
+      expect(settled).toBe(false);
+      await writeFile(gate, 'release');
+      expect(await response).toMatchObject({
+        code: 'unavailable',
+        diagnostic: {
+          kind: 'app',
+          message: { id: 'codexExited', params: { code: '23' } },
+          externalDetail: stderr,
+        },
+      });
+    } finally {
+      await transport.close();
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it('owns bounded teardown when a broken-input process stays alive', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'vandashi-codex-stalled-diagnostic-'));
+    const binary = join(root, 'fixture.mjs');
+    const stderr = 'Provider stopped reading input but stayed alive\n';
+    await writeFile(
+      binary,
+      `#!/usr/bin/env node
+import { closeSync } from 'node:fs';
+closeSync(0);
+process.stderr.write(${JSON.stringify(stderr)});
+process.stdout.write(JSON.stringify({method:'fixture/ready'})+'\\n');
+setInterval(() => {}, 1000);
+`,
+    );
+    const transport = new CodexTransport(binary, 2_000);
+    const { child, stdin } = ownedChild();
+    try {
+      await ready(transport);
+      const pipeError = once(stdin, 'error');
+      const response = transport.initialize().catch((error: unknown) => error);
+      expect((await pipeError)[0]).toMatchObject({ code: 'EPIPE' });
+      expect(child.exitCode).toBeNull();
+      expect(await response).toMatchObject({
+        code: 'unavailable',
+        diagnostic: { kind: 'app', message: { id: 'codexExited' }, externalDetail: stderr },
+      });
+      await transport.close();
+      expect(child.exitCode !== null || child.signalCode !== null).toBe(true);
     } finally {
       await transport.close();
       await rm(root, { recursive: true, force: true });

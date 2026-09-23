@@ -60,6 +60,7 @@ export class CodexTransport implements RpcClient {
   private stderr = '';
   private readonly processClosed: Promise<void>;
   private shutdown: Promise<void> | null = null;
+  private failureDrain: Promise<void> | null = null;
   constructor(
     binary = resolveCodexBinary(),
     private readonly timeoutMs = 30_000,
@@ -79,6 +80,7 @@ export class CodexTransport implements RpcClient {
     this.child.stdout.setEncoding('utf8');
     this.child.stderr.setEncoding('utf8');
     this.child.stdout.on('data', (chunk: string) => {
+      if (this.closed || this.failureDrain) return;
       try {
         for (const line of this.decoder.push(chunk)) this.receive(line);
       } catch (error) {
@@ -90,15 +92,13 @@ export class CodexTransport implements RpcClient {
       this.stderr = (this.stderr + chunk).slice(-4096);
     });
     this.child.on('error', (error) => {
-      this.fail(new AgentError('unavailable', { id: 'codexStartFailed' }, error.message));
+      this.drainFailure(new AgentError('unavailable', { id: 'codexStartFailed' }, error.message));
     });
     this.child.stdin.on('error', (error) => {
-      this.fail(error);
+      this.drainFailure(error);
     });
-    this.child.on('exit', (code) => {
-      this.fail(
-        new AgentError('unavailable', { id: 'codexExited', params: { code: String(code) } }, this.stderr),
-      );
+    this.child.on('exit', () => {
+      this.drainFailure();
     });
   }
   async initialize(): Promise<unknown> {
@@ -110,7 +110,8 @@ export class CodexTransport implements RpcClient {
     return result;
   }
   request(method: string, params: unknown): Promise<unknown> {
-    if (this.closed) return Promise.reject(new AgentError('unavailable', { id: 'codexDisconnected' }));
+    if (this.closed || this.failureDrain)
+      return Promise.reject(new AgentError('unavailable', { id: 'codexDisconnected' }));
     const id = ++this.serial;
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
@@ -130,14 +131,49 @@ export class CodexTransport implements RpcClient {
     return () => this.failures.delete(listener);
   }
   close(): Promise<void> {
+    if (this.failureDrain) return this.failureDrain;
     this.fail(new AgentError('unavailable', { id: 'codexConnectionClosed' }));
+    return this.stopProcess();
+  }
+  private stopProcess(): Promise<void> {
     this.shutdown ??= shutdownProcess(this.child, this.processClosed);
     return this.shutdown;
   }
+  private drainFailure(cause?: Error): void {
+    if (this.closed || this.failureDrain) return;
+    for (const pending of this.pending.values()) clearTimeout(pending.timer);
+    this.failureDrain = (async () => {
+      // EPIPE and exit can precede final stderr. Own teardown if natural stdio closure stalls.
+      const timer = setTimeout(() => {
+        void this.stopProcess();
+      }, 250);
+      try {
+        await this.processClosed;
+        await this.stopProcess();
+        this.fail(
+          cause instanceof AgentError
+            ? cause
+            : new AgentError(
+                'unavailable',
+                { id: 'codexExited', params: { code: String(this.child.exitCode) } },
+                this.stderr || cause?.message,
+              ),
+        );
+      } finally {
+        clearTimeout(timer);
+      }
+    })();
+  }
   private write(message: unknown): void {
-    if (!this.closed) this.child.stdin.write(`${JSON.stringify(message)}\n`);
+    if (this.closed || this.failureDrain) return;
+    try {
+      this.child.stdin.write(`${JSON.stringify(message)}\n`);
+    } catch (error) {
+      this.drainFailure(error instanceof Error ? error : new Error(String(error)));
+    }
   }
   private receive(line: string): void {
+    if (this.closed || this.failureDrain) return;
     const message = envelope.parse(JSON.parse(line));
     if (message.method) {
       const event = { method: message.method, params: message.params };
