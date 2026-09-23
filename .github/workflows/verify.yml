@@ -91,7 +91,7 @@ jobs:
         run: npm run test:e2e
       - name: Allow only the test Electron binary to create its Linux sandbox
         if: runner.os == 'Linux'
-        run: node scripts/prepare-linux-sandbox.mjs node_modules/electron/dist/electron
+        run: node scripts/prepare-linux-sandbox.mjs --electron
       - name: Test the real Electron renderer on Linux
         if: runner.os == 'Linux'
         run: xvfb-run --auto-servernum npm run test:e2e

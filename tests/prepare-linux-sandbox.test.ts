@@ -1,5 +1,7 @@
 import { execFile } from 'node:child_process';
-import { resolve } from 'node:path';
+import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 import { expect, it } from 'vitest';
@@ -21,6 +23,52 @@ const runner = {
   workspace: '/home/runner/work/Vandashi/Vandashi',
   temporaryDirectory: '/home/runner/work/_temp',
 };
+
+it('resolves a lazily installed Electron binary without confusing download output with its path', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'vandashi-lazy-electron-'));
+  try {
+    const moduleRoot = join(directory, 'node_modules/electron');
+    await mkdir(moduleRoot, { recursive: true });
+    await writeFile(join(directory, 'package.json'), '{}');
+    await writeFile(
+      join(moduleRoot, 'index.js'),
+      `const fs = require('node:fs');
+const path = require('node:path');
+const binary = path.join(__dirname, 'dist/electron');
+if (!fs.existsSync(binary)) {
+  console.log('Downloading Electron binary...');
+  fs.mkdirSync(path.dirname(binary), { recursive: true });
+  fs.writeFileSync(binary, 'fixture executable');
+}
+module.exports = binary;`,
+    );
+    const code = `import { resolveSandboxExecutable } from ${JSON.stringify(pathToFileURL(script).href)};
+console.log(JSON.stringify(await resolveSandboxExecutable('--electron', ${JSON.stringify(join(directory, 'package.json'))})));`;
+    const { stdout } = await execute(process.execPath, ['--input-type=module', '-e', code]);
+    const binary = join(moduleRoot, 'dist/electron');
+    expect(stdout.trim().split(/\r?\n/)).toEqual([
+      'Downloading Electron binary...',
+      JSON.stringify(await realpath(binary)),
+    ]);
+    expect(await readFile(binary, 'utf8')).toBe('fixture executable');
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+it('uses an explicit packaged path without loading an Electron package', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'vandashi-explicit-executable-'));
+  try {
+    const binary = join(directory, 'vandashi');
+    await writeFile(binary, 'packaged fixture');
+    const code = `import { resolveSandboxExecutable } from ${JSON.stringify(pathToFileURL(script).href)};
+console.log(JSON.stringify(await resolveSandboxExecutable(${JSON.stringify(binary)}, ${JSON.stringify(join(directory, 'package.json'))})));`;
+    const { stdout } = await execute(process.execPath, ['--input-type=module', '-e', code]);
+    expect(JSON.parse(stdout)).toBe(await realpath(binary));
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
 
 async function plan(input: unknown) {
   const code = `import { linuxSandboxPlan } from ${JSON.stringify(pathToFileURL(script).href)};
@@ -88,10 +136,13 @@ it.each(['ID=fedora\n', 'ID_LIKE=ubuntu\n', ''])(
   },
 );
 
-it('rejects direct CLI use outside Actions before reading or changing host policy', async () => {
-  await expect(
-    execute(process.execPath, [script, runner.executable], {
-      env: { ...process.env, GITHUB_ACTIONS: 'false' },
-    }),
-  ).rejects.toThrow('GitHub-hosted Linux runner');
-});
+it.each([runner.executable, '--electron'])(
+  'rejects direct CLI use outside Actions before resolving %s or changing host policy',
+  async (selection) => {
+    await expect(
+      execute(process.execPath, [script, selection], {
+        env: { ...process.env, GITHUB_ACTIONS: 'false' },
+      }),
+    ).rejects.toThrow('GitHub-hosted Linux runner');
+  },
+);

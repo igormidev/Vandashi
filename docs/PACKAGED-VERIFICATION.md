@@ -433,3 +433,13 @@ cleanup all passed in 13.43 seconds. Evidence is
 does not replace the separately recorded real-Codex walkthrough. The new Linux
 launcher, exact-path CI policy and packaged sandbox checks require the next native
 Linux run; the historical artifacts and frozen package manifest remain unchanged.
+
+The first corrected [Linux CI attempt at `27794c3`](https://github.com/igormidev/Vandashi/actions/runs/35932492153)
+passed 895 unit tests and the complete static/build gate, then stopped before native
+tests with `ENOENT` in sandbox setup. Electron 44 installs its binary lazily on its
+first package import; the helper had tried to canonicalize the expected binary path
+before that initialization. The follow-up uses Electron's own exported executable
+path through `--electron`, retaining all hosted-runner and exact-path guards. A fake
+package regression creates its previously missing executable during resolution;
+explicit packaged paths bypass that resolver. No AppArmor change occurred in the
+failed attempt. That functional fix still requires a new CI run.

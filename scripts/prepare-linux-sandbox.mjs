@@ -2,12 +2,22 @@ import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { constants } from 'node:fs';
 import { access, mkdtemp, readFile, realpath, rm, stat, writeFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import { join, posix, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 
 const execute = promisify(execFile);
 const restrictionPath = '/proc/sys/kernel/apparmor_restrict_unprivileged_userns';
+
+export async function resolveSandboxExecutable(selection, moduleLocation = import.meta.url) {
+  // Electron's package entry installs its pinned binary lazily on first require.
+  // Capture its returned path directly; installation may also print progress.
+  const selected =
+    selection === '--electron' ? createRequire(moduleLocation)('electron') : resolve(selection);
+  if (typeof selected !== 'string') throw new Error('Electron must resolve to an executable path.');
+  return realpath(selected);
+}
 
 function requireHostedRunner({ platform, environment, uid }) {
   if (
@@ -77,10 +87,10 @@ async function main() {
   // Refuse local/self-hosted invocations before any privileged command or temporary policy write.
   requireHostedRunner(context);
   if (process.argv.length !== 3)
-    throw new Error('Usage: node scripts/prepare-linux-sandbox.mjs <executable>');
+    throw new Error('Usage: node scripts/prepare-linux-sandbox.mjs <executable|--electron>');
   const workspace = await realpath(exactPath(process.env.GITHUB_WORKSPACE));
   const temporaryDirectory = await realpath(exactPath(process.env.RUNNER_TEMP));
-  const executable = await realpath(resolve(process.argv[2]));
+  const executable = await resolveSandboxExecutable(process.argv[2]);
   const restriction = await readFile(restrictionPath, 'utf8').catch((error) => {
     if (error.code === 'ENOENT') return null;
     throw error;
