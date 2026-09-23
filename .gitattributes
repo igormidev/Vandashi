@@ -1,0 +1,2 @@
+# Keep source and tool inputs stable on Windows as well as Unix checkouts.
+* text=auto eol=lf

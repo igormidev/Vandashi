@@ -16,7 +16,7 @@ async function main() {
       case '--help':
       case undefined:
         console.log(
-          'Usage: node scripts/ci_monitor.cjs <command>\n  check-actions [workflow-file]  Verify action references against live GitHub releases\n  runs [--branch name]           List recent workflow runs\n  watch <run-id>                 Watch a run until completion\n  view <run-id>                  Show run jobs and conclusion\n  log-failed <run-id>            Show failed job logs\n  download <run-id> [--dir path] Download build/test artifacts\n  dispatch <workflow> [args]     Start a workflow',
+          'Usage: node scripts/ci_monitor.cjs <command>\n  check-actions [workflow-file]  Verify action references against live GitHub releases\n  runs [--branch name]           List recent workflow runs\n  watch <run-id>                 Watch a run until completion\n  view <run-id>                  Show run jobs and conclusion\n  job-log <owner/repo> <job-id>  Read a completed job while its workflow continues\n  log-failed <run-id>            Show failed job logs\n  download <run-id> [--dir path] Download build/test artifacts\n  dispatch <workflow> [args]     Start a workflow',
         );
         break;
       case 'check-actions': {
@@ -43,6 +43,11 @@ async function main() {
         break;
       case 'view':
         gh(['run', 'view', ...args]);
+        break;
+      case 'job-log':
+        if (args.length !== 2 || !/^[\w.-]+\/[\w.-]+$/.test(args[0]) || !/^\d+$/.test(args[1]))
+          throw new Error('Usage: job-log <owner/repository> <completed-job-id>');
+        gh(['api', `repos/${args[0]}/actions/jobs/${args[1]}/logs`]);
         break;
       case 'log-failed':
         gh(['run', 'view', ...args, '--log-failed']);

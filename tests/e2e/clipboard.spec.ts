@@ -9,12 +9,14 @@ async function preservingClipboard(application: ElectronApplication, task: () =>
   // Keep the original native items in the main process; never serialize private clipboard data.
   const saved = await application.evaluateHandle(async ({ clipboard, ClipboardItem }) => {
     const items = await Promise.all(
-      (await clipboard.read()).map(async (item) => {
-        const entries = await Promise.all(
-          item.types.map(async (type) => [type, await item.getType(type)] as const),
-        );
-        return new ClipboardItem(Object.fromEntries(entries));
-      }),
+      (await clipboard.read())
+        .filter((item) => item.types.length > 0)
+        .map(async (item) => {
+          const entries = await Promise.all(
+            item.types.map(async (type) => [type, await item.getType(type)] as const),
+          );
+          return new ClipboardItem(Object.fromEntries(entries));
+        }),
     );
     return {
       restore: async () => {
