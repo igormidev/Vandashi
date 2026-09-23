@@ -145,16 +145,16 @@ describe('release workflows with real storage and Git', () => {
     });
     expect(result.session.scope).toEqual(app.scope);
     expect(result.session.topic).toBe(`publish:youtubeShorts:${clip.id}`);
-    expect(result.prompt).toContain(output);
-    expect(result.prompt).toContain(join(app.path, 'launch.yml'));
-    expect(result.prompt).not.toContain(join(clip.path, 'launch.yml'));
+    expect(result.prompt).toContain(JSON.stringify(output));
+    expect(result.prompt).toContain(JSON.stringify(`${app.path}/launch.yml`));
+    expect(result.prompt).not.toContain(JSON.stringify(`${clip.path}/launch.yml`));
     const guidance = buildWorkspacePrompt({
       workspace: await app.store.openWorkspace(app.scope),
       topic: result.session.topic,
       mode: 'edit',
       text: result.prompt,
     });
-    expect(guidance).toContain(join(clip.path, 'video_packaging.yml'));
+    expect(guidance).toContain(JSON.stringify(`${clip.path}/video_packaging.yml`));
     expect(guidance).toContain(`clipId="${clip.id}"`);
     await app.api.updateLaunch({
       scope: app.scope,

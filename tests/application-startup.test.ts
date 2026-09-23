@@ -19,9 +19,11 @@ describe('uncertain turn recovery', () => {
     const termination = new Promise<void>((resolve) => {
       stopped = resolve;
     });
+    let entered = false;
     app.agent.run.mockImplementationOnce(async (_input, emit) => {
       emit({ type: 'thread', threadId: 'uncertain-thread' });
       await writeFile(join(app.path, 'partial.txt'), 'Agent work before lost ACK');
+      entered = true;
       await termination;
       throw new AgentError('uncertain-start', 'Start unknown; Codex stopped.');
     });
@@ -33,12 +35,20 @@ describe('uncertain turn recovery', () => {
       selection: app.request.selection,
     });
     const result = submitted.catch((error: unknown) => error);
-    await vi.waitFor(() => {
+    try {
+      await vi.waitFor(
+        () => {
+          expect(entered).toBe(true);
+        },
+        { timeout: 10_000, interval: 25 },
+      );
       expect(app.agent.run).toHaveBeenCalledOnce();
-    });
-    await expect(app.api.closeChat(app.session.id)).rejects.toThrow('Another operation');
-    expect((await app.git.status(app.path)).dirty).toBe(true);
-    stopped();
+      await expect(app.api.closeChat(app.session.id)).rejects.toThrow('Another operation');
+      expect((await app.git.status(app.path)).dirty).toBe(true);
+    } finally {
+      stopped();
+      await result;
+    }
     expect(await result).toMatchObject({ code: 'uncertain-start' });
     await app.idle();
     expect(await readFile(join(app.path, 'script.md'), 'utf8')).toBe('# Preserve staged direction');

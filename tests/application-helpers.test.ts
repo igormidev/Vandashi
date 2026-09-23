@@ -128,7 +128,7 @@ describe('automatic helper contracts', () => {
     });
     expect(prepared.session.scope).toEqual(app.scope);
     expect(prepared.session.topic).toBe(`publish:youtubeShorts:${clip.id}`);
-    expect(prepared.prompt).toContain(output);
+    expect(prepared.prompt).toContain(JSON.stringify(output));
     expect(prepared.prompt).toContain('launch.yml');
     expect(prepared.prompt).not.toContain('launch_status.yml');
   });

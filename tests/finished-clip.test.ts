@@ -131,7 +131,7 @@ describe('finished clip import', () => {
       packaging: { ...clip.packaging, titles: { long: [], short: ['Reviewed square clip'] } },
     });
     expect(result.session.topic).toBe(`publish:x:${clip.id}`);
-    expect(result.prompt).toContain(clip.renderedPath);
+    expect(result.prompt).toContain(JSON.stringify(clip.renderedPath));
     expect(result.prompt).toContain('Reviewed square clip');
     expect(app.agent.run).not.toHaveBeenCalled();
   });
