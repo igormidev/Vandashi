@@ -4,6 +4,8 @@ export const launchEn = {
   launchClipNeedsRender: 'Render first',
   launchUrlError: 'Enter a valid web link without embedded credentials.',
   launchDraftHelp: 'These review changes stay in this upload draft. Your saved packaging stays as it is.',
+  launchEditReview: 'Edit review',
+  importedVideoEditingHelp: 'This imported video is ready to package and publish.',
   launchGeneratingChapters: 'Generating chapters…',
   launchRemoveChapters: 'Remove chapters',
   launchChapterHelp:

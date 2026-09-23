@@ -138,6 +138,18 @@ test('trims real media, keeps the initial conversation through packaging edits, 
     page.getByText('Initial clip direction: Keep the opening reveal.', { exact: true }),
   ).toBeVisible();
   await expect(page.locator('.preview-stage')).toHaveCSS('aspect-ratio', '1 / 1');
+  for (const width of [1200, 1480]) {
+    await desktopApp.evaluate(({ BrowserWindow }, nextWidth) => {
+      BrowserWindow.getAllWindows()[0]?.setSize(nextWidth, 800);
+    }, width);
+    await expect
+      .poll(() =>
+        page
+          .locator('.clip-packaging .panel-scroll')
+          .evaluate((element) => element.scrollWidth - element.clientWidth),
+      )
+      .toBeLessThanOrEqual(1);
+  }
   const titles = page.getByRole('textbox', { name: 'Titles', exact: true });
   await expect(titles).toHaveValue('Clip short title');
   await titles.fill('Edited square title');

@@ -70,6 +70,20 @@ export function itemMessage(
       };
     case 'webSearch':
       return { ...base, role: 'tool', text: string(item['query']) };
+    case 'imageGeneration': {
+      const status = string(item['status']);
+      const savedPath = string(item['savedPath']);
+      const failure = object(item['failure']);
+      const failed = status === 'failed' || Object.keys(failure).length > 0;
+      return {
+        ...base,
+        role: failed ? 'error' : 'tool',
+        text: [`image_generation: ${status}`, ...(failed ? [JSON.stringify(failure)] : []), savedPath]
+          .filter(Boolean)
+          .join('\n'),
+        ...(status === 'completed' && !failed && savedPath ? { generatedImages: [savedPath] } : {}),
+      };
+    }
     default:
       return null;
   }

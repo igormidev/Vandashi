@@ -48,6 +48,12 @@ export interface NewClip {
   start: number;
   end: number;
 }
+export interface ImportedVideo {
+  brandId: string;
+  name: string;
+  ratio: '16:9' | '9:16';
+  sourcePath: string;
+}
 
 /** Persistence contracts contain no Electron or provider-specific dependencies. */
 export interface StoragePort {
@@ -57,6 +63,7 @@ export interface StoragePort {
   openBrand(id: string): Promise<Workspace>;
   listVideos(brandId: string): Promise<VideoSummary[]>;
   createVideo(input: { brandId: string; name: string; ratio: '16:9' | '9:16' }): Promise<Workspace>;
+  importVideo(input: ImportedVideo, validateCopy: (path: string) => Promise<void>): Promise<Workspace>;
   openWorkspace(scope: Scope): Promise<Workspace>;
   saveWorkspace(input: SaveInput): Promise<Workspace>;
   createClip(input: NewClip): Promise<Clip>;

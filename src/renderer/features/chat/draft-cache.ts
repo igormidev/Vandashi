@@ -16,11 +16,19 @@ export function readDraft(id: string, seed: string | null): SavedDraft {
       !('text' in value) ||
       typeof value.text !== 'string' ||
       !('seed' in value) ||
-      (value.seed !== null && typeof value.seed !== 'string')
+      (value.seed !== null && typeof value.seed !== 'string') ||
+      ('pending' in value && value.pending !== null && typeof value.pending !== 'string')
     )
       return fallback;
     return {
-      draft: seedDraft({ text: value.text, seed: value.seed, pending: null }, seed),
+      draft: seedDraft(
+        {
+          text: value.text,
+          seed: value.seed,
+          pending: 'pending' in value && typeof value.pending === 'string' ? value.pending : null,
+        },
+        seed,
+      ),
       mode: 'mode' in value && value.mode === 'read' ? 'read' : 'edit',
     };
   } catch {
@@ -31,7 +39,7 @@ export function cacheDraft(id: string, draft: Draft, mode: 'read' | 'edit'): voi
   try {
     localStorage.setItem(
       `vandashi.draft.${id}`,
-      JSON.stringify({ text: draft.text, seed: draft.seed, mode }),
+      JSON.stringify({ text: draft.text, seed: draft.seed, pending: draft.pending, mode }),
     );
   } catch {
     /* A full preferences store must not interrupt typing. */

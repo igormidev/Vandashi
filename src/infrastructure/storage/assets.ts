@@ -138,11 +138,23 @@ export class AssetStore {
       description: metadata.description,
       tags: cleanTags(metadata.tags),
     };
-    const embedding = await embedMetadata(asset.path, fields);
+    const prior = (await exists(path))
+      ? metadataSchema.parse(JSON.parse(await readFile(path, 'utf8')))
+      : null;
+    const preserveBytes = prior?.preserveBytes === true;
+    const embedding = preserveBytes
+      ? { metadataStorage: 'sidecar' as const, embeddingWarning: 'Finished video bytes are preserved.' }
+      : await embedMetadata(asset.path, fields);
     await atomicWrite(
       path,
       JSON.stringify(
-        { ...fields, hash: asset.hash, contentHash: await hashFile(asset.path), ...embedding },
+        {
+          ...fields,
+          hash: asset.hash,
+          contentHash: await hashFile(asset.path),
+          ...embedding,
+          ...(preserveBytes ? { preserveBytes } : {}),
+        },
         null,
         2,
       ),

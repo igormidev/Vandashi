@@ -121,6 +121,7 @@ describe('conversation reference scope', () => {
             name: 'Excerpt',
             path: '/parent/clips/excerpt',
             ratio: '9:16',
+            origin: 'composition',
             updatedAt: '',
             renderedPath: null,
             start: 0,

@@ -55,6 +55,7 @@ export const videoRecordSchema = z.object({
   brandId: z.string().min(1),
   name: z.string().min(1),
   ratio: z.enum(['16:9', '9:16', '1:1']),
+  origin: z.enum(['composition', 'imported']).default('composition'),
   updatedAt: z.string(),
   renderedPath: z.string().nullable(),
   renderedRevision: z.string().optional(),
@@ -78,6 +79,7 @@ export const metadataSchema = z.object({
   contentHash: z.string().optional(),
   metadataStorage: z.enum(['embedded', 'sidecar']).optional(),
   embeddingWarning: z.string().nullable().optional(),
+  preserveBytes: z.boolean().optional(),
 });
 const fileChangeSchema = z.object({
   path: z.string(),
@@ -94,10 +96,13 @@ const messageSchema = z
     files: z.array(fileChangeSchema),
     createdAt: z.string(),
     appMessage: z.object({ id: z.enum(['turnSaved', 'turnUnchanged']) }).optional(),
+    generatedImages: z.array(z.string()).max(20).optional(),
   })
-  .transform(({ appMessage, ...message }) =>
-    appMessage === undefined ? message : { ...message, appMessage },
-  );
+  .transform(({ appMessage, generatedImages, ...message }) => ({
+    ...message,
+    ...(appMessage === undefined ? {} : { appMessage }),
+    ...(generatedImages === undefined ? {} : { generatedImages }),
+  }));
 const checkpointSchema = z
   .object({
     turnId: z.string(),

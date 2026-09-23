@@ -23,6 +23,7 @@ A packaged macOS regression also launched with `PATH=/usr/bin:/bin:/usr/sbin:/sb
 - `src/domain/prompts.ts` builds repeated, scope-specific context with mandatory files, assets, data contracts, and completion requirements.
 - `src/infrastructure/codex/transport.ts` owns the child process, JSON framing, correlation, request deadlines, and failure fanout.
 - `launch.ts` supplies a Node runtime to official npm launchers when the desktop process has a minimal PATH.
+- `shutdown.ts` waits for the owned process to close, including termination of its launcher/process group; a kill signal alone is not treated as completion.
 - `schemas.ts` validates inbound protocol data while accepting unknown future fields.
 - `discovery.ts` maps real model, account, plugin, and skill capabilities.
 - `policy.ts` enforces filesystem and external-tool restrictions.
@@ -40,6 +41,17 @@ The client starts `codex app-server --stdio`, sends `initialize` with its Vandas
 
 `turn/start` only acknowledges acceptance. Completion is `turn/completed`, whose status can be completed, interrupted, or failed. File reconciliation must run after all three outcomes. A process failure is also a recovery condition. Stop sends `turn/interrupt` and keeps the operation locked until completion.
 
+A lost, malformed, or internally failed start acknowledgement is an uncertain outcome.
+The adapter closes the connection and awaits actual process termination before returning
+`uncertain-start`. POSIX launches own an isolated process group; shutdown allows graceful
+EOF/SIGTERM cleanup, escalates after five seconds, and removes remaining owned children.
+Windows uses native `taskkill /T /F`. The application preserves staged source and partial
+edits, reconciles them while still holding its lease, and records the failure without a
+success receipt or an invented undo checkpoint. Only protocol validation rejections are
+treated as definite non-starts. The real-process fixture in `codex-startup.test.ts` withholds
+an ACK while a subprocess writes; it verifies shutdown completes before recovery can run.
+The subprocess smoke is verified on macOS; Windows process-tree shutdown needs native CI.
+
 Server requests cannot hang indefinitely. Command/file approvals are declined, structured questions receive an empty answer, and unsupported requests receive a clear RPC rejection. The UI receives a recoverable warning; the agent is instructed to ask questions in its reply. The transport does not auto-approve escalation or external actions. A future interactive approval UI can extend this single boundary.
 
 Model names, reasoning levels, image support, and speed tiers come from paginated `model/list`. Standard mode clears the persisted service tier; Fast uses the catalog's priority tier. Explicit unavailable selections fail instead of silently changing models.
@@ -56,11 +68,39 @@ Creation and clip guidance prefer those connected browser controls for inspectin
 
 Images can be passed as actual local image inputs when the selected model supports them. Other attachments are explicitly identified by absolute paths for tool access. The asset importer owns copying and metadata.
 
+Actual `imageGeneration` items retain status and structured failure details. Completed,
+nonfailed provider-reported saved paths become `ChatMessage.generatedImages`; raw base64
+result data is never persisted in chat. Streamed items and paginated history use the same
+mapping. A real Vandashi thumbnail turn on 2026-09-23 generated an image through the installed
+tool, saved its provider artifact, then copied a 1664 × 936 PNG into the project's thumbnails.
+The workspace copy decoded in the app and its uncropped inspection modal was checked.
+
+Provider artifacts usually live outside the workspace. `image-artifacts.ts` records only
+paths learned from completed normalized provider items and the initialization response's
+actual `codexHome`. An artifact must match `generated_images/<threadId>/<itemId>.png` exactly.
+Only that file is eligible, and each resolution checks a regular file and rejects symlinks
+at the configured home and throughout the artifact subtree. The desktop media authorization
+boundary consults the resolver; arbitrary Markdown and local session snapshots cannot add
+grants. After restart, reading the matching Codex history restores this capability. Servers
+without a reported Codex home fail closed. Images inherited from another thread after a
+fork need the original thread's verified grant or an authorized workspace copy.
+
+`codex-artifacts.test.ts` covers live and reopened-history grants, mismatched thread/item
+paths, failed/unfinished items, arbitrary Markdown, missing files, non-regular files, and
+symlink replacements. The upstream path convention is documented by
+`codex-rs/ext/image-generation/src/artifact.rs` in the inspected reference checkout.
+
 ## Durable conversations and undo
 
 New conversations use `historyMode: paginated`. Read through `thread/read` metadata and `thread/turns/list` with full items. Resume only when the thread is not already loaded: newly created threads may not materialize a rollout until the first turn.
 
 Only a genuine missing-history error invalidates the saved scope-to-thread mapping. Authentication, timeout, and transport errors preserve it. Reset switches to a fresh conversation; it does not delete the old Codex history.
+
+Opening a conversation merges recovered Codex snapshots into local history, updates
+partial messages, and restores missing final/tool/image items. It preserves application
+receipts, local errors, stable user-message IDs, and recorded timestamps. Undo message
+boundaries are remapped to their original anchors when recovered items are inserted;
+recovery never invents a verified file checkpoint for an unacknowledged turn.
 
 Undo uses `thread/fork {threadId,beforeTurnId}`. It retains the prefix before that turn and preserves the source conversation for recovery. Forking changes conversation history only; application code separately restores repository snapshots and updates the active mapping. Before restoration, every repository must be clean and its current HEAD must equal the recorded post-run HEAD. This prevents undo from discarding later manual work or another chat's commits. Missing boundaries leave files untouched.
 

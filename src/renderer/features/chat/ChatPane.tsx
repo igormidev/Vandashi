@@ -1,7 +1,6 @@
 import { MessageSquare, RotateCcw, Sparkles, Undo2, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import ReactMarkdown from 'react-markdown';
 import type { ChatMessage, Scope } from '../../../domain/models';
 import { scopeKey } from '../../../domain/defaults';
 import { useApp } from '../../app/store';
@@ -10,9 +9,11 @@ import { clearDraft } from './draft-cache';
 import { Composer } from './Composer';
 import { useSessions } from './use-sessions';
 import { DiffFiles } from '../history/DiffFiles';
+import { ChatMarkdown } from './ChatMarkdown';
+import { ChatImage } from './ChatImage';
 import '../../styles/chat.css';
 
-function Message({ message }: { message: ChatMessage }) {
+function Message({ message, root }: { message: ChatMessage; root: string }) {
   const { t } = useTranslation();
   if (message.appMessage)
     return (
@@ -23,19 +24,24 @@ function Message({ message }: { message: ChatMessage }) {
     );
   if (message.role === 'reasoning' || message.role === 'tool')
     return (
-      <details className="reasoning">
-        <summary>
-          <Sparkles size={12} />
-          {t(message.role === 'reasoning' ? 'thinking' : 'toolActivity')}
-        </summary>
-        <pre>{message.text}</pre>
-        {message.files.length > 0 && <DiffFiles files={message.files} />}
-      </details>
+      <div>
+        <details className="reasoning">
+          <summary>
+            <Sparkles size={12} />
+            {t(message.role === 'reasoning' ? 'thinking' : 'toolActivity')}
+          </summary>
+          <pre>{message.text}</pre>
+          {message.files.length > 0 && <DiffFiles files={message.files} />}
+        </details>
+        {message.generatedImages?.map((path) => (
+          <ChatImage key={path} path={path} />
+        ))}
+      </div>
     );
   return (
     <article className={`message ${message.role}`}>
       <div className="message-body">
-        <ReactMarkdown>{message.text}</ReactMarkdown>
+        <ChatMarkdown text={message.text} root={root} />
       </div>
       {message.files.length > 0 && <DiffFiles files={message.files} />}
     </article>
@@ -51,7 +57,7 @@ export function ChatPane() {
 }
 function Conversation({ scope }: { scope: Scope }) {
   const { t } = useTranslation();
-  const { api, run, chatTarget, setChatTarget, busy, activity, dirty } = useApp();
+  const { api, run, chatTarget, setChatTarget, busy, activity, dirty, workspace } = useApp();
   const { sessions, selected, setSelected, loading, failed, refresh, replace, close } = useSessions(scope);
   const [confirm, setConfirm] = useState<'reset' | 'undo' | null>(null);
   const [confirming, setConfirming] = useState(false);
@@ -137,7 +143,11 @@ function Conversation({ scope }: { scope: Scope }) {
             }}
           >
             {session.messages.map((message) => (
-              <Message key={message.id} message={message} />
+              <Message
+                key={message.id}
+                message={message}
+                root={workspace?.video?.path ?? `${workspace?.brand.path ?? ''}/brand_identity`}
+              />
             ))}
             {!session.messages.length && (
               <div className="chat-start">

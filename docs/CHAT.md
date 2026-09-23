@@ -4,9 +4,25 @@ The composer uses Tiptap 3.31.3 and ProseMirror, following the atomic inline-nod
 
 `mention-references.ts` supplies brand config, all workspace taste guides, the saved brand image, and the relevant script/packaging/composition/media files. Taste guides use the same distinct icons as the brand editor. Config, logo, assets, and project files have separate visual types. Filenames and human asset titles are searchable; the full absolute path stays available in the chip tooltip and serialized prompt. A stored reference whose file disappears remains visible and keeps its original path, rather than silently changing the intended input.
 
-Drafts remain plain text with escaped `@[name](<absolute path>)` references in the local preferences store. Existing `@[name](path)` drafts are supported. `mention-document.ts` restores these tokens as editor nodes without interpreting ordinary Markdown. Text and read/edit mode are stored per conversation; the selected conversation is stored per workspace. A fresh conversation resets its draft explicitly. A stale selected ID falls back to an existing open conversation. Prepared publishing requests replace untouched drafts; edited drafts require the explicit “Use prepared request” action.
+Drafts remain plain text with escaped `@[name](<absolute path>)` references in the local preferences store. Existing `@[name](path)` drafts are supported. `mention-document.ts` restores these tokens as editor nodes without interpreting ordinary Markdown. Text and read/edit mode are stored per conversation; the selected conversation is stored per workspace. A fresh conversation resets its draft explicitly. A stale selected ID falls back to an existing open conversation. Prepared publishing requests replace untouched drafts; edited drafts require an explicit choice between “Use prepared request” and “Keep my draft” before sending. The unresolved choice is persisted with the draft and survives tab selection, page navigation, and reopening. Hiding a prepared target does not approve or discard its request.
 
 The renderer keeps open conversation composers mounted when switching tabs. History loads merge stable message IDs with newer streamed content. Authoritative completion refreshes reconcile checkpoints. Workspace refreshes and unrelated helper events preserve the selected conversation and draft. The message list follows output only while the user is near its bottom.
+
+At the application boundary, `chat-history.ts` also merges Codex's persisted history when
+reopening a conversation. This recovers final responses or image outputs lost from the
+local snapshot during shutdown, retains application receipts/errors, and avoids duplicate
+user messages. Recovered insertions adjust each undo checkpoint's message boundary while
+leaving its verified Git heads intact. `tests/chat-history.test.ts` exercises recovery,
+repeat-open stability, storage round trips, and undo after recovery with real Git files.
+
+Only the selected stored conversation is hydrated from Codex when a chat view opens.
+Other open tabs hydrate on their first selection; incoming history never changes selection,
+reopens a closed tab, or replaces its unsent draft. A failed read offers the existing retry
+action. Image generation items display their completed local artifact as well as tool
+progress. Markdown images pass through the same authorized media interface; remote images
+are not fetched. Failed local images offer an explicit retry that rechecks authorization.
+Provider artifacts outside the workspace require the exact verified grant described in
+`CODEX.md`; a filename written only in Markdown cannot create that grant.
 
 Successful edit turns end with an application-owned Git receipt. `application/turn-receipt.ts`
 compares each repository's captured starting commit with its verified commit after

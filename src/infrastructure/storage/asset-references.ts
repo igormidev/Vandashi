@@ -20,12 +20,7 @@ const textExtensions = new Set([
   '.svg',
 ]);
 const excludedDirectories = new Set(['.git', 'node_modules', 'output', 'clips', '.vandashi-recovery']);
-const excludedFiles = new Set([
-  '.vandashi.yml',
-  'video_packaging.yml',
-  'launch.yml',
-  '.vandashi-shared.json',
-]);
+const excludedFiles = new Set(['video_packaging.yml', 'launch.yml', '.vandashi-shared.json']);
 
 function decoded(value: string): string {
   return value

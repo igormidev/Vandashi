@@ -72,11 +72,13 @@ export function App() {
   const [saveStudio, setSaveStudio] = useState(false);
   const restored = useRef(false);
   const open = useCallback(
-    (value: Workspace) => {
+    (value: Workspace, destination?: 'packaging' | 'launch') => {
       setWorkspace(value);
       setChatTarget(null);
       setDirty(false);
-      setPage(value.video ? 'packaging' : 'brand');
+      setPage(
+        destination ?? (value.video?.origin === 'imported' ? 'launch' : value.video ? 'packaging' : 'brand'),
+      );
       setChecking(true);
     },
     [setWorkspace, setChatTarget, setDirty],
@@ -121,8 +123,12 @@ export function App() {
       setChecking(true);
       return;
     }
-    if (workspace?.scope.clipId && next !== 'clips')
-      setWorkspace(await api.openWorkspace({ ...workspace.scope, clipId: null }));
+    if (workspace?.scope.clipId && next !== 'clips') {
+      const parent = await api.openWorkspace({ ...workspace.scope, clipId: null });
+      setWorkspace(parent);
+      if (parent.video?.origin === 'imported' && (next === 'creation' || next === 'manual'))
+        next = 'packaging';
+    }
     const leavingVideo = ['brand', 'videos', 'sharedAssets'].includes(next) && !!workspace?.video;
     if (leavingVideo) setWorkspace(await api.openBrand(workspace.scope.brandId));
     if (next === 'home') {
@@ -139,7 +145,7 @@ export function App() {
       return (
         <Checks
           key={workspace ? scopeKey(workspace.scope) : 'home'}
-          video={!!workspace?.video}
+          video={!!workspace?.video && workspace.video.origin !== 'imported'}
           onReady={() => {
             setChecking(false);
           }}
@@ -247,13 +253,20 @@ export function App() {
                   type="button"
                   key={id}
                   className={page === id ? 'active' : ''}
+                  title={
+                    workspace?.video?.origin === 'imported' && (id === 'creation' || id === 'manual')
+                      ? t('importedVideoEditingHelp')
+                      : undefined
+                  }
                   disabled={
                     busy ||
                     dirty ||
                     checking ||
-                    ((id === 'clips' || id === 'launch') &&
-                      !workspace?.video?.renderedPath &&
-                      !workspace?.scope.clipId)
+                    (workspace?.video?.origin === 'imported' && (id === 'creation' || id === 'manual')) ||
+                    (!workspace?.video?.renderedPath &&
+                      !workspace?.scope.clipId &&
+                      ((id === 'clips' && !workspace?.clips.length) ||
+                        (id === 'launch' && !workspace?.clips.some((clip) => clip.renderedPath))))
                   }
                   onClick={() => {
                     void run(() => navigate(id));

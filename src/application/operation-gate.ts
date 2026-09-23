@@ -38,6 +38,9 @@ export class OperationGate {
     };
   }
   async run<T>(owner: string, task: () => Promise<T>, announce = true): Promise<T> {
+    // Focus-triggered snapshots may already be reading when a native picker returns.
+    // Finish that passive read before accepting foreground work; never queue behind another edit.
+    if (this.owner === 'workspace-read') await this.waitUntilIdle();
     const release = this.acquire(owner, announce);
     try {
       return await task();

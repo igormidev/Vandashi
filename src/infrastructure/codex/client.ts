@@ -13,6 +13,7 @@ import type { ModelInfo } from '../../domain/models';
 import { loadCapabilities, loadModels, status } from './discovery';
 import { executeTurn } from './execution';
 import { readHistory } from './history';
+import { CodexImageArtifacts } from './image-artifacts';
 import { threadConfiguration } from './policy';
 import { missingHistory, object, string, threadResponse } from './schemas';
 import type { CodexModel } from './schemas';
@@ -22,12 +23,14 @@ import type { RpcClient } from './transport';
 export interface CodexConnection {
   client: RpcClient;
   version: string;
+  codexHome?: string;
 }
 export interface CodexAgentOptions {
   binary?: string;
   transportFactory?: () => Promise<CodexConnection>;
 }
 export class CodexAgent implements AgentPort {
+  private readonly images = new CodexImageArtifacts();
   private connection: Promise<CodexConnection> | null = null;
   private rawModels: CodexModel[] = [];
   private readonly loadedThreads = new Set<string>();
@@ -67,15 +70,21 @@ export class CodexAgent implements AgentPort {
     return response.thread.id;
   }
   async readThread(threadId: string): Promise<AgentThread> {
-    const { client } = await this.ensureConnection();
-    return readHistory(client, threadId);
+    const { client, codexHome } = await this.ensureConnection();
+    const history = await readHistory(client, threadId);
+    if (history.id !== threadId) throw new AgentError('protocol', 'Codex returned a different conversation.');
+    for (const message of history.messages) this.images.observe(codexHome, threadId, message);
+    return history;
+  }
+  generatedImage(path: string): Promise<string | null> {
+    return this.images.resolve(path);
   }
   async run(input: AgentRunInput, onEvent: (event: AgentEvent) => void): Promise<AgentRunResult> {
     if (this.running) throw new AgentError('busy', 'Another AI operation is already running.');
     this.running = true;
     this.stopRequested = false;
     try {
-      const { client } = await this.connectionForMode(input.mode);
+      const { client, codexHome } = await this.connectionForMode(input.mode);
       if (!this.rawModels.length) await this.models();
       const model = this.rawModels.find((entry) => entry.model === input.selection.model);
       if (!model)
@@ -112,7 +121,10 @@ export class CodexAgent implements AgentPort {
       if (this.wasStopped()) return { threadId, turnId: '', status: 'interrupted', output: '', error: null };
       return await executeTurn(client, threadId, input, {
         supportsImages: model.inputModalities.includes('image'),
-        onEvent,
+        onEvent: (event) => {
+          if (event.type === 'message') this.images.observe(codexHome, threadId, event.message);
+          onEvent(event);
+        },
         onTurn: (turnId) => {
           this.active = { threadId, turnId };
           if (this.wasStopped())
@@ -133,7 +145,7 @@ export class CodexAgent implements AgentPort {
       const response = threadResponse.parse(
         await client.request('thread/fork', { threadId, beforeTurnId: turnId, excludeTurns: true }),
       );
-      return await readHistory(client, response.thread.id);
+      return await this.readThread(response.thread.id);
     } catch (error) {
       return missingHistory(error);
     }
@@ -151,12 +163,7 @@ export class CodexAgent implements AgentPort {
     this.rawModels = [];
     this.lastMode = null;
     this.loadedThreads.clear();
-    if (connection)
-      void connection
-        .then(({ client }) => {
-          client.close();
-        })
-        .catch(() => undefined);
+    if (connection) void connection.then(({ client }) => client.close()).catch(() => undefined);
   }
   private async connectionForMode(mode: AgentThreadOptions['mode']): Promise<CodexConnection> {
     // Rebuild tool capabilities when mode changes; a loaded thread may retain old MCP policy.
@@ -189,9 +196,10 @@ export class CodexAgent implements AgentPort {
           this.loadedThreads.clear();
         }
       });
-      return { client, version: string(initialized['userAgent']) };
+      const codexHome = string(initialized['codexHome']);
+      return { client, version: string(initialized['userAgent']), ...(codexHome ? { codexHome } : {}) };
     } catch (error) {
-      client.close();
+      await client.close();
       throw error;
     }
   }

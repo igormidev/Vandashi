@@ -6,7 +6,10 @@ import type { ApiMethod, DesktopApi } from '../domain/api';
 export class PathPermissions {
   private readonly files = new Map<string, Promise<string>>();
   private readonly directories = new Map<string, string>();
-  constructor(private readonly workspacePath: (value: string) => Promise<string>) {}
+  constructor(
+    private readonly workspacePath: (value: string) => Promise<string>,
+    private readonly providerImage?: (value: string) => Promise<string | null>,
+  ) {}
 
   async grantDirectory(value: string): Promise<string> {
     const canonical = await realpath(value);
@@ -41,6 +44,8 @@ export class PathPermissions {
         throw new Error('The selected file has changed location. Select it again.');
       return canonical;
     }
+    const artifact = await this.providerImage?.(value);
+    if (artifact) return artifact;
     const workspace = await this.workspacePath(value);
     if (!(await lstat(workspace)).isFile()) throw new Error('Choose a regular file.');
     return workspace;
@@ -62,7 +67,11 @@ export class PathPermissions {
     } else if (method === 'importAsset') {
       const input = args[0] as Parameters<DesktopApi['importAsset']>[0];
       input.draft.sourcePath = await this.file(input.draft.sourcePath);
-    } else if (method === 'importThumbnail' || method === 'importFinishedClip') {
+    } else if (
+      method === 'importThumbnail' ||
+      method === 'importFinishedClip' ||
+      method === 'importFinishedVideo'
+    ) {
       const input = args[0] as Parameters<DesktopApi['importThumbnail']>[0];
       input.sourcePath = await this.file(input.sourcePath);
     } else if (method === 'saveWorkspace') {

@@ -1,10 +1,10 @@
 import { execFile } from 'node:child_process';
-import { createHash } from 'node:crypto';
 import { lstat, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
 import type { Commit, FileChange } from '../../domain/models';
 import type { GitPort, GitStatus } from '../../domain/storage';
+import { renderFingerprint } from './render-fingerprint';
 
 const execute = promisify(execFile);
 const validRevision = /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/u;
@@ -58,11 +58,8 @@ export class LocalGit implements GitPort {
   }
 
   async contentRevision(repository: string): Promise<string> {
-    const excluded = new Set(['.vandashi.yml', 'video_packaging.yml', 'launch.yml']);
-    const entries = (await this.run(repository, ['ls-files', '--stage', '-z']))
-      .split('\0')
-      .filter((entry) => entry && !excluded.has(entry.slice(entry.indexOf('\t') + 1)));
-    return createHash('sha256').update(entries.join('\0')).digest('hex');
+    const entries = (await this.run(repository, ['ls-files', '--stage', '-z'])).split('\0');
+    return renderFingerprint(entries, (path) => this.run(repository, ['show', `:${path}`]));
   }
 
   async status(repository: string): Promise<GitStatus> {

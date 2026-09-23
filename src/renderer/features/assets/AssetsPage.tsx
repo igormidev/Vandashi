@@ -94,8 +94,11 @@ export function AssetsPage() {
             type="button"
             disabled={locked || dirty}
             onClick={() => {
+              setMutating(true);
               void run(async () => {
                 beginImport(await api.chooseFiles('assets'));
+              }).finally(() => {
+                setMutating(false);
               });
             }}
           >

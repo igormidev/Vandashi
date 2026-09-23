@@ -23,6 +23,10 @@ Only one AI operation runs globally. Dirty manual drafts block AI and navigation
 
 Media playback regressions must exercise the production protocol with real native file grants. Fixture protocol replacements do not verify seek behavior or access control. Preserve range metadata and restrictive response policies when changing media delivery.
 
+Provider image capabilities come only from completed Codex items or freshly verified provider history. Never grant access from renderer Markdown or local session metadata alone, and never broaden access to a Codex-home or temporary directory. Revalidate the exact canonical artifact before every read.
+
+An uncertain AI start must await process shutdown before file recovery or lease release. Preserve uncertain edits; never restore staged files merely because the start acknowledgement was lost. History recovery must preserve app receipts and verified undo boundaries.
+
 Keep UI editing locked through workspace refreshes, not only the preceding operation.
 Never replace a dirty local draft with an asynchronous snapshot. Validation belongs to
 the complete workspace scope. Async modal actions must lock both controls and dismissal

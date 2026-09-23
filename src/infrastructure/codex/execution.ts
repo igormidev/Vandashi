@@ -3,6 +3,7 @@ import { AgentError } from '../../domain/agent';
 import { EventReducer } from './events';
 import { object, string, turnResponse, turnSchema } from './schemas';
 import type { RpcClient } from './transport';
+import { RpcError } from './transport';
 
 export function sandboxPolicy(input: Pick<AgentRunInput, 'mode' | 'writableRoots'>): Record<string, unknown> {
   return input.mode === 'read'
@@ -55,7 +56,6 @@ export async function executeTurn(
     clearTimeout(timer);
     timer = setTimeout(() => {
       reject?.(new AgentError('timeout', 'Codex stopped reporting progress.'));
-      client.close();
     }, callbacks.inactivityMs ?? 600_000);
   };
   resetTimer();
@@ -119,6 +119,17 @@ export async function executeTurn(
     const earlyResult = finished.get(currentTurnId);
     if (earlyResult) complete?.(earlyResult);
     return await completion;
+  } catch (error) {
+    // Protocol validation rejects before dispatch; internal server errors may follow acceptance.
+    if (!currentTurnId && error instanceof RpcError && [-32600, -32601, -32602].includes(error.code))
+      throw error;
+    await client.close();
+    if (!currentTurnId)
+      throw new AgentError(
+        'uncertain-start',
+        `Codex did not confirm the turn start. Its process was stopped; any changes will be preserved. ${error instanceof Error ? error.message : String(error)}`,
+      );
+    throw error;
   } finally {
     clearTimeout(timer);
     unsubscribe();

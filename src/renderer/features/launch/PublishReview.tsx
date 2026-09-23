@@ -1,9 +1,10 @@
 import { ArrowLeft, LoaderCircle, Rocket, Sparkles } from 'lucide-react';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { verticalPlatforms, chapterTime } from '../../../domain/launch';
 import { useApp } from '../../app/store';
 import { IconButton } from '../../shared/ui';
+import { TagsInput } from '../../shared/TagsInput';
 import { ChapterEditor } from './ChapterEditor';
 import { ReviewThumbnails } from './ReviewThumbnails';
 import type { ReleaseDraft } from './release-draft';
@@ -13,17 +14,22 @@ export function PublishReview({
   onChange,
   onBack,
   onPrepared,
+  prepared,
+  onEdit,
 }: {
   draft: ReleaseDraft;
   onChange: (draft: ReleaseDraft) => void;
   onBack: () => void;
   onPrepared: () => void;
+  prepared: boolean;
+  onEdit: () => void;
 }) {
   const { t } = useTranslation();
   const { workspace, api, run, busy, dirty, setChatTarget } = useApp();
   const [editing, setEditing] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [preparing, setPreparing] = useState(false);
+  const tagsId = useId();
   if (!workspace) return null;
   const format = verticalPlatforms.includes(draft.platform) ? 'short' : 'long';
   const packaging = draft.packaging;
@@ -63,8 +69,13 @@ export function PublishReview({
             <p className="muted">{draft.source.name}</p>
           </div>
         </div>
+        {prepared && (
+          <button className="button" type="button" disabled={lock} onClick={onEdit}>
+            {t('launchEditReview')}
+          </button>
+        )}
       </div>
-      <fieldset disabled={lock}>
+      <fieldset disabled={lock || prepared}>
         <div className="form">
           <div className="release-target">
             <span className="eyebrow">{t('launchDestination')}</span>
@@ -117,22 +128,17 @@ export function PublishReview({
               }}
             />
           </label>
-          <label className="field">
+          <label className="field" htmlFor={tagsId}>
             <span>{t('tags')}</span>
-            <input
-              value={packaging.tags[format].join(', ')}
-              onChange={(event) => {
+            <TagsInput
+              id={tagsId}
+              value={packaging.tags[format]}
+              onChange={(tags) => {
                 onChange({
                   ...draft,
                   packaging: {
                     ...packaging,
-                    tags: {
-                      ...packaging.tags,
-                      [format]: event.target.value
-                        .split(',')
-                        .map((tag) => tag.trim())
-                        .filter(Boolean),
-                    },
+                    tags: { ...packaging.tags, [format]: tags },
                   },
                 });
               }}

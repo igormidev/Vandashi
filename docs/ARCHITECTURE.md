@@ -36,11 +36,26 @@ commit comparison; the adapter validates full commit hashes and uses literal fil
 
 Layout/preferences writes are outside the project-operation lease because they do not change creative files or a running turn's captured model selection. Workspace reads use a stable cached snapshot while a lease is active: reading storage can itself synchronize shared assets or repair malformed YAML, so it must not race an agent halfway through a write. Change notifications are deferred until the lease is released.
 
+An uncertain Codex start acknowledgement cannot release that lease or roll back staged
+files while its process might still write. The adapter awaits process shutdown, then the
+application preserves and reconciles the uncertain edits without claiming success or
+changing an older undo checkpoint. Reopening history merges recovered provider items
+with local receipts and adjusts message boundaries without inventing Git checkpoints.
+
 ## Host security
 
 Node integration is disabled; context isolation and renderer sandboxing are enabled. IPC validates both the top-level sender and runtime payload. The preload exposes use cases, never shell execution. Media access is rooted in registered project directories and rejects escaping symlinks. External links require an allowed HTTP(S) URL. Hyperframes is isolated from the privileged preload. Native window minimum size is 1200 × 720.
 
 Picker and native drop events grant access to specific canonical external files for previews and imports. Grants are rechecked before use. The media protocol serves supported media types only with restrictive response policies. Unfinished edits and operations block window unload until a native confirmation; process disposal happens only after the close is accepted.
+
+Codex-generated images have a separate exact-file capability. The adapter learns the actual
+Codex home from initialization and registers only completed image-generation items from live
+events or freshly fetched provider history. The saved path must match that home's
+`generated_images/<thread>/<item>.png`. Every media request rechecks a regular canonical file
+and rejects symlinks in the configured home or artifact subtree. The desktop composes this
+resolver with existing file permissions; it exposes no directory grant or extra renderer IPC.
+Local session JSON and Markdown paths alone cannot authorize provider files. Selected-chat
+hydration restores verified grants after restart without eagerly reading every open chat.
 
 `desktop/media-handler.ts` authorizes each media request and streams through Electron's
 file fetch. It supplies HTTP byte-range status and size metadata explicitly: Electron's

@@ -1,32 +1,15 @@
 import { ChevronLeft, ChevronRight, Copy, GitCommitHorizontal } from 'lucide-react';
-import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { Commit } from '../../../domain/models';
 import { useApp } from '../../app/store';
 import { IconButton } from '../../shared/ui';
 import { ExpandableText } from '../../shared/ExpandableText';
 import { DiffFiles } from './DiffFiles';
+import { useHistory } from './use-history';
 
 export function History() {
   const { t } = useTranslation();
-  const { workspace, api, run, setToast } = useApp();
-  const [page, setPage] = useState(0);
-  const [commits, setCommits] = useState<Commit[]>([]);
-  const [hasMore, setHasMore] = useState(false);
-  useEffect(() => {
-    let active = true;
-    if (workspace)
-      void run(async () => {
-        const result = await api.history({ scope: workspace.scope, page });
-        if (active) {
-          setCommits(result.commits);
-          setHasMore(result.hasMore);
-        }
-      });
-    return () => {
-      active = false;
-    };
-  }, [api, workspace, page, run]);
+  const { run, setToast } = useApp();
+  const { page, setPage, commits, hasMore } = useHistory();
   return (
     <section className="history">
       <div className="history-heading">

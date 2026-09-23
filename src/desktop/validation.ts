@@ -61,6 +61,7 @@ export const validators: Readonly<Record<ApiMethod, z.ZodType>> = Object.freeze(
   openBrand: z.tuple([id]),
   listVideos: z.tuple([id]),
   createVideo: z.tuple([z.object({ brandId: id, name: id, ratio: z.enum(['16:9', '9:16']) }).strict()]),
+  importFinishedVideo: z.tuple([z.object({ brandId: id, name: id, sourcePath: path }).strict()]),
   openWorkspace: z.tuple([scope]),
   saveWorkspace: z.tuple([
     z

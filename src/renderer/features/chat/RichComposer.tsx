@@ -13,10 +13,11 @@ interface Props {
   references: MentionReference[];
   disabled: boolean;
   placeholder: string;
+  label?: string;
   onChange: (text: string) => void;
-  onSend: () => void;
+  onSend?: () => void;
 }
-export function RichComposer({ value, references, disabled, placeholder, onChange, onSend }: Props) {
+export function RichComposer({ value, references, disabled, placeholder, label, onChange, onSend }: Props) {
   const { t } = useTranslation();
   const id = useId();
   const [menu, setMenu] = useState<MentionMenu | null>(null);
@@ -53,13 +54,14 @@ export function RichComposer({ value, references, disabled, placeholder, onChang
     editorProps: {
       attributes: {
         role: 'textbox',
-        'aria-label': t('chat'),
+        'aria-label': label ?? t('chat'),
         'aria-multiline': 'true',
         'data-placeholder': placeholder,
         class: 'rich-composer',
       },
       handleKeyDown: (view, event) => {
-        if (event.key !== 'Enter' || event.shiftKey || event.isComposing || view.composing) return false;
+        if (!onSend || event.key !== 'Enter' || event.shiftKey || event.isComposing || view.composing)
+          return false;
         if (mentionKey.getState(view.state)?.active) return false;
         event.preventDefault();
         onSend();

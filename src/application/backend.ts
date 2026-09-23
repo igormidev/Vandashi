@@ -11,6 +11,7 @@ import { Studio } from './studio';
 import { Automation } from './automation';
 import { Publishing } from './publishing';
 import { Dependencies } from './dependencies';
+import { importFinishedVideo } from './finished-video';
 
 export type HostMethods = Pick<
   DesktopApi,
@@ -129,6 +130,8 @@ export function createBackend(
         const workspace = await store.createVideo(input);
         return seedVideo(workspace.scope);
       }),
+    importFinishedVideo: (input) =>
+      mutation(async () => remember(await importFinishedVideo(input, store, media))),
     openWorkspace: (scope) => readWorkspace(scope),
     saveWorkspace: (input) => mutation(async () => remember(await store.saveWorkspace(input))),
     suggestCommit: (input) => gate.run('commit-message', () => commits.suggest(input.scope, input.summary)),
@@ -161,11 +164,19 @@ export function createBackend(
     updateAsset: (input) => mutation(() => store.updateAsset(input)),
     deleteAsset: (input) => mutation(() => store.deleteAsset(input)),
     importThumbnail: (input) => mutation(async () => remember(await store.importThumbnail(input))),
-    startStudio: (scope) => studio.start(scope),
+    startStudio: async (scope) => {
+      if ((await store.openWorkspace(scope)).video?.origin === 'imported')
+        throw new Error('This imported video has no editable composition. Use Packaging or Launch.');
+      return studio.start(scope);
+    },
     studioChanges: (scope) => studio.changes(scope),
     discardStudio: (scope) => studio.discard(scope),
     saveStudio: async (input) => remember(await studio.save(input)),
-    renderVideo: (scope) => studio.render(scope),
+    renderVideo: async (scope) => {
+      if ((await store.openWorkspace(scope)).video?.origin === 'imported')
+        throw new Error('This finished video is already ready to upload and has no composition to render.');
+      return studio.render(scope);
+    },
     saveScript: (input) => chats.saveScript(input),
     generateChapters: (scope) => publishing.chapters(scope),
     importFinishedClip: (input) => publishing.importClip(input),

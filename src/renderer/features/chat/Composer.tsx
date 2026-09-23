@@ -18,7 +18,7 @@ export function Composer({ session }: { session: ChatSession }) {
   const seed = chatTarget?.topic === session.topic ? (chatTarget.prompt ?? null) : null;
   const [restored] = useState(() => readDraft(session.id, seed));
   const [draft, setDraft] = useState<Draft>(restored.draft);
-  if (draft.seed !== seed) setDraft(seedDraft(draft, seed));
+  if (seed !== null && draft.seed !== seed) setDraft(seedDraft(draft, seed));
   const text = draft.text;
   const setText = (value: string) => {
     setDraft((current) => ({ ...current, text: value }));
@@ -37,7 +37,7 @@ export function Composer({ session }: { session: ChatSession }) {
     [workspace, session.topic, logoLabel],
   );
   const send = async () => {
-    if (!text.trim() || busy || dirty || sending || !models.length) return;
+    if (!text.trim() || draft.pending || busy || dirty || sending || !models.length) return;
     setSending(true);
     const value = await run(async () => {
       await api.sendChat({ sessionId: session.id, text: text.trim(), mode, selection, attachments });
@@ -72,14 +72,16 @@ export function Composer({ session }: { session: ChatSession }) {
           >
             {t('chatUsePrepared')}
           </button>
-          <IconButton
-            label={t('dismiss')}
+          <button
+            className="button small ghost"
+            type="button"
+            disabled={busy || dirty || sending}
             onClick={() => {
               setDraft((current) => ({ ...current, pending: null }));
             }}
           >
-            <X size={12} />
-          </IconButton>
+            {t('chatKeepDraft')}
+          </button>
         </div>
       )}
       <div
@@ -171,7 +173,7 @@ export function Composer({ session }: { session: ChatSession }) {
             <button
               className="send-button"
               type="button"
-              disabled={busy || !text.trim() || dirty || sending || !models.length}
+              disabled={busy || !text.trim() || !!draft.pending || dirty || sending || !models.length}
               aria-label={t('send')}
               onClick={() => {
                 void send();

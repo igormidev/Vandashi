@@ -1,4 +1,4 @@
-import { Clapperboard, Plus } from 'lucide-react';
+import { Clapperboard, Plus, Upload } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { VideoSummary, Workspace } from '../../../domain/models';
@@ -7,10 +7,16 @@ import { Empty, InfoTip, Modal } from '../../shared/ui';
 import { Checks } from '../workspace/Checks';
 import { PlatformIcon } from '../../shared/PlatformIcon';
 import { ExpandableText } from '../../shared/ExpandableText';
+import { ImportVideoDialog } from './ImportVideoDialog';
 
-export function VideosPage({ onOpen }: { onOpen: (workspace: Workspace) => void }) {
+export function VideosPage({
+  onOpen,
+}: {
+  onOpen: (workspace: Workspace, destination?: 'packaging' | 'launch') => void;
+}) {
   const { t } = useTranslation();
-  const { api, workspace, run } = useApp();
+  const { api, workspace, run, busy, dirty } = useApp();
+  const [importing, setImporting] = useState(false);
   const [videos, setVideos] = useState<VideoSummary[]>([]);
   const [preflight, setPreflight] = useState(false);
   const [create, setCreate] = useState(false);
@@ -38,17 +44,31 @@ export function VideosPage({ onOpen }: { onOpen: (workspace: Workspace) => void 
     <main className="page">
       <div className="page-header">
         <h1>{t('videos')}</h1>
-        <button
-          className="button primary"
-          type="button"
-          onClick={() => {
-            setName('');
-            setPreflight(true);
-          }}
-        >
-          <Plus size={15} />
-          {t('createVideo')}
-        </button>
+        <div className="toolbar">
+          <button
+            type="button"
+            className="button"
+            disabled={busy || dirty}
+            onClick={() => {
+              setImporting(true);
+            }}
+          >
+            <Upload size={15} />
+            {t('importFinishedVideo')}
+          </button>
+          <button
+            className="button primary"
+            type="button"
+            disabled={busy || dirty}
+            onClick={() => {
+              setName('');
+              setPreflight(true);
+            }}
+          >
+            <Plus size={15} />
+            {t('createVideo')}
+          </button>
+        </div>
       </div>
       {videos.length ? (
         <div className="video-grid">
@@ -75,6 +95,15 @@ export function VideosPage({ onOpen }: { onOpen: (workspace: Workspace) => void 
           icon={<Clapperboard size={36} strokeWidth={1} />}
           title={t('noVideos')}
           description={t('noVideosHelp')}
+        />
+      )}
+      {importing && (
+        <ImportVideoDialog
+          brandId={workspace.scope.brandId}
+          onClose={() => {
+            setImporting(false);
+          }}
+          onOpen={onOpen}
         />
       )}
       <Modal
@@ -170,6 +199,7 @@ export function VideosPage({ onOpen }: { onOpen: (workspace: Workspace) => void 
   );
 }
 function VideoTile({ video, onOpen }: { video: VideoSummary; onOpen: () => void }) {
+  const { t } = useTranslation();
   const { api, run } = useApp();
   const [url, setUrl] = useState('');
   useEffect(() => {
@@ -190,6 +220,7 @@ function VideoTile({ video, onOpen }: { video: VideoSummary; onOpen: () => void 
       {video.packaging.theme && <ExpandableText text={video.packaging.theme} />}
       <div className="video-meta">
         <span>{video.ratio}</span>
+        {video.origin === 'imported' && <span>{t('importedVideo')}</span>}
         <span>{new Date(video.updatedAt).toLocaleDateString()}</span>
       </div>
     </div>

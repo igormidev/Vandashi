@@ -58,8 +58,16 @@ export interface AgentPort {
   dispose(): void;
 }
 export class AgentError extends Error {
+  // uncertain-start is emitted only after the adapter confirms its process stopped; preserve possible edits.
   constructor(
-    readonly code: 'unavailable' | 'authentication' | 'missing-history' | 'busy' | 'protocol' | 'timeout',
+    readonly code:
+      | 'unavailable'
+      | 'authentication'
+      | 'missing-history'
+      | 'busy'
+      | 'protocol'
+      | 'timeout'
+      | 'uncertain-start',
     message: string,
   ) {
     super(message);

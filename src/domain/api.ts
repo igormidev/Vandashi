@@ -30,6 +30,7 @@ export interface DesktopApi {
   openBrand(id: string): Promise<Workspace>;
   listVideos(brandId: string): Promise<VideoSummary[]>;
   createVideo(input: { brandId: string; name: string; ratio: '16:9' | '9:16' }): Promise<Workspace>;
+  importFinishedVideo(input: { brandId: string; name: string; sourcePath: string }): Promise<Workspace>;
   openWorkspace(scope: Scope): Promise<Workspace>;
   saveWorkspace(input: SaveInput): Promise<Workspace>;
   suggestCommit(input: { scope: Scope; summary: string }): Promise<{ title: string; body: string }>;

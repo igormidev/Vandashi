@@ -2,6 +2,44 @@ import { join } from 'node:path';
 import { test, expect } from './fixtures';
 import { chatCalls, installChatFixture } from './chat-fixture';
 
+test('keeps finished clips available after the parent video changes while blocking stale source actions', async ({
+  desktopApp,
+  page,
+}) => {
+  await installChatFixture(desktopApp, true, { clips: true, staleParent: true });
+  await page.reload();
+  const launch = page.getByRole('button', { name: 'Launch suite', exact: true });
+  await expect(launch).toBeEnabled();
+  await page.getByRole('button', { name: 'Clips', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'New clip', exact: true })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Preview First excerpt', exact: true })).toBeEnabled();
+  await launch.click();
+  const youtube = page.locator('.launch-row').filter({
+    has: page.getByRole('heading', { name: 'YouTube', exact: true }),
+  });
+  await expect(youtube.getByRole('button', { name: 'Render first', exact: true })).toBeDisabled();
+  const shorts = page.locator('.launch-platform-group').filter({
+    has: page.getByRole('heading', { name: 'YouTube Shorts', exact: true }),
+  });
+  await shorts.getByRole('button', { name: 'Prepare upload', exact: true }).click();
+  await expect(page.getByRole('textbox', { name: 'Titles', exact: true })).toHaveValue('Clip short title');
+  await page.getByRole('button', { name: 'Open upload chat', exact: true }).click();
+  await expect(page.getByRole('textbox', { name: 'AI chat', exact: true })).toHaveText(
+    'Prepared upload request 1',
+  );
+});
+
+test('keeps initial clip and launch tabs disabled until a project has usable media', async ({
+  desktopApp,
+  page,
+}) => {
+  await installChatFixture(desktopApp, true, { staleParent: true });
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'Packaging', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Clips', exact: true })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Launch suite', exact: true })).toBeDisabled();
+});
+
 test('tracks each clip release and opens the selected clip publishing conversation', async ({
   desktopApp,
   page,

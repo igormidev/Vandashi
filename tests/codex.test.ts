@@ -26,9 +26,10 @@ class FakeClient implements RpcClient {
     this.failures.add(listener);
     return () => this.failures.delete(listener);
   }
-  close(): void {
+  close(): Promise<void> {
     this.closed = true;
     for (const listener of this.failures) listener(new Error('closed'));
+    return Promise.resolve();
   }
   emit(method: string, params: unknown): void {
     for (const listener of this.listeners) listener({ method, params });
@@ -206,7 +207,7 @@ describe('Codex streaming', () => {
       supportsImages: true,
     });
     await untilCall(client, 'turn/start');
-    client.close();
+    await client.close();
     await expect(promise).rejects.toThrow('closed');
     expect(client.listeners.size).toBe(0);
   });

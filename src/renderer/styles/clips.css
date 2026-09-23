@@ -328,6 +328,10 @@
 .clip-packaging .panel-scroll {
   padding: 24px 20px;
 }
+.clip-packaging .panel-scroll .chip-scroll {
+  margin-inline: -20px;
+  padding-inline: 20px;
+}
 .clip-editor-preview {
   min-height: 0;
   min-width: 0;

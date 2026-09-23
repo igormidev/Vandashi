@@ -81,7 +81,7 @@ describe.skipIf(process.env['VANDASHI_CODEX_LIVE'] !== '1')('installed Codex int
       expect(output['exitCode']).not.toBe(0);
       await expect(readFile(join(directory, 'sentinel.txt'))).rejects.toThrow();
     } finally {
-      transport.close();
+      await transport.close();
       await rm(directory, { recursive: true, force: true });
     }
   });
@@ -144,7 +144,7 @@ describe.skipIf(process.env['VANDASHI_CODEX_LIVE'] !== '1')('installed Codex int
           }
         }
       } finally {
-        cleanup.close();
+        await cleanup.close();
         await rm(directory, { recursive: true, force: true });
       }
     }

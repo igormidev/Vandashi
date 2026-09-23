@@ -7,7 +7,7 @@ import { scopeKey } from '../../../domain/defaults';
 import { cachedSelection, cacheSelection } from './draft-cache';
 
 export function useSessions(scope: Scope) {
-  const { api, run, chatTarget } = useApp();
+  const { api, run, chatTarget, busy } = useApp();
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [selected, setSelected] = useState<string | null>(() => cachedSelection(scopeKey(scope)));
   const [loading, setLoading] = useState(true);
@@ -16,10 +16,19 @@ export function useSessions(scope: Scope) {
     cacheSelection(scopeKey(scope), selected);
   }, [scope, selected]);
   const opened = useRef(new Set<string>());
+  const hydrationAttempts = useRef(new Set<string>());
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
   const generation = useRef(0);
   const pending = useRef(new Map<string, ChatSession['messages']>());
   const refresh = useCallback(
     async (authoritative = false) => {
+      if (!authoritative) hydrationAttempts.current.clear();
       const ticket = ++generation.current;
       try {
         const result = await api.sessions(scope);
@@ -94,6 +103,38 @@ export function useSessions(scope: Scope) {
       disposed = true;
     };
   }, [api, chatTarget, run, scope]);
+  useEffect(() => {
+    if (
+      chatTarget ||
+      busy ||
+      !selected ||
+      opened.current.has(selected) ||
+      hydrationAttempts.current.has(selected)
+    )
+      return;
+    const session = sessions.find((entry) => entry.id === selected && entry.open);
+    if (!session) return;
+    hydrationAttempts.current.add(session.id);
+    void run(async () => {
+      try {
+        const result = await openConversation(api, { scope, topic: session.topic, title: session.title });
+        if (!mounted.current) return;
+        opened.current.add(result.id);
+        setSessions((current) =>
+          current.map((entry) =>
+            entry.id === result.id && entry.open
+              ? mergeSession(result, { ...entry, messages: pending.current.get(entry.id) ?? entry.messages })
+              : entry,
+          ),
+        );
+        // Hydration never selects a tab: a late response must not steal the user's current conversation.
+        setFailed(false);
+      } catch (error) {
+        if (mounted.current) setFailed(true);
+        throw error;
+      }
+    });
+  }, [api, busy, chatTarget, run, scope, selected, sessions]);
   useEffect(
     () =>
       api.onEvent((event) => {

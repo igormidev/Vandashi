@@ -1,11 +1,13 @@
 import { FileDiff, Minus, Plus, Redo2, RotateCcw, Undo2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { createPatch } from 'diff';
 import { defaultSettings } from '../../../domain/defaults';
 import { useApp } from '../../app/store';
 import { IconButton, Modal } from '../../shared/ui';
 import { ModelPicker } from '../chat/ModelPicker';
+import { RichComposer } from '../chat/RichComposer';
+import { mentionReferences } from '../chat/mention-references';
 
 export function ScriptEditor({ onBegin }: { onBegin: () => void }) {
   const { t } = useTranslation();
@@ -19,6 +21,11 @@ export function ScriptEditor({ onBegin }: { onBegin: () => void }) {
   const [saving, setSaving] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [fontSize, setFontSize] = useState(12);
+  const logoLabel = t('logo');
+  const references = useMemo(
+    () => (workspace ? mentionReferences(workspace, 'creation', logoLabel) : []),
+    [workspace, logoLabel],
+  );
   const content = versions[position] ?? original;
   const dirty = !submitted && content !== original;
   const update = (value: string) => {
@@ -142,17 +149,19 @@ export function ScriptEditor({ onBegin }: { onBegin: () => void }) {
         <pre className="script-diff">{createPatch('script.md', original, content)}</pre>
         {dialog === 'save' && (
           <>
-            <label className="field">
+            <div className="field">
               <span>{t('scriptGuidance')}</span>
-              <textarea
-                value={guidance}
-                disabled={saving}
-                onChange={(event) => {
-                  setGuidance(event.target.value);
-                }}
-                placeholder={t('scriptGuidanceHint')}
-              />
-            </label>
+              <div className="composer">
+                <RichComposer
+                  label={t('scriptGuidance')}
+                  value={guidance}
+                  references={references}
+                  disabled={saving}
+                  onChange={setGuidance}
+                  placeholder={t('scriptGuidanceHint')}
+                />
+              </div>
+            </div>
             <div className="modal-actions">
               <ModelPicker value={selection} onChange={setSelection} disabled={saving} />
               <button

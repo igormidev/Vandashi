@@ -120,6 +120,7 @@ function context(input: WorkspacePromptInput): TopicContext {
       ],
       guidance: [
         'Give thumbnail files descriptive names and keep packaging.thumbnails ordered with the main candidate first. Update references if filenames change.',
+        'The thumbnails directory holds release artwork. Keep composition media in video_assets; if release artwork must appear inside the video, copy it into video_assets and reference that copy so future thumbnail edits do not change the composition.',
         'Use available image tools when asked to create or edit images. Report unavailable capabilities; do not claim an image exists without checking its output file.',
       ],
     };
@@ -151,7 +152,7 @@ function context(input: WorkspacePromptInput): TopicContext {
     if (!staged) mandatory.push(taste(input, `SCRIPT_${form}_FORM_VIDEOS_TASTE.md`));
     const guidance = [
       'Use the installed Hyperframes skill/plugin to implement the video. Read its instructions before changing the composition; do not replace the project with a different editor or invented runtime.',
-      'Keep the Hyperframes composition and script.md synchronized. Every scene asset must be referenced with its actual absolute file path in Markdown, including backgrounds, music, and transition sounds.',
+      'Keep the Hyperframes composition and script.md synchronized. Every scene asset, including backgrounds, music, and transition sounds, must use exactly the same file mention syntax as the creator: @[asset name](<absolute filesystem path>). The angle brackets preserve paths containing spaces. Use actual existing files; never substitute a basename or relative path.',
       'Follow the existing script organization. Describe meaningful timing, narration, visual hierarchy, motion, sound, and scene boundaries. Validate the composition and inspect/render the result before claiming success.',
       input.mode === 'edit'
         ? "Vandashi manages the project preview and final renderer outside the Codex filesystem sandbox. For visual verification, discover the installed connected browser/computer-use tools, read their instructions, and inspect this project's actual running loopback preview when available. Verify the project and URL; never invent a preview address. Prefer those tools over launching desktop Chrome through a shell. If macOS denies a browser launch, do not repeat it through alternate cache directories, weaken the sandbox, or change security settings. Do not start a competing permanent Studio server. Run available Hyperframes lint/check validation; if the preview is unavailable during this edit, explicitly report that visual/render verification is still pending and leave the composition ready for Vandashi Preview/Render. A browser permission failure alone does not mean the composition is invalid."

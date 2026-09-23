@@ -14,6 +14,9 @@ export interface ChatFixtureOptions {
   checksFail?: boolean;
   studioDirty?: boolean;
   delayedDiscard?: boolean;
+  staleParent?: boolean;
+  chatMediaUrls?: Record<string, string>;
+  delayedFirstOpen?: boolean;
 }
 
 export function chatFixtureData(video: boolean, options: ChatFixtureOptions) {
@@ -45,8 +48,9 @@ export function chatFixtureData(video: boolean, options: ChatFixtureOptions) {
           name: 'Chat test video',
           path: '/tmp/chat-test/videos/video',
           ratio: options.portrait ? '9:16' : '16:9',
+          origin: 'composition',
           updatedAt: '',
-          renderedPath: '/tmp/chat-test/render.mp4',
+          renderedPath: options.staleParent ? null : '/tmp/chat-test/render.mp4',
           packaging: {
             titles: { long: ['Test title'], short: ['Short title'] },
             descriptions: { long: '', short: '' },
@@ -85,6 +89,7 @@ export function chatFixtureData(video: boolean, options: ChatFixtureOptions) {
     name: 'First excerpt',
     path: '/tmp/chat-test/videos/video/clips/excerpt',
     ratio: '9:16' as const,
+    origin: 'composition' as const,
     start: 0,
     end: 20,
     updatedAt: '',

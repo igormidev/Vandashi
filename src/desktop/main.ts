@@ -54,7 +54,10 @@ async function createWindow(): Promise<void> {
         detail: desktopMessages.recovery(basename(path), backupPath),
       });
   });
-  const permissions = new PathPermissions((value) => store.allowedPath(value));
+  const permissions = new PathPermissions(
+    (value) => store.allowedPath(value),
+    (value) => agent.generatedImage(value),
+  );
   const rendererUrl = rendererLocation(
     app.isPackaged,
     process.env.ELECTRON_RENDERER_URL,

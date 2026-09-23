@@ -1,6 +1,7 @@
 import type { ElectronApplication } from '@playwright/test';
 import type { AppEvent, AssetDraft, SaveInput, Settings } from '../../src/domain/models';
 import { chatFixtureData, type ChatFixtureOptions } from './chat-fixture-data';
+import type { ChatControlAction } from './chat-controls';
 
 export async function installChatFixture(
   desktopApp: ElectronApplication,
@@ -15,6 +16,8 @@ export async function installChatFixture(
       let failSend = false;
       let studioDirty = fixture.options.studioDirty ?? false;
       let releaseDiscard: ((fail: boolean) => void) | undefined;
+      let releaseOpen: (() => void) | undefined;
+      let firstOpen = true;
       const sessions = fixture.sessions;
       const calls: string[] = [];
       const requests: unknown[] = [];
@@ -27,21 +30,16 @@ export async function installChatFixture(
       const emit = (event: AppEvent) => {
         BrowserWindow.getAllWindows()[0]?.webContents.send('vandashi:event', event);
       };
-      ipcMain.on(
-        'vandashi:test-control',
-        (
-          _event,
-          action: { event?: AppEvent; failSend?: boolean; reload?: boolean; discard?: 'success' | 'failure' },
-        ) => {
-          if (action.discard) releaseDiscard?.(action.discard === 'failure');
-          if (action.failSend) failSend = true;
-          if (action.reload) {
-            currentWorkspace = { ...currentWorkspace, revision: `${currentWorkspace.revision}-new` };
-            emit({ type: 'workspace-changed', scope: currentWorkspace.scope });
-          }
-          if (action.event) emit(action.event);
-        },
-      );
+      ipcMain.on('vandashi:test-control', (_event, action: ChatControlAction) => {
+        if (action.discard) releaseDiscard?.(action.discard === 'failure');
+        if (action.open) releaseOpen?.();
+        if (action.failSend) failSend = true;
+        if (action.reload) {
+          currentWorkspace = { ...currentWorkspace, revision: `${currentWorkspace.revision}-new` };
+          emit({ type: 'workspace-changed', scope: currentWorkspace.scope });
+        }
+        if (action.event) emit(action.event);
+      });
       ipcMain.on('vandashi:test-requests', (_event, reply: (value: unknown[]) => void) => {
         reply(requests);
       });
@@ -70,6 +68,23 @@ export async function installChatFixture(
           const session = sessions.find((entry) => entry.topic === input.topic);
           if (!session) throw new Error('Unknown fixture conversation');
           session.open = true;
+          if (fixture.options.delayedFirstOpen && firstOpen) {
+            firstOpen = false;
+            const snapshot = structuredClone(session);
+            snapshot.messages.push({
+              id: 'recovered',
+              role: 'assistant',
+              text: 'Recovered provider answer',
+              turnId: 'recovered-turn',
+              files: [],
+              createdAt: '',
+            });
+            return new Promise((resolve) => {
+              releaseOpen = () => {
+                resolve(snapshot);
+              };
+            });
+          }
           return structuredClone(session);
         }
         if (method === 'resetChat') {
@@ -154,7 +169,14 @@ export async function installChatFixture(
             { seconds: 20, title: 'Middle' },
             { seconds: 40, title: 'Ending' },
           ];
-        if (method === 'mediaUrl') return 'vandashi-media://local/chapter-video.mp4';
+        if (method === 'mediaUrl') {
+          if (fixture.options.chatMediaUrls) {
+            if (typeof input !== 'string' || !Object.hasOwn(fixture.options.chatMediaUrls, input))
+              throw new Error('Image is outside the selected workspace');
+            return fixture.options.chatMediaUrls[input];
+          }
+          return 'vandashi-media://local/chapter-video.mp4';
+        }
         if (method === 'assetWaveform')
           return Array.from({ length: 100 }, (_, index) => (index < 50 ? 0.25 : 0.8));
         if (method === 'chooseFiles')
@@ -224,6 +246,22 @@ export async function installChatFixture(
         if (method === 'importFinishedClip') {
           currentWorkspace = { ...currentWorkspace, clips: [fixture.clip] };
           return fixture.clip;
+        }
+        if (method === 'importFinishedVideo') {
+          if (
+            !input ||
+            typeof input !== 'object' ||
+            !('name' in input) ||
+            typeof input.name !== 'string' ||
+            !fixture.finishedWorkspace.video
+          )
+            throw new Error('Missing finished video');
+          requests.push({ method, input });
+          currentWorkspace = {
+            ...fixture.finishedWorkspace,
+            video: { ...fixture.finishedWorkspace.video, name: input.name, origin: 'imported' },
+          };
+          return currentWorkspace;
         }
         if (method === 'updateLaunch') {
           if (
@@ -299,31 +337,7 @@ export async function installChatFixture(
         throw new Error(`Unexpected fixture method ${method}`);
       });
     },
-    chatFixtureData(video, options),
+    { ...chatFixtureData(video, options), finishedWorkspace: chatFixtureData(true, options).workspace },
   );
 }
-export async function chatControl(
-  desktopApp: ElectronApplication,
-  action: { event?: AppEvent; reload?: boolean; failSend?: boolean; discard?: 'success' | 'failure' },
-): Promise<void> {
-  await desktopApp.evaluate(({ ipcMain }, value) => {
-    ipcMain.emit('vandashi:test-control', undefined, value);
-  }, action);
-}
-export function chatCalls(desktopApp: ElectronApplication): Promise<string[]> {
-  return desktopApp.evaluate(
-    ({ ipcMain }) =>
-      new Promise<string[]>((resolve) => {
-        ipcMain.emit('vandashi:test-calls', undefined, resolve);
-      }),
-  );
-}
-
-export function chatRequests(desktopApp: ElectronApplication): Promise<unknown[]> {
-  return desktopApp.evaluate(
-    ({ ipcMain }) =>
-      new Promise<unknown[]>((resolve) => {
-        ipcMain.emit('vandashi:test-requests', undefined, resolve);
-      }),
-  );
-}
+export { chatControl, chatCalls, chatRequests } from './chat-controls';

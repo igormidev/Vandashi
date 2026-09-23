@@ -16,6 +16,7 @@ const api: DesktopApi = {
   openBrand: (id) => invoke('openBrand', id),
   listVideos: (id) => invoke('listVideos', id),
   createVideo: (input) => invoke('createVideo', input),
+  importFinishedVideo: (input) => invoke('importFinishedVideo', input),
   openWorkspace: (scope) => invoke('openWorkspace', scope),
   saveWorkspace: (input) => invoke('saveWorkspace', input),
   suggestCommit: (scope) => invoke('suggestCommit', scope),

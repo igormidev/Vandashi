@@ -109,7 +109,12 @@ export function LaunchPage({ onCreateClips }: { onCreateClips: () => void }) {
             <Upload size={14} />
             {t(importing ? 'loading' : 'importVideo')}
           </button>
-          <button className="button primary" type="button" disabled={lock} onClick={onCreateClips}>
+          <button
+            className="button primary"
+            type="button"
+            disabled={lock || !video.renderedPath}
+            onClick={onCreateClips}
+          >
             <Scissors size={14} />
             {t('goClips')}
           </button>
@@ -122,6 +127,11 @@ export function LaunchPage({ onCreateClips }: { onCreateClips: () => void }) {
         draft={draft}
         onChange={setDraft}
         onBack={back}
+        prepared={chat}
+        onEdit={() => {
+          setChat(false);
+          setChatTarget(null);
+        }}
         onPrepared={() => {
           setChat(true);
         }}

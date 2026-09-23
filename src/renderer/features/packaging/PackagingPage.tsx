@@ -1,12 +1,14 @@
 import { ArrowLeft, ArrowRight, ImagePlus, RotateCcw } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useApp } from '../../app/store';
 import { AiButton, IconButton, InfoTip } from '../../shared/ui';
 import { CommitDialog } from '../history/CommitDialog';
+import { TagsInput } from '../../shared/TagsInput';
 
 export function PackagingPage() {
   const { t } = useTranslation();
+  const tagsId = useId();
   const { workspace, api, run, busy, setDirty, setWorkspace, setChatTarget } = useApp();
   const [packaging, setPackaging] = useState(workspace?.video?.packaging);
   const [format, setFormat] = useState<'long' | 'short'>(
@@ -121,7 +123,7 @@ export function PackagingPage() {
                 }}
               />
             </label>
-            <label className="field">
+            <label className="field" htmlFor={tagsId}>
               <span className="field-label">
                 <span>{t('tags')}</span>
                 <AiButton
@@ -134,16 +136,17 @@ export function PackagingPage() {
                   }}
                 />
               </span>
-              <input
+              <TagsInput
+                id={tagsId}
                 aria-label={t('tags')}
-                value={packaging.tags[format].join(', ')}
+                value={packaging.tags[format]}
                 placeholder={t('tagsHint')}
-                onChange={(event) => {
+                onChange={(tags) => {
                   setPackaging({
                     ...packaging,
                     tags: {
                       ...packaging.tags,
-                      [format]: event.target.value.split(',').map((tag) => tag.trim()),
+                      [format]: tags,
                     },
                   });
                 }}

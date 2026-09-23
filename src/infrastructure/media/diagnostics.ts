@@ -19,11 +19,40 @@ const probeSchema = z.object({
         codec_type: z.string().optional(),
         width: z.number().optional(),
         height: z.number().optional(),
+        sample_aspect_ratio: z.string().optional(),
+        tags: z.object({ rotate: z.string().optional() }).optional(),
+        side_data_list: z.array(z.object({ rotation: z.number().optional() })).optional(),
       }),
     )
     .default([]),
   format: z.object({ duration: z.string().optional(), format_name: z.string().optional() }),
 });
+
+function displayedDimensions(video: z.infer<typeof probeSchema>['streams'][number] | undefined): {
+  width: number | null;
+  height: number | null;
+} {
+  if (!video?.width || !video.height || video.width < 0 || video.height < 0)
+    return { width: null, height: null };
+  const parts = video.sample_aspect_ratio?.match(/^(\d+):(\d+)$/);
+  const numerator = Number(parts?.[1]);
+  const denominator = Number(parts?.[2]);
+  const sampleRatio = numerator > 0 && denominator > 0 ? numerator / denominator : 1;
+  const width = video.width * sampleRatio;
+  // Display Matrix is authoritative; older files may only expose a rotate tag.
+  const rotation =
+    video.side_data_list?.find((entry) => entry.rotation !== undefined)?.rotation ??
+    Number(video.tags?.rotate ?? 0);
+  if (!Number.isFinite(rotation) || !Number.isFinite(width))
+    throw new Error('The media has invalid display dimensions.');
+  const radians = ((rotation % 360) * Math.PI) / 180;
+  const cosine = Math.abs(Math.cos(radians));
+  const sine = Math.abs(Math.sin(radians));
+  return {
+    width: Math.round(width * cosine + video.height * sine),
+    height: Math.round(width * sine + video.height * cosine),
+  };
+}
 
 export function parseMediaProbe(output: string): MediaProbe {
   const parsed = probeSchema.parse(JSON.parse(output) as unknown);
@@ -32,8 +61,7 @@ export function parseMediaProbe(output: string): MediaProbe {
   if (!Number.isFinite(duration) || duration < 0) throw new Error('The media has an invalid duration.');
   return {
     duration,
-    width: video?.width ?? null,
-    height: video?.height ?? null,
+    ...displayedDimensions(video),
     hasAudio: parsed.streams.some((stream) => stream.codec_type === 'audio'),
     format: parsed.format.format_name ?? '',
   };
@@ -46,7 +74,7 @@ export async function probeMedia(runtime: MediaRuntime, path: string): Promise<M
       '-v',
       'error',
       '-show_entries',
-      'format=duration,format_name:stream=codec_type,width,height',
+      'format=duration,format_name:stream=codec_type,width,height,sample_aspect_ratio:stream_tags=rotate:stream_side_data=rotation',
       '-of',
       'json',
       '--',

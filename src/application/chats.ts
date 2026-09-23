@@ -1,4 +1,5 @@
 import { undoChat } from './chat-undo';
+import { openChatSession } from './chat-history';
 import { repositoryHeads, turnReceipt } from './turn-receipt';
 import type { MediaPort } from '../domain/media';
 import type { AgentPort, AgentRunInput } from '../domain/agent';
@@ -58,34 +59,9 @@ export class Chats {
     return this.gate.run('prepare-chat', async () => task(await this.openUnlocked(input)));
   }
   private async openUnlocked(input: { scope: Scope; topic: string; title: string }): Promise<ChatSession> {
-    const found = (await this.store.sessions(input.scope)).find((session) => session.topic === input.topic);
-    const session: ChatSession = found ?? {
-      id: crypto.randomUUID(),
-      scope: input.scope,
-      topic: input.topic,
-      title: input.title,
-      threadId: null,
-      messages: [],
-      open: true,
-      updatedAt: new Date().toISOString(),
-    };
-    if (session.threadId) {
-      try {
-        await this.agent.readThread(session.threadId);
-      } catch (error) {
-        if (!(error instanceof AgentError) || error.code !== 'missing-history') throw error;
-        session.threadId = null;
-        this.notify({
-          type: 'notice',
-          code: 'missing-history',
-          detail: 'The previous Codex conversation could not be found. A new conversation will start.',
-        });
-      }
-    }
-    session.open = true;
-    session.updatedAt = new Date().toISOString();
-    await this.store.saveSession(session);
-    return session;
+    return openChatSession(this.store, this.agent, input, (event) => {
+      this.notify(event);
+    });
   }
   close(id: string): Promise<void> {
     return this.gate.run('close-chat', async () => {
@@ -236,6 +212,7 @@ export class Chats {
     const { session, original, heads } = prepared;
     const lifecycle = { started: false };
     let failed = false;
+    let uncertainStart = false;
     let startError: unknown;
     let finalSaved = false;
     let persistence = Promise.resolve();
@@ -291,7 +268,8 @@ export class Chats {
     } catch (error) {
       failed = true;
       startError = error;
-      if (lifecycle.started) {
+      uncertainStart = error instanceof AgentError && error.code === 'uncertain-start';
+      if (lifecycle.started || uncertainStart) {
         const message: ChatMessage = {
           id: crypto.randomUUID(),
           role: 'error',
@@ -306,7 +284,7 @@ export class Chats {
     }
     await persistence;
     try {
-      if (!lifecycle.started) {
+      if (!lifecycle.started && !uncertainStart) {
         await prepared.rollback();
         await this.store.saveSession(original);
       } else {
@@ -315,7 +293,7 @@ export class Chats {
           activity: { sessionId: session.id, phase: 'committing', detail: '' },
         });
         await this.commits.reconcile(session.scope, prepared.request.mode === 'edit');
-        const latest = session.checkpoints?.at(-1);
+        const latest = lifecycle.started ? session.checkpoints?.at(-1) : undefined;
         if (latest) latest.postHeads = await repositoryHeads(this.git, Object.keys(heads));
         const receipt =
           !failed && prepared.request.mode === 'edit' && latest ? await turnReceipt(this.git, latest) : null;

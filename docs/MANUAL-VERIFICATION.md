@@ -37,12 +37,28 @@ This records observed behavior, including defects still being worked on. It is n
 - Exported the actual title sequence through Render video. FFprobe confirmed H.264, 1920×1080, and exactly six seconds. The output became available to Clips and Launch.
 - Asked the real Codex conversation to change the title to THE QUIET CITY in the composition and script. The direct agent commit was sandbox-denied; the application's commit fallback created `b6ea212`, and Git was clean. Playback displayed the changed title. The prior render was correctly marked stale.
 - Used Revert last change and confirmed it. The app forked the conversation before the last turn, removed that user turn and its response from the visible chat, and created compensating commit `027c493` with a backup reference. Both source files contained THE HIDDEN CITY again, Git remained clean, and six-second playback visibly restored the original title. The unchanged prior MP4 became fresh and Clips/Launch re-enabled.
-- The agent's final text still claimed its own failed commit left files uncommitted even though the application fallback had saved them. The app now adds its own receipt after verifying the repositories and persisting the conversation. Real-Git tests cover direct agent commits, fallback commits, no-change turns, and failure paths; Electron tests verify the saved filenames and expandable diffs. A further live turn will check this complete path in the running app.
+- The agent's final text still claimed its own failed commit left files uncommitted even though the application fallback had saved them. The app now adds its own receipt after verifying the repositories and persisting the conversation. Real-Git tests cover direct agent commits, fallback commits, no-change turns, and failure paths; Electron tests verify the saved filenames and expandable diffs. The live clip turn below also verified this complete path.
 
 ## 2026-09-23 — Native video seeking and asset refresh
 
 - The actual six-second exported MP4 decoded correctly with FFmpeg but remained at zero in the clip selector. The production media protocol had forwarded a sliced file response without the required byte-range status and headers. The handler now preserves the range semantics. An actual Electron test with a real native-picker grant decodes an H.264 video, seeks to two seconds, plays beyond 2.5 seconds, and verifies an exact 100-byte partial response. The protocol and IPC are not replaced in this test.
 - The complete renderer run exposed an asset-refresh loop that disabled and blurred metadata inputs between focus and text insertion. DOM event capture confirmed no input event reached state in failed attempts. The refresh lifecycle now performs one entry read and coalesces pending focus reads. Both shared and video asset regressions verify bounded reads, retained typed drafts, and delayed external metadata applied only after explicit reset. The original metadata-save scenario also passes unchanged.
+
+## 2026-09-23 — Real independent clip generation
+
+- Restarted the built app and reopened the disposable landscape project. Created **A hidden city**, selected portrait 9:16, replaced the numeric start value using ordinary keyboard input, and selected 2–6 seconds. The source preview sought to two seconds, played the selected interval, and returned to the selection start.
+- Submitted a real GPT-6-Astra turn asking for a silent four-second title card using the original dark green grid and mint underline. While it ran, the app showed its ongoing conversation and locked conflicting controls. The same conversation remained visible in the clip workspace afterward.
+- The app's commit fallback saved `index.html` and `script.md` as `b2e2701`. Its independent **Changes saved.** receipt displayed both filenames, and expanding the composition row showed the actual inserted and removed lines. The clip repository was clean. The parent remained clean at its unchanged `027c493` revision.
+- Played the four-second 9:16 composition and rendered it through the actual UI. FFprobe confirmed H.264, 1080×1920, 30 fps, 120 frames, and exactly four seconds. The render manifest was committed as `5e87317`.
+- Returned to the parent clip library and clicked the clip row. The exported MP4 played with the complete three-line title and green grid visible. No publishing action ran.
+
+## 2026-09-23 — Real image generation and thumbnail ordering
+
+- Used the actual thumbnail conversation to request a bitmap for **THE HIDDEN CITY**. Codex's image-generation tool produced a PNG; the agent copied it into the video's `thumbnails/` folder, added metadata, and made it the first packaging candidate.
+- The saved image is 1664×936 (16:9). The app's fallback commit `a8ec8a6` contains only the PNG, its metadata sidecar, and `video_packaging.yml`. The composition, script, and clips were unchanged; Clips and Launch remained available with the existing render.
+- The final Markdown image displayed in chat. Opened its inspector and visually verified the complete dark green city artwork, mint underline, and three-line white title. Packaging displayed the same image.
+- The provider's original temporary image was correctly denied by the existing file-permission boundary. A narrowly scoped provider-artifact resolver is being added so this intermediate image can also display; this observation alone does not verify that fix.
+- Imported the original generated bitmap as a second candidate using the native picker. Moved it first, verified that navigation and AI were blocked by the dirty order, reviewed the real generated commit title/body, and saved. Commit `8668d3c` persisted the selected order; Git was clean afterward.
 
 ## Automated integration evidence
 

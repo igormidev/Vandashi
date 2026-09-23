@@ -40,7 +40,8 @@ export interface Draft {
   pending: string | null;
 }
 export function seedDraft(draft: Draft, seed: string | null): Draft {
-  if (seed === draft.seed) return draft;
+  // Selecting another tab hides the prepared target; it does not resolve its pending decision.
+  if (seed === null || seed === draft.seed) return draft;
   const edited = !!draft.text.trim() && draft.text !== draft.seed;
-  return { seed, text: edited || !seed ? draft.text : seed, pending: edited ? seed : null };
+  return { seed, text: edited ? draft.text : seed, pending: edited ? seed : null };
 }

@@ -147,7 +147,8 @@ export function ClipsPage() {
     );
   if (main.video.ratio !== '16:9')
     return <Empty icon={<Scissors size={32} />} title={t('clipOnlyLandscape')} />;
-  if (!main.video.renderedPath) return <Empty icon={<Film size={32} />} title={t('noRender')} />;
+  if (!main.video.renderedPath && !main.clips.length)
+    return <Empty icon={<Film size={32} />} title={t('noRender')} />;
   return (
     <section className="clips-library">
       <div className="clips-list">
@@ -156,7 +157,7 @@ export function ClipsPage() {
           <button
             className="button primary small"
             type="button"
-            disabled={busy || dirty}
+            disabled={busy || dirty || !main.video.renderedPath}
             onClick={() => {
               setView('checks');
             }}

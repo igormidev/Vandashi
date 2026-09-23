@@ -12,7 +12,7 @@ function clientFor(pages: unknown[]) {
     }),
     subscribe: () => () => undefined,
     onFailure: () => () => undefined,
-    close: () => undefined,
+    close: () => Promise.resolve(),
   } satisfies RpcClient;
 }
 

@@ -3,4 +3,9 @@ export const chatEn = {
   chatLoadError: 'The conversation could not be loaded. Your saved history is still available.',
   chatPreparedDraft: 'A new upload request is ready. Your draft has been kept.',
   chatUsePrepared: 'Use prepared request',
+  chatKeepDraft: 'Keep my draft',
+  chatGeneratedImage: 'Generated image',
+  chatInspectImage: 'Inspect {{name}}',
+  chatImageUnavailable: 'Image unavailable',
+  chatRetryImage: 'Retry image',
 };

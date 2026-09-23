@@ -42,6 +42,7 @@ export interface VideoSummary {
   name: string;
   path: string;
   ratio: AspectRatio;
+  origin: 'composition' | 'imported';
   updatedAt: string;
   packaging: Packaging;
   renderedPath: string | null;
@@ -147,6 +148,7 @@ export interface ChatMessage {
   files: FileChange[];
   createdAt: string;
   appMessage?: AppMessage;
+  generatedImages?: string[];
 }
 export interface ChatSession {
   id: string;

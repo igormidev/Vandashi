@@ -14,7 +14,7 @@ import type {
   VideoSummary,
   Workspace,
 } from '../../domain/models';
-import type { GitPort, NewClip, RecoveryListener, StoragePort } from '../../domain/storage';
+import type { GitPort, ImportedVideo, NewClip, RecoveryListener, StoragePort } from '../../domain/storage';
 import { AssetStore, assetKind } from './assets';
 import { saveBrandImage } from './brand-image';
 import { assetReferences } from './asset-references';
@@ -62,6 +62,11 @@ export class LocalStorage implements StoragePort {
   }
   async createVideo(input: { brandId: string; name: string; ratio: '16:9' | '9:16' }): Promise<Workspace> {
     return this.writes.run(async () => this.openWorkspace(await this.projects.createVideo(input)));
+  }
+  async importVideo(input: ImportedVideo, validateCopy: (path: string) => Promise<void>): Promise<Workspace> {
+    return this.writes.run(async () =>
+      this.openWorkspace(await this.projects.importVideo(input, validateCopy)),
+    );
   }
   createClip(input: NewClip): Promise<Clip> {
     return this.writes.run(() => this.projects.createClip(input));

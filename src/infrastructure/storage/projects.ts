@@ -4,7 +4,8 @@ import { join } from 'node:path';
 import { emptyPackaging, tasteFiles } from '../../domain/defaults';
 import { initialScript, tasteTemplates } from '../../domain/templates';
 import type { Brand, Clip, Scope, VideoSummary } from '../../domain/models';
-import type { GitPort, NewClip, RecoveryListener } from '../../domain/storage';
+import type { GitPort, ImportedVideo, NewClip, RecoveryListener } from '../../domain/storage';
+import { ImportedMediaHashes, initializeImportedVideo } from './finished-video';
 import type { AssetStore } from './assets';
 import { atomicWrite, containedPath, exists, safeName } from './files';
 import type { Registry } from './registry';
@@ -15,6 +16,7 @@ const ignore =
   '.vandashi-recovery/\n.vandashi-write-*\nnode_modules/\noutput/\n.thumbnails/\nrenders/\n.cache/\n.transcode-cache/\n.waveform-cache/\n.DS_Store\n';
 
 export class ProjectStore {
+  private readonly importedMedia = new ImportedMediaHashes();
   constructor(
     readonly registry: Registry,
     readonly git: GitPort,
@@ -99,10 +101,14 @@ export class ProjectStore {
     if (
       renderedPath !== null &&
       (!(await exists(renderedPath)) ||
-        record.renderedRevision !== (await this.git.contentRevision(path)) ||
-        (await this.git.status(path)).paths.some(
-          (file) => !['.vandashi.yml', 'video_packaging.yml', 'launch.yml'].includes(file),
-        ))
+        record.renderedRevision !==
+          (record.origin === 'imported'
+            ? await this.importedMedia.revision(renderedPath)
+            : await this.git.contentRevision(path)) ||
+        (record.origin !== 'imported' &&
+          (await this.git.status(path)).paths.some(
+            (file) => !['.vandashi.yml', 'video_packaging.yml', 'launch.yml'].includes(file),
+          )))
     )
       renderedPath = null;
     return {
@@ -111,6 +117,7 @@ export class ProjectStore {
       name: record.name,
       path,
       ratio: record.ratio,
+      origin: record.origin,
       updatedAt: record.updatedAt,
       renderedPath,
       packaging: await readYaml(path, 'video_packaging.yml', packagingSchema, this.git, this.onRecovery),
@@ -189,10 +196,36 @@ export class ProjectStore {
       brandId: brand.id,
       name,
       ratio: input.ratio,
+      origin: 'composition',
       updatedAt: new Date().toISOString(),
       renderedPath: null,
     };
     await this.initialize(path, record, await containedPath(brand.path, 'shared_assets'));
+    return { brandId: brand.id, videoId: record.id, clipId: null };
+  }
+
+  async importVideo(input: ImportedVideo, validateCopy: (path: string) => Promise<void>): Promise<Scope> {
+    const brand = await this.brand(input.brandId);
+    const name = safeName(input.name, 3);
+    if (name.startsWith('.')) throw new Error('Choose a project name that does not start with a dot.');
+    const record: VideoRecord = {
+      id: randomUUID(),
+      brandId: brand.id,
+      name,
+      ratio: input.ratio,
+      origin: 'imported',
+      updatedAt: new Date().toISOString(),
+      renderedPath: null,
+    };
+    const shared = await containedPath(brand.path, 'shared_assets');
+    await initializeImportedVideo(
+      await containedPath(brand.path, 'videos'),
+      input,
+      record,
+      this.git,
+      (path) => this.initialize(path, record, shared),
+      validateCopy,
+    );
     return { brandId: brand.id, videoId: record.id, clipId: null };
   }
 
@@ -215,6 +248,7 @@ export class ProjectStore {
       brandId: brand.id,
       name,
       ratio: input.ratio,
+      origin: 'composition',
       updatedAt: new Date().toISOString(),
       renderedPath: null,
       parentVideoId: parent.id,

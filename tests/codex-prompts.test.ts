@@ -17,6 +17,7 @@ const workspace: Workspace = {
     name: 'video',
     path: '/studio/Example/videos/video',
     ratio: '16:9',
+    origin: 'composition',
     updatedAt: '',
     renderedPath: null,
     packaging: {
@@ -55,6 +56,10 @@ describe('workspace prompts', () => {
     expect(staged).toContain('EDITS_LONG_FORM_VIDEOS_TASTE.md');
     expect(staged.split('Optional context:')[0]).not.toContain('SCRIPT_LONG_FORM_VIDEOS_TASTE.md');
     expect(staged).toContain('/skills/hyperframes/SKILL.md');
+    expect(staged).toContain('@[asset name](<absolute filesystem path>)');
+    expect(buildWorkspacePrompt({ ...base, topic: 'creation' })).toContain(
+      '@[asset name](<absolute filesystem path>)',
+    );
     expect(buildWorkspacePrompt({ ...base, topic: 'creation' })).toContain(
       'For a new script, establish one clear viewer promise',
     );

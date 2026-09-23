@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { AgentError } from '../../domain/agent';
 import { resolveCodexBinary } from './binary';
 import { codexLaunch } from './launch';
+import { shutdownProcess } from './shutdown';
 
 const envelope = z.object({
   id: z.union([z.string(), z.number()]).optional(),
@@ -20,7 +21,7 @@ export interface RpcClient {
   request(method: string, params: unknown): Promise<unknown>;
   subscribe(listener: (event: RpcNotification) => void): () => void;
   onFailure(listener: (error: Error) => void): () => void;
-  close(): void;
+  close(): Promise<void>;
 }
 interface Pending {
   resolve(value: unknown): void;
@@ -57,6 +58,8 @@ export class CodexTransport implements RpcClient {
   private serial = 0;
   private closed = false;
   private stderr = '';
+  private readonly processClosed: Promise<void>;
+  private shutdown: Promise<void> | null = null;
   constructor(
     binary = resolveCodexBinary(),
     private readonly timeoutMs = 30_000,
@@ -65,7 +68,13 @@ export class CodexTransport implements RpcClient {
     this.child = spawn(launch.command, launch.args, {
       stdio: 'pipe',
       windowsHide: true,
+      detached: process.platform !== 'win32',
       env: launch.environment,
+    });
+    this.processClosed = new Promise((resolve) => {
+      this.child.once('close', () => {
+        resolve();
+      });
     });
     this.child.stdout.setEncoding('utf8');
     this.child.stderr.setEncoding('utf8');
@@ -74,7 +83,7 @@ export class CodexTransport implements RpcClient {
         for (const line of this.decoder.push(chunk)) this.receive(line);
       } catch (error) {
         this.fail(error instanceof Error ? error : new Error(String(error)));
-        this.child.kill();
+        void this.close();
       }
     });
     this.child.stderr.on('data', (chunk: string) => {
@@ -118,10 +127,10 @@ export class CodexTransport implements RpcClient {
     this.failures.add(listener);
     return () => this.failures.delete(listener);
   }
-  close(): void {
+  close(): Promise<void> {
     this.fail(new AgentError('unavailable', 'Codex connection closed.'));
-    this.child.stdin.end();
-    this.child.kill('SIGTERM');
+    this.shutdown ??= shutdownProcess(this.child, this.processClosed);
+    return this.shutdown;
   }
   private write(message: unknown): void {
     if (!this.closed) this.child.stdin.write(`${JSON.stringify(message)}\n`);

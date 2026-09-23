@@ -79,11 +79,41 @@ test('refreshes a prepared publishing request without overwriting an edited draf
   await page.getByRole('button', { name: 'Open upload chat', exact: true }).click();
   const composer = page.getByRole('textbox', { name: 'AI chat', exact: true });
   await expect(composer).toHaveText('Prepared upload request 1');
+  await expect(page.getByRole('textbox', { name: 'Titles', exact: true })).toBeDisabled();
+  await page.getByRole('button', { name: 'Edit review', exact: true }).click();
+  await expect(composer).toHaveCount(0);
+  await page.getByRole('textbox', { name: 'Titles', exact: true }).fill('Updated reviewed title');
+  const tags = page.getByRole('textbox', { name: 'Tags', exact: true });
+  await tags.pressSequentially('hidden city, blue hour, hidden city');
+  await expect(tags).toHaveValue('hidden city, blue hour, hidden city');
+  await tags.press('Tab');
+  await expect(tags).toHaveValue('hidden city, blue hour');
   await page.getByRole('button', { name: 'Open upload chat', exact: true }).click();
   await expect(composer).toHaveText('Prepared upload request 2');
   await composer.fill('My reviewed publishing instructions');
+  await page.getByRole('button', { name: 'Edit review', exact: true }).click();
+  await page.getByRole('textbox', { name: 'Description', exact: true }).fill('Updated description');
   await page.getByRole('button', { name: 'Open upload chat', exact: true }).click();
   await expect(composer).toHaveText('My reviewed publishing instructions');
+  await expect(page.getByRole('button', { name: 'Send message', exact: true })).toBeDisabled();
+  await composer.press('Enter');
+  expect((await chatCalls(desktopApp)).filter((call) => call === 'sendChat')).toHaveLength(0);
+  await page.locator('.chat-tab.active > button').first().click();
+  await expect(page.getByRole('button', { name: 'Send message', exact: true })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Keep my draft', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Packaging', exact: true }).click();
+  await expect(composer).toHaveText('My reviewed publishing instructions');
+  await expect(page.getByRole('button', { name: 'Send message', exact: true })).toBeDisabled();
+  await page.getByRole('button', { name: 'Keep my draft', exact: true }).click();
+  await expect(composer).toHaveText('My reviewed publishing instructions');
+  await expect(page.getByRole('button', { name: 'Send message', exact: true })).toBeEnabled();
+  await page.getByRole('button', { name: 'Launch suite', exact: true }).click();
+  await page
+    .locator('.launch-row')
+    .filter({ has: page.getByRole('heading', { name: 'YouTube', exact: true }) })
+    .getByRole('button', { name: 'Prepare upload', exact: true })
+    .click();
+  await page.getByRole('button', { name: 'Open upload chat', exact: true }).click();
   await page.getByRole('button', { name: 'Use prepared request', exact: true }).click();
-  await expect(composer).toHaveText('Prepared upload request 3');
+  await expect(composer).toHaveText('Prepared upload request 4');
 });
