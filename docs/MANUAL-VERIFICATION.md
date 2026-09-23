@@ -238,4 +238,51 @@ This records observed behavior, including defects still being worked on. It is n
 - Electron tests cover the native preload boundary, native picker grants, real asset import and media decode, contextual-chat draft preservation, and prepared upload conversations.
 - Application tests exercise real Git and local storage with controlled agent failures, interrupted script edits, recovery commits, and compensating undo.
 
+## Localized package and site preparation — 2026-09-23
+
+- The unsigned package frozen at `6795514` passed real speech and Studio/render
+  integration, including authenticated Codex script synchronization (2/2).
+- Direct computer use switched Settings through English, Japanese, Korean,
+  Portuguese, German, French, Spanish, Italian, then English. Every save updated
+  the real Recovery Studio workspace and persisted on reopening Settings. Names
+  and creative-guide content stayed unchanged. No user project files were translated.
+- Opened Northstar Stories and its real Creation, Clips, Shared assets, and creative
+  guide screens. Captured four unmodified product screenshots from these workflows.
+  The actual six-second composition and four-second portrait clip played to completion.
+- Clicking the real History Copy commit SHA exposed a denied Chromium clipboard
+  write. The correction keeps reads/Studio denied and permits sanitized writes only
+  for the exact trusted top-level document. Two focused native cases then verified
+  localized History copying, exact SHA bytes, Studio/read denial, and image copying
+  in both brand and video asset consumers; three existing diagnostic cases also passed.
+  This native correction still needs a fresh packaged/direct retest.
+- The first clipboard regression test failed to restore its initial clipboard
+  because Electron requires newly constructed ClipboardItems when writing a snapshot.
+  The original pre-test clipboard could not be recovered. The corrected tests eagerly
+  clone MIME payloads, preflight restoration, and restore in finally; later runs passed.
+- Direct site checks at 390 CSS pixels exercised language selection, Japanese
+  installation controls, real prompt copying, screenshot enlargement, keyboard
+  dismissal and focus return. The browser-session clipboard was initially empty
+  and returned to empty afterward. The production suite then passed all 306 cases
+  in Chromium, Firefox and WebKit, with 64 language/viewport captures and eight
+  mobile screenshot-dialog captures. It exposed and verified fixes for enlarged-text
+  header reflow and WebKit arrow-key image panning. Independent visual review found
+  an isolated German letter and awkward Japanese heading breaks; shorter translated
+  phrases and phrase-aware headings corrected both. The same reviewer accepted 15
+  refreshed Japanese/German/Korean/Portuguese captures, and a fresh complete production
+  rerun passed all 306 cases again. The separate language/catalog suite passes 58 tests.
+
 The current test suite is the executable source of exact scenarios and counts. No Windows/Linux runtime, real public upload, or deployed landing-page acceptance is implied by this journal.
+
+## Landing checkpoint native regression follow-up
+
+The first full 112-case native run passed 111 cases and exposed a flaky synthetic
+caret setup in the mention test. Eight instrumented fresh-app trials reproduced
+two document-start corrections without an application content reset: ProseMirror
+ignores that selection change during the first 200 ms after focus. The test now
+uses six ordinary Left-arrow presses and verifies DOM caret offsets before typing.
+Its mention insertion, Escape, IME Enter, reset and reload assertions are unchanged.
+Both cases passed ten repetitions each (20/20); no production chat code changed.
+The complete native suite then passed **112/112** in 2.2 minutes. The source gate
+passes **553 tests**, with 13 explicitly opt-in integration cases skipped, and
+reports zero static-analysis errors/warnings. Separate real packaged integration
+evidence remains documented above; skipped live tests are not counted as passed.

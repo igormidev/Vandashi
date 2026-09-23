@@ -171,6 +171,21 @@ lengths, keys, IDs, and parameters are validated. Translation began after the En
 implementation checkpoint; language-specific reviews and actual layout acceptance are
 recorded in [TRANSLATION.md](TRANSLATION.md).
 
+## Browser landing page
+
+`landing/src` is a separate browser-only entry with its own strict TypeScript environment,
+complete locale catalogs, and production `/Vandashi/` base path. It imports no desktop
+runtime, renderer, host adapter, or Node API; dependency rules enforce this in both
+directions. It shares only installed UI/font packages. Source checks and builds include
+both products; three-engine production browser tests are separate from native Electron
+tests. See [SITE.md](SITE.md) for content, screenshot provenance, and deployment.
+
+Desktop permissions still default to denied. `renderer-permissions.ts` permits only
+`clipboard-sanitized-write` from the exact top-level app WebContents, requesting document,
+and current loaded document. Clipboard reads, embedded Studio, other windows, and all
+unrecognized permissions are denied. Native image copying remains behind its validated
+asset capability; it does not grant browser clipboard reads.
+
 ## References
 
 - [Electron security recommendations](https://www.electronjs.org/docs/latest/tutorial/security)

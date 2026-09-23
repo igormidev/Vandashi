@@ -65,3 +65,14 @@ Structural changes require a separate read-only agent to check whether the landi
 Resolve app-owned chat labels from stable topics at render time. Preserve user clip/asset
 names, unknown historical titles, and all raw content. Persistent failures retain typed
 diagnostics so a language change updates the explanation without restarting the request.
+
+The landing page lives in `landing/src`, with its own browser-only TypeScript environment
+and eight complete catalogs. It must never import Electron, host adapters, Node, or desktop
+renderer code. `npm run check` verifies and builds both products. Run `npm run test:site`
+against the production `/Vandashi/` base path before site delivery. Keep screenshots tied
+to an identified real app revision; preserve full captures in `docs/screenshots` and record
+any lossless web encoding in `docs/SITE.md`. Never replace real screenshots with invented UI.
+
+Clipboard permissions default to denied. Only sanitized writes from the exact top-level
+app document may pass the production permission handlers. Keep reads, unknown permissions,
+other windows, and embedded Studio frames denied; test native history and both asset consumers.

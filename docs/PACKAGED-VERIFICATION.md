@@ -98,3 +98,21 @@ Browser installation uses the official
 [Puppeteer install API](https://pptr.dev/browsers-api/browsers.install);
 Linux display setup follows
 [Electron's headless CI guidance](https://www.electronjs.org/docs/latest/tutorial/testing-on-headless-ci).
+
+## Localized macOS checkpoint
+
+The localized source commit `6795514` was packaged with
+`CSC_IDENTITY_AUTO_DISCOVERY=false`, explicitly skipping code signing. The app is
+`/tmp/vandashi-localized-package/mac-arm64/Vandashi.app`. All 288 generated output
+files matched the packaged payload; this includes 248 local CJK font subsets.
+The notice bundle contains 175 distinct notices and the original Noto font license.
+The frozen inputs are recorded in `/tmp/vandashi-localized-package/frozen-input.json`.
+
+Both real package tests passed: speech in 6.77 seconds, Studio/Codex/render in
+58.74 seconds. The latter used the authenticated optional agent smoke path, minimal
+desktop PATH, `/usr/bin/git`, and explicit verified FFmpeg/FFprobe/browser paths.
+Results are `/tmp/vandashi-localized-package/smoke-results.json` and
+`/tmp/vandashi-localized-package-smoke.log`. Direct packaged Settings/language and
+existing-project walkthroughs followed. These observations verify this checkpoint;
+the subsequent clipboard correction and any final audit changes require fresh
+package verification before final release acceptance.

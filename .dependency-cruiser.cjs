@@ -31,6 +31,35 @@ module.exports = {
       from: { path: '^src/infrastructure' },
       to: { path: '^src/(renderer|desktop)' },
     },
+    {
+      name: 'desktop-independent-of-landing',
+      severity: 'error',
+      from: { path: '^src/' },
+      to: { path: '^landing/' },
+    },
+    {
+      name: 'landing-only-shares-pure-locales',
+      severity: 'error',
+      from: { path: '^landing/src/' },
+      to: {
+        path: '^(?!landing/|node_modules/|src/domain/locales\\.ts$)',
+        dependencyTypesNot: ['core'],
+      },
+    },
+    {
+      name: 'landing-no-node',
+      severity: 'error',
+      from: { path: '^landing/src/' },
+      to: { dependencyTypes: ['core'] },
+    },
+    {
+      name: 'landing-no-desktop-runtime',
+      severity: 'error',
+      from: { path: '^landing/src/' },
+      to: {
+        path: '(^|node_modules/)(electron|electron-vite|hyperframes|exiftool-vendored|@huggingface/transformers)(/|$)',
+      },
+    },
     { name: 'no-unresolved', severity: 'error', from: {}, to: { couldNotResolve: true } },
   ],
   options: {

@@ -44,8 +44,16 @@ test('inserts at the caret, dismisses suggestions, preserves IME Enter, and clea
   await page.reload();
   const editor = page.getByRole('textbox', { name: 'AI chat', exact: true });
   await editor.fill('Before  after');
-  await editor.press(process.platform === 'darwin' ? 'Meta+ArrowLeft' : 'Home');
-  for (let index = 0; index < 7; index++) await editor.press('ArrowRight');
+  const caret = () =>
+    editor.evaluate((element) => {
+      const selection = window.getSelection();
+      if (!selection?.anchorNode || !element.contains(selection.anchorNode)) return null;
+      return { anchor: selection.anchorOffset, focus: selection.focusOffset };
+    });
+  await expect.poll(caret).toEqual({ anchor: 13, focus: 13 });
+  // Avoid ProseMirror's just-focused document-start correction while exercising real keyboard movement.
+  for (let index = 0; index < 6; index++) await editor.press('ArrowLeft');
+  await expect.poll(caret).toEqual({ anchor: 7, focus: 7 });
   await editor.pressSequentially('@brand');
   await page.getByRole('option', { name: 'brand_config.yml', exact: true }).click();
   await expect(editor.locator('.kind-config')).toHaveText('brand_config.yml');

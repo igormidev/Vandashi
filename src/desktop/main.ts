@@ -32,6 +32,7 @@ import { createMediaHandler } from './media-handler';
 import { DesktopStudioHost } from './studio-host';
 import { STUDIO_BRIDGE_FLUSH, STUDIO_BRIDGE_INSTALL } from '../infrastructure/media/studio-bridge';
 import { AppFault, failureEnvelope } from '../domain/diagnostics';
+import { installRendererPermissions } from './renderer-permissions';
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -203,10 +204,7 @@ async function createWindow(): Promise<void> {
         });
     });
   });
-  session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => {
-    callback(false);
-  });
-  session.defaultSession.setPermissionCheckHandler(() => false);
+  installRendererPermissions(session.defaultSession, window.webContents, rendererUrl);
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   window.webContents.on('will-navigate', (event) => {
     event.preventDefault();

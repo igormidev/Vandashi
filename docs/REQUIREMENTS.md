@@ -4,12 +4,12 @@ Source of truth: [`genesis_prompt.md`](../genesis_prompt.md), read in full again
 
 Unchecked means **not yet verified**, including work that may already exist. Check an item only with a corresponding implementation and current test or manual verification evidence. Record evidence in the verification log; do not equate scaffolding, a disabled button, or a mock adapter with a working integration. Ambiguities and chosen interpretations live in [`DECISIONS.md`](DECISIONS.md).
 
-The checked items below are supported by the dated evidence anchors E01–E14, not a final
+The checked items below are supported by the dated evidence anchors E01–E15, not a final
 product sign-off. UI evidence is from macOS Electron; controlled AI/browser fixtures are
 identified separately from real Codex/media execution. A combined requirement stays
 unchecked when any clause lacks evidence. Historical package tests establish the tested
 integration only: **the final release installer, Windows/Linux execution, real external uploads,
-translations, landing site, and final independent reviews remain unaccepted**.
+landing deployment, and final independent reviews remain unaccepted**.
 
 ## 1. Product and local data model
 
@@ -242,11 +242,11 @@ Source: `genesis_prompt.md:L606–L650`, `L671–L676`, `L711–L712`.
 - [ ] UX-05 — Horizontal scrollables reach the component edges and keep padding inside the scrolling content, not around the scroll viewport.
 - [ ] UX-06 — Desktop panes remain usable at the native minimum, common sizes, and large windows; focus, keyboard access, dialog dismissal, loading, empty, error, and disabled states are checked.
 - [x] I18N-01 — English keyed-string architecture is in place immediately; actual translations start only after app functionality is finished. [E13](#e13).
-- [ ] I18N-02 — App and later landing page support English, Japanese, French, Spanish, German, Korean, Brazilian Portuguese, and Italian; unsupported locales fall back to English.
-- [ ] I18N-03 — Japanese uses natural kanji/kana; Korean uses Hangul. Translation review includes actual UI context, glyph coverage, wrapping, interpolations, and pluralization.
-- [ ] I18N-04 — Hyperframes Studio may remain in its upstream language; the surrounding shell and app-owned help are translated.
+- [x] I18N-02 — App and later landing page support English, Japanese, French, Spanish, German, Korean, Brazilian Portuguese, and Italian; unsupported locales fall back to English. [E15](#e15).
+- [x] I18N-03 — Japanese uses natural kanji/kana; Korean uses Hangul. Translation review includes actual UI context, glyph coverage, wrapping, interpolations, and pluralization.
+- [x] I18N-04 — Hyperframes Studio may remain in its upstream language; the surrounding shell and app-owned help are translated.
 - [x] SET-01 — Fixed top-right settings icon is available on brand selection and brand page. [E03](#e03).
-- [ ] SET-02 — Settings change app language and automatic-operation model/reasoning preferences individually, including commit text, metadata, chapter generation, and manual-edit script synchronization.
+- [x] SET-02 — Settings change app language and automatic-operation model/reasoning preferences individually, including commit text, metadata, chapter generation, and manual-edit script synchronization.
 - [x] SET-03 — Automatic operations default to available Luna-class/medium reasoning except justified high-effort tasks; settings persist and cannot select unsupported capabilities. [E13](#e13).
 - [x] SET-04 — Chat preferences are separate from automatic-operation settings and preserve the last selected model/effort. [E13](#e13).
 
@@ -255,10 +255,10 @@ Source: `genesis_prompt.md:L606–L650`, `L671–L676`, `L711–L712`.
 Source: `genesis_prompt.md:L652–L670` and `L678–L714`.
 
 - [ ] SITE-01 — Build the landing site only after the app is complete, then host it on GitHub Pages under the repository/account URL without requiring a custom domain.
-- [ ] SITE-02 — Landing highlights open source and free Vandashi software, accurately explains supported Codex/ChatGPT access requirements, and links the source.
-- [ ] SITE-03 — Use strong web-design guidance/research, concise useful copy, and a distinctive design; app screenshots are accurate if used.
-- [ ] SITE-04 — Verify mobile/desktop and intermediate viewport responsiveness with real browser use and no clipped controls/content.
-- [ ] SITE-05 — Detect browser language, support all requested locales, and fall back to English; language can be deliberately selected where provided.
+- [x] SITE-02 — Landing highlights open source and free Vandashi software, accurately explains supported Codex/ChatGPT access requirements, and links the source. [E15](#e15).
+- [x] SITE-03 — Use strong web-design guidance/research, concise useful copy, and a distinctive design; app screenshots are accurate if used. [E15](#e15).
+- [x] SITE-04 — Verify mobile/desktop and intermediate viewport responsiveness with real browser use and no clipped controls/content. [E15](#e15).
+- [x] SITE-05 — Detect browser language, support all requested locales, and fall back to English; language can be deliberately selected where provided. [E15](#e15).
 - [x] DOC-01 — Human-readable GitHub README explains what the app does, setup, usage, prerequisites, and current integration limitations accurately. [E14](#e14).
 - [ ] DOC-02 — README includes real app screenshots, landing URL after deployment, and a copy/paste prompt for an agent to clone, install, run, and open the app.
 - [x] DOC-03 — Maintain architecture/integration/upgrading guidance and records of material decisions. Re-read genesis for every feature and after context compaction. [E14](#e14).
@@ -542,7 +542,8 @@ clean recapture; that follow-up acceptance is recorded in the translation journa
 Native workspace-editor tests persist five separate model/effort preferences; chat tests retain
 its own selection. Live discovery/validation allow supported combinations. Defaults remain
 Luna-class medium, script reconciliation high and chat Astra-class medium when supported.
-The landing page language requirement remains pending its separate final implementation.
+The landing page has eight complete catalogs and separate browser verification;
+its final editorial/layout review is recorded in the site acceptance evidence.
 
 <a id="e14"></a>
 **E14 — Current setup and integration documentation.**
@@ -550,10 +551,22 @@ The landing page language requirement remains pending its separate final impleme
 source layout, checks, account/browser limits and an agent installation prompt. Architecture,
 Codex, Hyperframes, chat, assets, publishing, imports, native-source, license, localization and
 decision documents identify contracts and upgrades. The full genesis was reread for this
-reconciliation. Screenshots/site and final publication remain unchecked. Local hooks can be
+reconciliation. Real app screenshots are now included. Deployed-site linkage and final publication remain unchecked. Local hooks can be
 bypassed; the configured [CI workflow](../.github/workflows/verify.yml) must be the review gate.
 Configuration is not an observed green matrix. [Packaged verification](PACKAGED-VERIFICATION.md)
 distinguishes the verified fresh macOS checkpoint from remaining cross-platform and final-release acceptance.
+
+<a id="e15"></a>
+**E15 — Eight-language landing site, real screenshots, responsive browser acceptance.**
+[SITE.md](SITE.md) records the separate browser-only source, research, design, source
+installation prompt and local font assets. Eight complete 40-key catalogs preserve
+commands and useful metadata. The language/catalog suite passes 58 cases. A fresh
+production run passes 306 cases across Chromium, Firefox and WebKit, including all
+eight locales at eight viewports, 200% text, failure recovery, keyboard dialogs and
+production-path 404s. Independent visual review accepted the refreshed typography
+fixes. The journal records direct browser checks and the real packaged-app provenance
+of all four screenshots. GitHub deployment and the live README link remain SITE-01
+and DOC-02; this local acceptance is not deployment evidence.
 
 ### Residual acceptance, kept explicit
 
@@ -572,12 +585,11 @@ from a demonstrated defect; they do not ask to rewrite verified behavior or star
 | ASSET-03/04/11/12/16       | Complete animated GIF, image clipboard, picker/drop interaction and an actual folder create/import/delete AI turn. Reference-aware deletion and unavailable-asset scope rejection pass; filename rename/reference repair still lacks a complete exercised scenario. Verify supported media rather than assuming every format.                                           |
 | LAUNCH-10–13/16            | Complete authorized test-account publication: browser/account verification, login/account recovery, destination fields/candidate limits, upload/processing monitoring, verified URL/manifest, cancellation/error recovery and lock release. No external upload has occurred.                                                                                            |
 | UX-01–03, UX-05/06         | Complete independent visual/style, installed icon/identity, concise-copy and all-consumer layout/accessibility review. Minimum/split and several modal/keyboard/tooltip states pass; this is not exhaustive all-screen/size acceptance.                                                                                                                                 |
-| I18N-02–04, SET-02         | All desktop languages are implemented and pass native/catalog checks. Finish cleaned visual recapture and direct packaged-language walkthrough; the combined landing-language requirement remains pending site implementation.                                                                                                                                          |
-| SITE-01–05, DOC-02         | Build/localize and responsively test the final site, deploy Pages, add accurate screenshots and verified site URL to README. The installation prompt already exists.                                                                                                                                                                                                    |
+| SITE-01, DOC-02            | The local site, translations, real screenshots and installation prompt pass browser/visual acceptance. Deploy Pages, observe the public URL, and add that verified link to README.                                                                                                                                                                                      |
 | QA-01–06                   | Maintain per-commit checks, then run final-state static/tests and real integration/manual acceptance. Conduct the requested strongest-model/highest-effort independent section review/fix/re-review loops. Verify final artifacts, GitHub push and deployment. Interim audits and historical green checkpoints do not satisfy the final loop.                           |
 
 Native source archives and licensing have separate recorded evidence. Release acceptance still
 requires the actual delivered artifacts to include their corresponding materials. The current
 macOS integration checkpoint is verified as described above. Final distributed packages,
-Windows/Linux execution, external account workflows, translations, site deployment and final
+Windows/Linux execution, external account workflows, site deployment and final
 section audits remain unaccepted by this documentation update.

@@ -105,3 +105,13 @@ split extremes at the native minimum, including original user/provider content.
 These are desktop translation checks. The separate site translations, final section
 audit loop, other-OS runtime execution, and authorized external-account publishing
 acceptance are not implied.
+
+The unsigned macOS package frozen at `6795514` passed its actual bundled speech
+test (6.77 seconds) and Studio/render test with real Codex script synchronization
+(58.74 seconds). The packaged app was then operated directly through Settings:
+English → Japanese → Korean → Brazilian Portuguese → German → French → Spanish →
+Italian → English. Each saved language appeared in the real brand workspace and
+on reopening Settings. Original project names and editable creative guides remained
+unchanged. The Japanese glyphs and workspace layout were inspected visually; all
+languages also have the native/capture evidence above. This completes desktop
+language/settings acceptance, independently of the later site's browser checks.

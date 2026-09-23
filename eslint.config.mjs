@@ -14,7 +14,6 @@ export default ts.config(
       'coverage/**',
       'test-results/**',
       'playwright-report/**',
-      'site/**',
     ],
   },
   js.configs.recommended,
@@ -34,7 +33,7 @@ export default ts.config(
     },
   },
   {
-    files: ['src/renderer/**/*.tsx'],
+    files: ['src/renderer/**/*.tsx', 'landing/src/**/*.tsx'],
     plugins: { 'react-hooks': hooks, 'jsx-a11y': a11y, i18next },
     rules: {
       ...hooks.configs.recommended.rules,

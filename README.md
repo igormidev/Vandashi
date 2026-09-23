@@ -6,6 +6,8 @@ Vandashi keeps your brand guides, scripts, assets, packaging, and version histor
 
 **Development preview:** the implementation and integration verification are in progress. See [the acceptance checklist](docs/REQUIREMENTS.md) for verified behavior and outstanding work.
 
+![A real Vandashi workspace: the script beside its editable video and version history](docs/screenshots/creation.png)
+
 ## Run from source
 
 Install Node.js 24, Git, and [Codex CLI](https://developers.openai.com/codex/cli/), then sign in with `codex login`.
@@ -33,6 +35,8 @@ The pinned Hyperframes CLI, Studio, and player are included in npm dependencies.
 
 Each contextual conversation persists locally. Read-only mode enforces a read-only Codex sandbox. Only one AI operation runs at a time. Undo uses a recoverable file checkpoint and a matching Codex conversation boundary.
 
+![Shared media with a preview and editable descriptions and tags](docs/screenshots/assets.png)
+
 ## Local files
 
 ```text
@@ -58,11 +62,14 @@ The app stores preferences and conversation records in the operating system's ap
 ```sh
 npm run check          # Types, strict lint, architecture, tests, production bundle
 npm run test:e2e       # Actual Electron shell and workflow tests
+npm run test:site      # Production landing page in Chromium, Firefox, and WebKit
 npm run package:dir    # Build an unpacked native app for this machine
 npm run package        # Verify and create native installers
 ```
 
 `npm ci` installs a pre-commit hook that runs the complete verification gate. CI runs it on macOS, Windows, and Linux, then tests Electron and packages the app. Live Codex tests are opt-in because they use a signed-in account; live media tests require the rendering tools. See [Codex integration](docs/CODEX.md), [Hyperframes integration](docs/HYPERFRAMES.md), and [architecture](docs/ARCHITECTURE.md).
+
+The separate [landing page](landing/) uses the same strict source checks and a production build under `/Vandashi/`. See [site maintenance](docs/SITE.md) for language catalogs, screenshot provenance, responsive checks, and GitHub Pages deployment.
 
 ## Ask an agent to install it
 
