@@ -13,7 +13,38 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  native-sources:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - name: Restore verified source downloads
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: build/native-source-cache
+          key: native-sources-${{ hashFiles('scripts/native-sources.lock.json') }}
+      - name: Collect original native source material
+        run: npm run sources:generate
+      - name: Verify every archived source payload
+        run: npm run sources:verify
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: Vandashi-native-sources
+          path: |
+            build/native-sources/*.tar.gz
+            build/native-sources/*.sha256
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
   desktop:
+    needs: native-sources
     strategy:
       fail-fast: false
       matrix:
@@ -45,6 +76,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install --yes ffmpeg xvfb
       - run: npm ci
+      - name: Check source coverage for installed native components
+        run: npm run sources:check
       - name: Verify architecture, types, lint, tests, and build
         run: npm run check
       - name: Test the real Electron renderer

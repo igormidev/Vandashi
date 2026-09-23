@@ -85,7 +85,7 @@ async function supplemental(name, version, directory) {
     return true;
   }
   if (name === 'exiftool-vendored.exe' && version === '13.59.2') {
-    await packageFile(directory, 'bin/exiftool_files/LICENSE', `${id} — bundled Perl and launcher`);
+    await packageFile(directory, 'bin/exiftool_files/LICENSE', `${id} — bundled runtime license file`);
     await packageFile(directory, 'bin/exiftool_files/readme_windows.txt', id);
     await packageFile(directory, 'vendor-manifest.json', `${id} — exact upstream archive provenance`);
     await archiveNotices(directory, 'bin/exiftool_files/Licenses_Strawberry_Perl.zip', id);

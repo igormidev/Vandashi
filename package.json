@@ -20,11 +20,14 @@
     "test:e2e": "playwright test",
     "check": "npm run format:check && npm run typecheck && npm run lint && npm run architecture && npm test && npm run build",
     "prepare": "node scripts/install-hooks.mjs",
-    "package": "npm run check && npm run licenses:generate && electron-builder",
-    "package:dir": "npm run build && npm run licenses:generate && electron-builder --dir",
+    "package": "npm run check && npm run licenses:generate && npm run sources:generate && npm run sources:verify && electron-builder",
+    "package:dir": "npm run build && npm run licenses:generate && npm run sources:check && electron-builder --dir",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "licenses:generate": "node scripts/generate-notices.mjs"
+    "licenses:generate": "node scripts/generate-notices.mjs",
+    "sources:check": "node scripts/native-sources.mjs --check",
+    "sources:generate": "node scripts/native-sources.mjs",
+    "sources:verify": "node scripts/native-source-verify.mjs"
   },
   "dependencies": {
     "@fontsource/geist": "^5.2.8",
