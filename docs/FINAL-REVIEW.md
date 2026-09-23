@@ -461,3 +461,15 @@ all 21 affected native cases with deterministic hydration. The independent revie
 accepted the unchanged coverage. The current `74c15c7` package also passed both real
 integrations with zero skips in 100.23 seconds, and its frozen hashes/mtimes remained
 unchanged. Current cross-platform CI remains separate from these local results.
+
+The original Chat reviewer independently accepted the current staged gate, 228-case
+native run and both packaged integrations. All 219 frozen source/build inputs match
+`0ad090b`, and all 288 packaged output hashes match. The attachment correction has no
+remaining local verification gate; a real Finder drag remains separate.
+
+The original prerequisite reviewer accepted the actual missing-executable recovery
+walkthrough in that package. A disposable profile and copied brand isolated the check;
+actual ENOENT, failed Retry, the official setup link and successful same-process Retry
+were observed. Explicit model refresh restored discovery, video checks completed and
+the composition played. All six copied/original repositories remained clean with
+matching HEADs/trees. Fresh installation, login and quota recovery remain unverified.

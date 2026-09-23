@@ -630,3 +630,32 @@ Undo restored the shared import's complete six-repository baseline trees, kept a
 repositories clean, and retained all five changed commits under backup refs. Evidence:
 `/tmp/vandashi-shared-readonly-undo.json` and `/tmp/vandashi-shared-import-undo.json`.
 The package was closed before subsequent renderer regression testing.
+
+## Native Codex executable recovery — current package
+
+The `74c15c7` macOS package, whose 219 source/build inputs also match `0ad090b`,
+was launched with a disposable profile and a process-local `VANDASHI_CODEX_PATH`
+pointing to an absent task-local executable. The complete Recovery Studio brand
+was copied and the isolated registry repointed to it. Installed tools, PATH, HOME,
+CODEX_HOME and account credentials were unchanged.
+
+Actual ENOENT blocked brand entry, disabled workspace navigation and displayed
+Installation guide without an unsupported AI repair action. Check again while the
+executable remained absent retained the error and showed the failed-retry toast.
+Installation guide opened Arc's Little Arc at the official Codex CLI documentation;
+the configured OpenAI URL redirected to `https://learn.chatgpt.com/docs/codex/cli`.
+Only that test-opened help window was then closed.
+
+A task-local symlink to the existing native `codex-cli 0.155.1` executable restored
+availability. Check again in the same running app entered the brand successfully.
+The initially empty model catalog required its existing explicit refresh action;
+GPT-6-Astra and Medium then appeared. Fresh canvas passed the actual video runtime
+and live core-skill checks. Its Creation preview opened and playback advanced to
+0:25 / 0:40. The isolated app was paused and closed before restoring the main manual
+profile. All six copied repositories matched the originals' HEADs and trees, and
+both sets remained clean.
+
+Evidence: `/var/folders/_8/nmgh3s5j1gncsykp5dm7vdc40000gn/T/vandashi-prerequisite-recovery-o75vh3_n/result.json`.
+The original prerequisite reviewer accepted this missing-configured-executable,
+official-help and same-process Retry branch. This does not establish a fresh
+installation, new/signed-out login, quota recovery or repository-writable AI repair.
