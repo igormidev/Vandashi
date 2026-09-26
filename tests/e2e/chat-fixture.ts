@@ -2,14 +2,16 @@ import type { ElectronApplication } from '@playwright/test';
 import type { AppEvent, AssetDraft, SaveInput, Settings } from '../../src/domain/models';
 import { chatFixtureData, type ChatFixtureOptions } from './chat-fixture-data';
 import type { ChatControlAction } from './chat-controls';
+import { installFixtureMedia } from './fixture-media';
 
 export async function installChatFixture(
   desktopApp: ElectronApplication,
   video = false,
   options: ChatFixtureOptions = {},
 ): Promise<void> {
+  if (options.mediaPath) await installFixtureMedia(desktopApp, options.mediaPath);
   await desktopApp.evaluate(
-    ({ ipcMain, BrowserWindow, protocol, net }, fixture) => {
+    ({ ipcMain, BrowserWindow }, fixture) => {
       let data = fixture.state;
       let currentWorkspace = fixture.workspace;
       let prepared = 0;
@@ -22,11 +24,6 @@ export async function installChatFixture(
       const calls: string[] = [];
       const requests: unknown[] = [];
       ipcMain.removeHandler('vandashi:invoke');
-      if (fixture.options.mediaPath) {
-        const mediaPath = fixture.options.mediaPath;
-        protocol.unhandle('vandashi-media');
-        protocol.handle('vandashi-media', () => net.fetch(`file://${mediaPath}`));
-      }
       const emit = (event: AppEvent) => {
         BrowserWindow.getAllWindows()[0]?.webContents.send('vandashi:event', event);
       };
@@ -49,6 +46,8 @@ export async function installChatFixture(
       ipcMain.handle('vandashi:invoke', (_event, method: string, args: unknown[]) => {
         calls.push(method);
         const input = args[0];
+        if (method === 'prepareTranscriptions') return { status: 'ready' };
+        if (method === 'prepareTranscriptionModel') return undefined;
         if (method === 'getUpdateState') return fixture.updateState;
         if (method === 'getState') return data;
         if (method === 'models') return fixture.models;

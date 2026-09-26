@@ -30,6 +30,8 @@ test('requires two confirmations, retains real download progress and never appli
     };
     ipcMain.removeHandler('vandashi:invoke');
     ipcMain.handle('vandashi:invoke', (event, method: unknown, args: unknown) => {
+      if (method === 'prepareTranscriptions') return { status: 'ready' };
+      if (method === 'prepareTranscriptionModel') return undefined;
       if (method === 'getUpdateState') return state;
       if (method === 'models') return [];
       if (method === 'downloadUpdate') {
@@ -119,6 +121,8 @@ test('Settings shows immediate local checking feedback, locks dismissal and repo
     };
     ipcMain.removeHandler('vandashi:invoke');
     ipcMain.handle('vandashi:invoke', (event, method: unknown, args: unknown) => {
+      if (method === 'prepareTranscriptions') return { status: 'ready' };
+      if (method === 'prepareTranscriptionModel') return undefined;
       if (method === 'getUpdateState') return state;
       if (method === 'models') return [];
       if (method === 'checkForUpdates')

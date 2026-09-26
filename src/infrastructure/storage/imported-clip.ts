@@ -3,7 +3,7 @@ import { readdir } from 'node:fs/promises';
 import { AppFault } from '../../domain/diagnostics';
 import { numberedImportName } from '../../domain/import-names';
 import type { VideoSummary } from '../../domain/models';
-import type { GitPort, ImportedClip } from '../../domain/storage';
+import type { GitPort, ImportedClip, ImportedMediaPreparation } from '../../domain/storage';
 import type { VideoRecord } from './schemas';
 import { containedPath, safeName } from './files';
 import { initializeImportedVideo } from './finished-video';
@@ -13,7 +13,7 @@ export async function initializeImportedClip(
   input: ImportedClip,
   git: GitPort,
   initialize: (path: string, record: VideoRecord) => Promise<void>,
-  validateCopy: (path: string) => Promise<void>,
+  validateCopy: ImportedMediaPreparation,
 ): Promise<{ path: string; record: VideoRecord }> {
   if (parent?.ratio !== '16:9') throw new AppFault({ id: 'storageClipLandscapeRequired' });
   if (!Number.isFinite(input.duration) || input.duration <= 0)

@@ -283,5 +283,13 @@
   "updatePlatformUnavailable": "Cette version n’a pas encore d’installateur pour cet ordinateur. Réessayez plus tard.",
   "updateDownloadFailed": "Le téléchargement n’a pas abouti. Réessayez pour télécharger une copie vérifiée.",
   "updateOpenFailed": "Impossible d’ouvrir l’installateur. Réessayez.",
-  "updateUnsupported": "Les mises à jour sont disponibles dans l’application installée."
+  "updateUnsupported": "Les mises à jour sont disponibles dans l’application installée.",
+  "appTranscriptionSetupFailed": "La configuration de la transcription a échoué. Vérifiez votre connexion et l’espace disponible, puis réessayez.",
+  "appTranscriptionFailed": "La transcription du média a échoué. Votre fichier a été conservé. Réessayez pour compléter ses métadonnées.",
+  "appTranscriptionCancelled": "La transcription a été annulée.",
+  "appTranscriptionChanged": "Le média a changé pendant la transcription. Réessayez avec le fichier actuel.",
+  "appTranscriptionUnavailable": "Les outils de transcription sont indisponibles. Terminez la configuration, puis réessayez.",
+  "appTranscriptionClassificationRequired": "Choisissez un type audio avant d’importer ce fichier.",
+  "appTranscriptionChoiceStale": "Le fichier audio a changé depuis sa vérification. Choisissez à nouveau son type.",
+  "appTranscriptionInvalid": "Les métadonnées de transcription sont invalides. Réessayez pour les régénérer."
 }

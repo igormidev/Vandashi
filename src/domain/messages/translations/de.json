@@ -283,5 +283,13 @@
   "updatePlatformUnavailable": "Für diesen Computer gibt es noch keine Installationsdatei dieser Version. Versuche es später erneut.",
   "updateDownloadFailed": "Der Download wurde nicht abgeschlossen. Versuche erneut, eine geprüfte Kopie herunterzuladen.",
   "updateOpenFailed": "Die Installationsdatei konnte nicht geöffnet werden. Versuche es erneut.",
-  "updateUnsupported": "Updates sind in der installierten App verfügbar."
+  "updateUnsupported": "Updates sind in der installierten App verfügbar.",
+  "appTranscriptionSetupFailed": "Die Einrichtung der Transkription ist fehlgeschlagen. Prüfe Verbindung und freien Speicher und versuche es erneut.",
+  "appTranscriptionFailed": "Das Medium konnte nicht transkribiert werden. Deine Datei wurde beibehalten. Versuche es erneut, um die Metadaten zu vervollständigen.",
+  "appTranscriptionCancelled": "Die Transkription wurde abgebrochen.",
+  "appTranscriptionChanged": "Das Medium wurde während der Transkription geändert. Versuche es mit der aktuellen Datei erneut.",
+  "appTranscriptionUnavailable": "Transkriptionswerkzeuge sind nicht verfügbar. Schließe die Einrichtung ab und versuche es erneut.",
+  "appTranscriptionClassificationRequired": "Wähle vor dem Import dieser Datei einen Audiotyp.",
+  "appTranscriptionChoiceStale": "Die Audiodatei wurde nach der Prüfung geändert. Wähle ihren Typ erneut.",
+  "appTranscriptionInvalid": "Die Transkriptionsmetadaten sind ungültig. Versuche erneut, sie zu erstellen."
 }

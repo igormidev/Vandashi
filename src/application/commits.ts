@@ -35,8 +35,8 @@ export class Commits {
   async syncBaseline(repositories: string[], scopes: Scope[]): Promise<void> {
     const failure = await this.sync(scopes);
     await this.save(repositories, {
-      title: 'Synchronize shared asset snapshots',
-      body: 'Materialize current shared assets in participating video and clip repositories before capturing an AI checkpoint.',
+      title: 'Prepare workspace asset metadata',
+      body: 'Preserve transcription evidence and synchronize current shared assets in participating video and clip repositories before capturing an AI checkpoint.',
     });
     if (failure) throw failure.error;
   }
@@ -92,7 +92,14 @@ export class Commits {
     normalize = true,
     participatingRepositories?: string[],
     sharedScopes: Scope[] = [],
+    prepareMetadata?: () => Promise<void>,
   ): Promise<void> {
+    let metadataFailure: { error: unknown } | undefined;
+    try {
+      await prepareMetadata?.();
+    } catch (error) {
+      metadataFailure = { error };
+    }
     const syncFailure = await this.sync(sharedScopes);
     let normalizationError: Error | undefined;
     try {
@@ -108,6 +115,7 @@ export class Commits {
     for (const repository of repositories)
       if ((await this.git.status(repository)).dirty) pending.push(repository);
     if (!pending.length) {
+      if (metadataFailure) throw metadataFailure.error;
       if (syncFailure) throw syncFailure.error;
       if (normalizationError) throw normalizationError;
       return;
@@ -127,6 +135,7 @@ export class Commits {
       };
     }
     await this.save(repositories, message);
+    if (metadataFailure) throw metadataFailure.error;
     if (syncFailure) throw syncFailure.error;
     if (normalizationError) throw new AppFault({ id: 'appNormalizationFailed' }, normalizationError.message);
   }

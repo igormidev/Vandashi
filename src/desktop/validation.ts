@@ -1,4 +1,5 @@
 import { updateValidators } from './update-validation';
+import { transcriptionValidators } from './transcription-validation';
 import { AppFault } from '../domain/diagnostics';
 import { extname } from 'node:path';
 import { z } from 'zod';
@@ -6,6 +7,7 @@ import type { ApiMethod } from '../domain/api';
 import { desktopUrl } from './request-errors';
 import { supportedLocales } from '../domain/locales';
 import { clipHandoffSchema } from './clip-handoff-schema';
+import { audioCategories, transcriptionModels } from '../domain/transcription';
 
 const text = z.string().max(2_000_000);
 const id = z.string().min(1).max(500);
@@ -49,6 +51,7 @@ const brandConfig = z
   .strict();
 const draft = z
   .object({
+    audioCategory: z.enum(audioCategories).optional(),
     sourcePath: path,
     sourceHash: z
       .string()
@@ -63,6 +66,7 @@ const draft = z
 const commit = { title: z.string().trim().min(1).max(200), body: z.string().trim().min(1).max(10000) };
 const noArgs = z.tuple([]);
 export const validators: Readonly<Record<ApiMethod, z.ZodType>> = Object.freeze({
+  ...transcriptionValidators(scope),
   ...updateValidators,
   getState: noArgs,
   chooseDirectory: noArgs,
@@ -94,6 +98,7 @@ export const validators: Readonly<Record<ApiMethod, z.ZodType>> = Object.freeze(
     z
       .object({
         locale: z.enum(supportedLocales),
+        transcriptionModel: z.enum(transcriptionModels),
         chat: selection,
         automation: selection,
         scriptSync: selection,
@@ -121,7 +126,9 @@ export const validators: Readonly<Record<ApiMethod, z.ZodType>> = Object.freeze(
   ]),
   cancelChat: noArgs,
   undoChat: z.tuple([id]),
-  describeAsset: z.tuple([z.object({ scope, path, requestId: id }).strict()]),
+  describeAsset: z.tuple([
+    z.object({ scope, path, requestId: id, category: z.enum(audioCategories).optional() }).strict(),
+  ]),
   cancelAssetInspection: z.tuple([id]),
   importAsset: z.tuple([z.object({ scope, draft }).strict()]),
   updateAsset: z.tuple([

@@ -4,6 +4,7 @@ import type { MediaPort, MediaProbe } from '../domain/media';
 import type { Scope } from '../domain/models';
 import type { StoragePort } from '../domain/storage';
 import { measuredFinishedRatio } from './finished-video';
+import type { Transcriptions } from './transcriptions';
 
 export function finishedClipRatio(probe: MediaProbe): '9:16' | '1:1' {
   const ratio = measuredFinishedRatio(probe, ['9:16', '1:1']);
@@ -15,6 +16,7 @@ export async function importFinishedClip(
   input: { scope: Scope; sourcePath: string },
   store: StoragePort,
   media: MediaPort,
+  transcriptions?: Transcriptions,
 ) {
   const original = await media.probeMedia(input.sourcePath);
   const ratio = finishedClipRatio(original);
@@ -29,6 +31,7 @@ export async function importFinishedClip(
         Math.abs(copy.duration - original.duration) > 0.01
       )
         throw new AppFault({ id: 'appImportedVideoChanged' });
+      return transcriptions?.analyze({ path, kind: 'video' });
     },
   );
 }

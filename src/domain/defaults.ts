@@ -4,6 +4,7 @@ import { defaultLocale } from './locales';
 export const defaultImportedClipName = 'Imported clip';
 export const defaultImportedVideoName = 'Imported video';
 export const defaultSettings: Settings = {
+  transcriptionModel: 'large-v3-turbo',
   locale: defaultLocale,
   chat: { model: 'gpt-6-astra', reasoning: 'medium', fast: false },
   automation: { model: 'gpt-6-luna', reasoning: 'medium', fast: false },

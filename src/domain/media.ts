@@ -36,6 +36,7 @@ export interface MediaPort {
     path: string,
     onProgress?: (progress: AssetInspectionProgress) => void,
     signal?: AbortSignal,
+    options?: { speech?: boolean },
   ): Promise<AssetInspectionLease>;
   createClip(input: ClipMediaInput): Promise<void>;
   dispose(): Promise<void>;

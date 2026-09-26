@@ -67,6 +67,9 @@ it.skipIf(!executablePath && !required)(
       expect(sidecar.stdout).toContain('0.8.64');
       const page = await desktop.firstWindow();
       await page.waitForLoadState('domcontentloaded');
+      // A fresh installed app now prepares its private transcription runtime before accepting edits.
+      // Let that real setup finish; this packaged integration must not race its operation lease.
+      await page.getByRole('heading', { name: 'Your brands', exact: true }).waitFor({ timeout: 600_000 });
       const protection = await desktop.evaluate(({ app, BrowserWindow }) => {
         const window = BrowserWindow.getAllWindows()[0];
         if (!window) throw new Error('Packaged renderer missing');
@@ -294,5 +297,5 @@ it.skipIf(!executablePath && !required)(
     }
     if (studioUrl) await expect(fetch(studioUrl, { signal: AbortSignal.timeout(1_000) })).rejects.toThrow();
   },
-  240_000,
+  720_000,
 );

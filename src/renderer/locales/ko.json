@@ -400,5 +400,22 @@
   "updateRestartHelp": "Vandashi를 재시작하여 다운로드한 업데이트를 적용합니다.",
   "updateDownloadHelp": "이 버전을 다운로드할까요? 설치하려면 한 번 더 확인해야 합니다.",
   "updateFinishWork": "업데이트를 적용하기 전에 변경 사항을 저장하고 진행 중인 작업을 완료하세요.",
-  "updateLater": "나중에"
+  "updateLater": "나중에",
+  "transcriptionPreparing": "오디오 및 동영상 준비",
+  "transcriptionInstalling": "받아쓰기 도구 설치 중…",
+  "transcriptionDownloading": "음성 모델 다운로드 중…",
+  "transcriptionChecking": "오디오 메타데이터 확인 중…",
+  "transcriptionClassifying": "오디오 유형 확인 중…",
+  "transcriptionTranscribing": "음성을 텍스트로 변환 중…",
+  "transcriptionAligning": "단어 타이밍 맞추는 중…",
+  "transcriptionSaving": "받아쓰기 저장 중…",
+  "transcriptionCount": "{{completed}} / {{total}}개 파일",
+  "transcriptionModel": "받아쓰기 모델",
+  "transcriptionModelHelp": "WhisperX로 로컬에서 실행합니다. 선택한 모델이 없으면 다운로드합니다. 큰 모델은 더 많은 저장 공간과 시간이 필요합니다. 기존 받아쓰기는 유지됩니다.",
+  "audioCategory": "오디오 유형",
+  "audioCategoryChoose": "오디오 유형 선택",
+  "audioDialog": "대화",
+  "audioMusic": "음악",
+  "audioSoundEffect": "효과음",
+  "audioCategoryHelp": "대화는 타임스탬프와 함께 텍스트로 변환합니다. 음악과 효과음은 유형만 지정합니다."
 }

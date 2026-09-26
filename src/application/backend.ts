@@ -15,6 +15,9 @@ import { Publishing } from './publishing';
 import { Dependencies } from './dependencies';
 import { importFinishedVideo } from './finished-video';
 import { ClipCreation } from './clip-creation';
+import { Transcriptions } from './transcriptions';
+import type { TranscriptionPort } from '../domain/transcription';
+import { assetKind } from '../domain/asset-kind';
 
 export type HostMethods = Pick<
   DesktopApi,
@@ -33,6 +36,7 @@ export function createBackend(
   host: HostMethods,
   emit: (event: AppEvent) => void,
   updates?: UpdateService,
+  transcriptionRuntime?: TranscriptionPort,
 ): BackendApi {
   const snapshots = new Map<string, Workspace>();
   const reads = new Map<string, Promise<Workspace>>();
@@ -99,7 +103,10 @@ export function createBackend(
     return promise;
   };
   const commits = new Commits(store, git, agent, media);
-  const chats = new Chats(store, git, agent, commits, gate, dispatch, media);
+  const transcriptions = transcriptionRuntime
+    ? new Transcriptions(store, git, transcriptionRuntime, notify)
+    : undefined;
+  const chats = new Chats(store, git, agent, commits, gate, dispatch, media, transcriptions);
   const clips = new ClipCreation(store, media, chats, gate, remember, dispatch);
   const studio = new Studio(
     store,
@@ -111,9 +118,10 @@ export function createBackend(
     dispatch,
     host.prepareStudio,
     host.flushStudio,
+    transcriptions,
   );
-  const automation = new Automation(store, agent, gate, media, notify);
-  const publishing = new Publishing(store, agent, media, gate);
+  const automation = new Automation(store, agent, gate, media, notify, transcriptions);
+  const publishing = new Publishing(store, agent, media, gate, transcriptions);
   const dependencies = new Dependencies(store, agent, media, commits, notify);
   const mutation = <T>(task: () => Promise<T>): Promise<T> => gate.run('manual', task);
   const updateService = (): UpdateService => {
@@ -121,6 +129,20 @@ export function createBackend(
     return updates;
   };
   return {
+    prepareTranscriptions: (input) =>
+      gate.run('asset-transcription', async () => {
+        if (!transcriptions) throw new AppFault({ id: 'appTranscriptionUnavailable' });
+        try {
+          return await transcriptions.prepare(input);
+        } finally {
+          if (input.scope) dispatch({ type: 'workspace-changed', scope: input.scope });
+        }
+      }),
+    prepareTranscriptionModel: (model) =>
+      gate.run('transcription-model', async () => {
+        if (!transcriptions) throw new AppFault({ id: 'appTranscriptionUnavailable' });
+        await transcriptions.prepareModel(model);
+      }),
     getUpdateState: () => Promise.resolve(updateService().state()),
     checkForUpdates: () => updateService().check(),
     downloadUpdate: (version) => updateService().download(version),
@@ -158,7 +180,7 @@ export function createBackend(
         return remember(workspace);
       }),
     importFinishedVideo: (input) =>
-      mutation(async () => remember(await importFinishedVideo(input, store, media))),
+      mutation(async () => remember(await importFinishedVideo(input, store, media, transcriptions))),
     openWorkspace: (scope) => readWorkspace(scope),
     saveWorkspace: (input) => mutation(async () => remember(await store.saveWorkspace(input))),
     suggestCommit: (input) => gate.run('commit-message', () => commits.suggest(input.scope, input.summary)),
@@ -188,7 +210,15 @@ export function createBackend(
     undoChat: (id) => chats.undo(id),
     describeAsset: (input) => automation.describeAsset(input),
     cancelAssetInspection: (requestId) => automation.cancelAssetInspection(requestId),
-    importAsset: (input) => mutation(() => store.importAsset(input)),
+    importAsset: (input) =>
+      mutation(async () => {
+        const kind = assetKind(input.draft.sourcePath);
+        if (kind === 'audio' || kind === 'video') {
+          if (!transcriptions) throw new AppFault({ id: 'appTranscriptionUnavailable' });
+          return store.importAsset({ ...input, draft: await transcriptions.importDraft(input.draft, kind) });
+        }
+        return store.importAsset(input);
+      }),
     updateAsset: (input) => mutation(() => store.updateAsset(input)),
     deleteAsset: (input) => mutation(() => store.deleteAsset(input)),
     importThumbnail: (input) => mutation(async () => remember(await store.importThumbnail(input))),

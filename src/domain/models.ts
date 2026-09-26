@@ -3,6 +3,12 @@ import type { AssetInspectionNote, AssetInspectionProgress } from './asset-inspe
 import type { AppMessage } from './messages';
 import type { Diagnostic } from './diagnostics';
 import type { Locale } from './locales';
+import type {
+  AssetAnalysis,
+  AudioCategory,
+  TranscriptionModel,
+  TranscriptionProgress,
+} from './transcription';
 
 export type AspectRatio = '16:9' | '9:16' | '1:1';
 export type AssetKind = 'image' | 'video' | 'audio' | 'other';
@@ -63,6 +69,7 @@ export interface WorkspaceDocument {
   kind: 'taste' | 'script' | 'config';
 }
 export interface Asset {
+  analysis?: AssetAnalysis;
   id: string;
   path: string;
   relativePath: string;
@@ -127,6 +134,7 @@ export interface ModelSelection {
   fast: boolean;
 }
 export interface Settings {
+  transcriptionModel: TranscriptionModel;
   locale: Locale;
   chat: ModelSelection;
   automation: ModelSelection;
@@ -202,6 +210,7 @@ export interface ChatActivity {
   detail: string;
 }
 export type AppEvent =
+  | { type: 'transcription'; active: boolean; progress: TranscriptionProgress }
   | { type: 'update'; state: UpdateState }
   | {
       type: 'checks';
@@ -230,6 +239,8 @@ export interface StudioInfo {
   projectPath: string;
 }
 export interface AssetDraft {
+  audioCategory?: AudioCategory;
+  analysis?: AssetAnalysis;
   inspection?: AssetInspectionNote;
   sourcePath: string;
   /** Exact original bytes inspected for this metadata; omitted only for uninspected manual drafts. */

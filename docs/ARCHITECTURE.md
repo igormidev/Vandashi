@@ -422,3 +422,43 @@ and monotonic revisions so late hydration cannot replace a newer event. They exp
 local pending feedback, two separate confirmations and persistent diagnostics.
 macOS remains installer-only while signing is unavailable. The source version record
 and verified release workflow are described in [UPDATES.md](UPDATES.md).
+
+## Full-file asset transcription
+
+`domain/transcription.ts` defines source-timed speech evidence, explicit music/effect
+skips, completed no-speech results, model choices and progress. `Transcriptions` is
+an application service behind `TranscriptionPort`; renderer code never installs
+runtimes or reads media directly. Explicit entry preparation scans shared sources
+at startup and local sources on workspace entry. Local audio decisions bind to the
+reviewed revision. Passive workspace reads remain read-only with respect to speech
+analysis. Failed startup preparation can return to Brands to reopen a moved folder;
+workspace entry still requires preparation.
+
+The managed adapter installs a private Python 3.11/WhisperX runtime with pinned,
+hash-checked dependencies. YAMNet runs through LiteRT; the packaged Silero weights
+avoid mutable `torch.hub` code. FFmpeg decodes full media to temporary mono PCM.
+Models are revision/digest pinned; processes and temporary data remain owned until
+shutdown. macOS uses CPU int8 inference. Supported alignment models provide word
+timing; other languages retain truthful segment timing. Model selection installs
+before adoption and locks the settings action through settlement.
+
+Adjacent `.vandashi.json` files hold `analysis`. Original source identity and current
+stored-byte identity remain distinct because ordinary metadata embedding can change
+a container without changing its media. `analysisContentHash` binds the evidence to
+current bytes; an external replacement invalidates it. Analysis writes share the
+AssetStore optimistic revision/path checks, preserve media bytes and leave commits
+to the owning operation. Shared `_shared` snapshots are never authoritative writers.
+
+All edit turns prepare media after clean Git preflight and before their checkpoint,
+then verify the full captured repository set after the provider stops, including
+registered child clips. Repairs precede shared-copy synchronization and final
+commits. Partial work is preserved on failure; incomplete verification never creates
+a success receipt or verified Undo boundary. Import preparation uses the same
+pipeline before publication, including finished videos and clips.
+
+The bundled `transcribe.js` CLI calls the same adapter and AssetStore writer. Each
+launch writes an app-owned `ASSET_TRANSCRIPTION.md` with the exact installed command;
+new and resumed agent turns receive its absolute path. Prepared offline CLI execution
+uses read-only model caches within the normal Codex sandbox. Missing runtime or
+language weights are reported, then the host-owned final verification completes
+preparation. The AI never receives broader filesystem roots for runtime installation.

@@ -40,6 +40,8 @@ async function install(
       ipcMain.handle('vandashi:invoke', (_event, method: string, args: unknown[]) => {
         const input = args[0];
         calls.push({ method, input });
+        if (method === 'prepareTranscriptions') return { status: 'ready' };
+        if (method === 'prepareTranscriptionModel') return undefined;
         if (method === 'getState') return fixture.data.state;
         if (method === 'models') return fixture.data.models;
         if (method === 'openBrand' || method === 'openWorkspace') return fixture.data.workspace;

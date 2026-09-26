@@ -60,8 +60,10 @@ it('preserves edits without a success commit when script synchronization fails',
   await expect(app.api.saveStudio({ scope: app.scope, title: 'Title', body: 'Body' })).rejects.toThrow(
     'disconnected',
   );
-  expect(await app.git.head(app.path)).toBe(head);
-  expect((await app.git.status(app.path)).dirty).toBe(true);
+  expect(await app.git.head(app.path)).not.toBe(head);
+  expect((await app.git.status(app.path)).dirty).toBe(false);
+  expect((await app.api.studioChanges(app.scope)).dirty).toBe(true);
+  expect((await app.git.history(app.path, 0)).commits[0]?.title).toBe('Preserve unfinished Studio save');
   expect(await readFile(join(app.path, 'index.html'), 'utf8')).toContain('Preserve manual work');
 });
 

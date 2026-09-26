@@ -400,5 +400,22 @@
   "updateRestartHelp": "Reinicia Vandashi para aplicar la actualización descargada.",
   "updateDownloadHelp": "¿Descargar esta versión? La instalación esperará tu próxima confirmación.",
   "updateFinishWork": "Guarda los cambios y termina las tareas activas antes de aplicar la actualización.",
-  "updateLater": "Más tarde"
+  "updateLater": "Más tarde",
+  "transcriptionPreparing": "Preparando audio y vídeo",
+  "transcriptionInstalling": "Instalando herramientas de transcripción…",
+  "transcriptionDownloading": "Descargando modelo de voz…",
+  "transcriptionChecking": "Comprobando metadatos de audio…",
+  "transcriptionClassifying": "Identificando el tipo de audio…",
+  "transcriptionTranscribing": "Transcribiendo el habla…",
+  "transcriptionAligning": "Alineando palabras…",
+  "transcriptionSaving": "Guardando transcripción…",
+  "transcriptionCount": "{{completed}} / {{total}} archivos",
+  "transcriptionModel": "Modelo de transcripción",
+  "transcriptionModelHelp": "Se ejecuta localmente con WhisperX. Al seleccionar un modelo, se descarga si es necesario; los modelos más grandes ocupan más espacio y tardan más. Se conservan las transcripciones existentes.",
+  "audioCategory": "Tipo de audio",
+  "audioCategoryChoose": "Elige un tipo de audio",
+  "audioDialog": "Diálogo",
+  "audioMusic": "Música",
+  "audioSoundEffect": "Efecto de sonido",
+  "audioCategoryHelp": "Los diálogos se transcriben con marcas de tiempo. La música y los efectos de sonido se clasifican sin transcripción."
 }

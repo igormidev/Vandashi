@@ -21,6 +21,8 @@ function invoke<K extends ApiMethod>(
   ) as ReturnType<DesktopApi[K]>;
 }
 const api: DesktopApi = {
+  prepareTranscriptions: (input) => invoke('prepareTranscriptions', input),
+  prepareTranscriptionModel: (model) => invoke('prepareTranscriptionModel', model),
   getUpdateState: () => invoke('getUpdateState'),
   checkForUpdates: () => invoke('checkForUpdates'),
   downloadUpdate: (version) => invoke('downloadUpdate', version),

@@ -76,6 +76,8 @@ export async function installAssetRefreshFixture(desktop: ElectronApplication, v
       });
       ipcMain.removeHandler('vandashi:invoke');
       ipcMain.handle('vandashi:invoke', (_event, method: string, args: unknown[]) => {
+        if (method === 'prepareTranscriptions') return { status: 'ready' };
+        if (method === 'prepareTranscriptionModel') return undefined;
         if (method === 'getUpdateState')
           return {
             revision: 0,

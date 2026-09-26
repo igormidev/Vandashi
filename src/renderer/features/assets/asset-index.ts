@@ -1,4 +1,5 @@
 import type { Asset, AssetKind } from '../../../domain/models';
+import { assetKind } from '../../../domain/asset-kind';
 
 export interface IndexedAsset {
   asset: Asset;
@@ -73,9 +74,5 @@ export function parseAssetTags(value: string): string[] {
 }
 
 export function fallbackAssetKind(path: string): AssetKind {
-  const extension = path.split('.').at(-1)?.toLowerCase() ?? '';
-  if (['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'avif', 'bmp', 'tiff'].includes(extension)) return 'image';
-  if (['mp4', 'mov', 'webm', 'mkv', 'avi', 'm4v'].includes(extension)) return 'video';
-  if (['mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac', 'aiff'].includes(extension)) return 'audio';
-  return 'other';
+  return assetKind(path);
 }

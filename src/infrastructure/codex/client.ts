@@ -64,7 +64,7 @@ export class CodexAgent implements AgentPort {
         historyMode: 'paginated',
         ephemeral: false,
         developerInstructions:
-          'You are the assistant inside Vandashi, a local video studio. Follow the per-message workspace guidance. Do not spawn other agents. Ask questions in your reply when input is needed. Never request unrestricted filesystem access.',
+          'You are the assistant inside Vandashi, a local video studio. Follow the per-message workspace guidance. MANDATORY: before adding or replacing any audio/video asset, read the app-owned transcription README identified in that guidance, run its exact command, and verify the saved category and transcript or explicit music/effects exemption. Never invent metadata evidence. Before editing audio/video or captions, read its saved source timestamps; later edits depend on them. Report media kind and verified preparation status. Do not spawn other agents. Ask questions in your reply when input is needed. Never request unrestricted filesystem access.',
       }),
     );
     this.loadedThreads.add(response.thread.id);

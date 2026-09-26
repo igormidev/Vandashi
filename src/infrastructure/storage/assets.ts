@@ -2,7 +2,10 @@ import { constants } from 'node:fs';
 import { copyFile, lstat, mkdir, readFile, rename, rm, stat } from 'node:fs/promises';
 import { basename, dirname, extname, join, relative } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import type { Asset, AssetDraft, AssetKind } from '../../domain/models';
+import type { Asset, AssetDraft } from '../../domain/models';
+import { assetKind } from '../../domain/asset-kind';
+export { assetKind } from '../../domain/asset-kind';
+import { parseAssetAnalysis, type AssetAnalysis } from '../../domain/transcription';
 import { AppFault } from '../../domain/diagnostics';
 import {
   atomicWrite,
@@ -26,23 +29,9 @@ import { z } from 'zod';
 import { storageFault } from './validation';
 import { appMessageEnglish } from '../../domain/messages';
 import type { WriteReceipt } from './files';
+import { analysisTags, checkedAssetPath } from './asset-metadata-fields';
 
 export const metadataSuffix = '.vandashi.json';
-
-export function assetKind(path: string): AssetKind {
-  const extension = extname(path).toLowerCase();
-  if (
-    ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg', '.avif', '.bmp', '.tif', '.tiff'].includes(extension)
-  )
-    return 'image';
-  if (['.mp4', '.mov', '.webm', '.mkv', '.avi', '.m4v'].includes(extension)) return 'video';
-  if (['.mp3', '.wav', '.m4a', '.aac', '.ogg', '.flac', '.aiff'].includes(extension)) return 'audio';
-  return 'other';
-}
-
-function cleanTags(tags: string[]): string[] {
-  return [...new Set(tags.map((tag) => tag.trim().replace(/^#+/u, '')).filter(Boolean))];
-}
 
 export class AssetStore {
   private readonly cache = new Map<string, { stamp: string; hash: string }>();
@@ -63,7 +52,7 @@ export class AssetStore {
     };
     let sidecarHash: string | null = null;
     try {
-      const content = await readFile(await containedPath(root, path + metadataSuffix));
+      const content = await readFile(await checkedAssetPath(root, path + metadataSuffix));
       sidecarHash = hashText(content.toString('base64'));
       metadata = metadataSchema.parse(JSON.parse(content.toString('utf8')));
     } catch (error) {
@@ -75,6 +64,12 @@ export class AssetStore {
       metadata = { ...metadata, ...embedded, title: embedded.title || metadata.title };
     }
     const relativePath = relative(root, path).split('\\').join('/');
+    const analysis =
+      ['audio', 'video'].includes(assetKind(path)) &&
+      metadata.analysisContentHash === hash &&
+      metadata.contentHash === hash
+        ? parseAssetAnalysis(metadata.analysis)
+        : null;
     return {
       id: hashText(relativePath).slice(0, 24),
       path,
@@ -88,7 +83,75 @@ export class AssetStore {
       kind: assetKind(path),
       shared: shared || relativePath.startsWith('_shared/'),
       mediaUrl: this.mediaUrl(path),
+      ...(analysis ? { analysis } : {}),
     };
+  }
+
+  async get(root: string, path: string, shared: boolean): Promise<Asset> {
+    return this.read(root, await checkedAssetPath(root, path), shared);
+  }
+
+  /** Sidecar-only: callers retain their existing operation lease and own the final Git commit. */
+  async saveAnalysis(
+    root: string,
+    input: { assetPath: string; expectedRevision: string; analysis: AssetAnalysis },
+    shared: boolean,
+  ): Promise<Asset> {
+    return this.writeAnalysis(root, input, shared);
+  }
+
+  private async writeAnalysis(
+    root: string,
+    input: { assetPath: string; expectedRevision: string; analysis: AssetAnalysis },
+    shared: boolean,
+    importedSourceHash?: string,
+  ): Promise<Asset> {
+    const asset = await this.get(root, input.assetPath, shared);
+    if (!shared && asset.shared) throw new AppFault({ id: 'storageSharedEditRequired' });
+    this.assertRevision(asset, input.expectedRevision);
+    const analysis = parseAssetAnalysis(input.analysis);
+    if (!analysis || !['audio', 'video'].includes(asset.kind))
+      throw new AppFault({ id: 'storageMetadataInvalid', params: { name: basename(asset.path) } });
+    const contentHash = await hashFile(asset.path);
+    const verifiedImport = importedSourceHash === analysis.sourceHash && asset.hash === importedSourceHash;
+    if (analysis.sourceHash !== contentHash && !verifiedImport)
+      throw new AppFault({ id: 'storageAssetInspectionStale' });
+    const path = await containedPath(root, asset.path + metadataSuffix);
+    const prior = (await exists(path))
+      ? metadataSchema.parse(JSON.parse(await readFile(path, 'utf8')))
+      : {
+          title: asset.title,
+          description: asset.description,
+          tags: asset.tags,
+          hash: asset.hash,
+          metadataStorage: 'sidecar' as const,
+        };
+    const temporary = join(dirname(path), `.vandashi-analysis-${randomUUID()}.json`);
+    try {
+      await atomicWrite(
+        temporary,
+        JSON.stringify(
+          {
+            ...prior,
+            hash: asset.hash,
+            tags: analysisTags(prior.tags, analysis),
+            contentHash,
+            analysisContentHash: contentHash,
+            analysis,
+          },
+          null,
+          2,
+        ),
+      );
+      this.assertRevision(await this.get(root, asset.path, shared), input.expectedRevision);
+      if (await exists(path)) await checkedAssetPath(root, path);
+      await rename(temporary, path);
+    } finally {
+      await rm(temporary, { force: true });
+    }
+    const saved = await this.get(root, asset.path, shared);
+    if (!saved.analysis) throw new AppFault({ id: 'storageAssetInspectionStale' });
+    return saved;
   }
 
   async list(root: string, shared: boolean): Promise<Asset[]> {
@@ -105,10 +168,26 @@ export class AssetStore {
     const hash = await hashFile(draft.sourcePath);
     if (draft.sourceHash !== undefined && draft.sourceHash !== hash)
       throw new AppFault({ id: 'storageAssetInspectionStale' });
+    const analysis = draft.analysis === undefined ? undefined : parseAssetAnalysis(draft.analysis);
+    if (
+      analysis === null ||
+      (analysis &&
+        (analysis.sourceHash !== hash || !['audio', 'video'].includes(assetKind(draft.sourcePath))))
+    )
+      throw new AppFault({ id: 'storageAssetInspectionStale' });
     const duplicate = (await this.list(root, shared)).find(
-      (asset) => asset.hash === hash || this.cache.get(asset.path)?.hash === hash,
+      (asset) =>
+        (shared || !asset.shared) && (asset.hash === hash || this.cache.get(asset.path)?.hash === hash),
     );
-    if (duplicate) return duplicate;
+    if (duplicate)
+      return analysis
+        ? this.writeAnalysis(
+            root,
+            { assetPath: duplicate.path, expectedRevision: duplicate.revision, analysis },
+            shared,
+            hash,
+          )
+        : duplicate;
     const sourceName = safeName(basename(draft.sourcePath));
     let path = await containedPath(root, sourceName);
     if (await exists(path))
@@ -122,12 +201,23 @@ export class AssetStore {
       const metadata = {
         title: draft.title.trim() || basename(sourceName, extname(sourceName)),
         description: draft.description.trim(),
-        tags: cleanTags(draft.tags),
+        tags: analysisTags(draft.tags, analysis),
       };
       const embedding = await embedMetadata(path, metadata);
+      const contentHash = await hashFile(path);
       await atomicWrite(
         path + metadataSuffix,
-        JSON.stringify({ ...metadata, hash, contentHash: await hashFile(path), ...embedding }, null, 2),
+        JSON.stringify(
+          {
+            ...metadata,
+            hash,
+            contentHash,
+            ...embedding,
+            ...(analysis ? { analysis, analysisContentHash: contentHash } : {}),
+          },
+          null,
+          2,
+        ),
       );
     } catch (error) {
       await rm(path, { force: true });
@@ -152,7 +242,7 @@ export class AssetStore {
     const fields = {
       title: metadata.title.trim(),
       description: metadata.description,
-      tags: cleanTags(metadata.tags),
+      tags: analysisTags(metadata.tags, asset.analysis),
     };
     const prior = (await exists(path))
       ? metadataSchema.parse(JSON.parse(await readFile(path, 'utf8')))
@@ -181,6 +271,7 @@ export class AssetStore {
             contentHash,
             ...prepared.result,
             ...(preserveBytes ? { preserveBytes } : {}),
+            ...(asset.analysis ? { analysis: asset.analysis, analysisContentHash: contentHash } : {}),
           },
           null,
           2,

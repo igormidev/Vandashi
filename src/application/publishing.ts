@@ -11,6 +11,7 @@ import { platforms } from '../domain/defaults';
 import { appendChapters, chapterIssue, horizontalPlatforms } from '../domain/launch';
 import { importFinishedClip } from './finished-clip';
 import { publishScope, verifyPublishMedia } from './publish-scope';
+import type { Transcriptions } from './transcriptions';
 
 function webUrl(value: string): URL | null {
   try {
@@ -27,6 +28,7 @@ export class Publishing {
     private readonly agent: AgentPort,
     private readonly media: MediaPort,
     private readonly gate: OperationGate,
+    private readonly transcriptions?: Transcriptions,
   ) {}
   updateLaunch(input: Parameters<DesktopApi['updateLaunch']>[0]): Promise<void> {
     return this.gate.run('release-status', async () => {
@@ -150,6 +152,8 @@ export class Publishing {
     });
   }
   async importClip(input: { scope: Scope; sourcePath: string }): Promise<Clip> {
-    return this.gate.run('import-clip', () => importFinishedClip(input, this.store, this.media));
+    return this.gate.run('import-clip', () =>
+      importFinishedClip(input, this.store, this.media, this.transcriptions),
+    );
   }
 }

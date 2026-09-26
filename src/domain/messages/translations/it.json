@@ -283,5 +283,13 @@
   "updatePlatformUnavailable": "Questa versione non ha ancora un programma di installazione per questo computer. Riprova più tardi.",
   "updateDownloadFailed": "Il download non è terminato. Riprova per scaricare una copia verificata.",
   "updateOpenFailed": "Impossibile aprire il programma di installazione. Riprova.",
-  "updateUnsupported": "Gli aggiornamenti sono disponibili nell’app installata."
+  "updateUnsupported": "Gli aggiornamenti sono disponibili nell’app installata.",
+  "appTranscriptionSetupFailed": "Configurazione della trascrizione non riuscita. Controlla la connessione e lo spazio disponibile, poi riprova.",
+  "appTranscriptionFailed": "Impossibile trascrivere il file multimediale. Il file è stato conservato. Riprova per completarne i metadati.",
+  "appTranscriptionCancelled": "Trascrizione annullata.",
+  "appTranscriptionChanged": "Il file multimediale è cambiato durante la trascrizione. Riprova con il file attuale.",
+  "appTranscriptionUnavailable": "Gli strumenti di trascrizione non sono disponibili. Completa la configurazione e riprova.",
+  "appTranscriptionClassificationRequired": "Scegli un tipo di audio prima di importare questo file.",
+  "appTranscriptionChoiceStale": "Il file audio è cambiato dopo la revisione. Scegli di nuovo il tipo.",
+  "appTranscriptionInvalid": "I metadati di trascrizione non sono validi. Riprova a generarli."
 }

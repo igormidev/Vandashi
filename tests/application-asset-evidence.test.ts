@@ -1,9 +1,12 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { applicationFixture, type ApplicationFixture } from './application-fixture';
+import { completeAnalysis, transcriptionFixture } from './transcription-fixture';
 import type { AssetInspectionLease } from '../src/domain/asset-inspection';
 let app: ApplicationFixture;
+let transcription = transcriptionFixture();
 beforeEach(async () => {
-  app = await applicationFixture();
+  transcription = transcriptionFixture();
+  app = await applicationFixture(transcription);
 });
 afterEach(async () => {
   await app.idle();
@@ -29,6 +32,9 @@ it('passes actual frame attachments and bounded speech evidence to Luna, and cle
     error: null,
     output: '{"title":"Bicycle","description":"A blue bicycle","tags":["travel"],"kind":"image"}',
   });
+  const analysis = completeAnalysis();
+  if (analysis.transcription.status === 'complete') analysis.transcription.segments = lease.transcript;
+  transcription.analyze.mockResolvedValueOnce(analysis);
   const draft = await app.api.describeAsset({
     requestId: 'inspection',
     scope: app.scope,
@@ -49,10 +55,10 @@ it('requires manual fallback for no evidence and releases evidence even if the A
   const lease = evidence();
   lease.images = [];
   lease.transcript = [];
-  lease.kind = 'audio';
+  lease.kind = 'image';
   app.media.inspectAsset.mockResolvedValueOnce(lease);
   await expect(
-    app.api.describeAsset({ requestId: 'inspection', scope: app.scope, path: '/tmp/silence.wav' }),
+    app.api.describeAsset({ requestId: 'inspection', scope: app.scope, path: '/tmp/empty.png' }),
   ).rejects.toThrow('No reliable');
   expect(app.agent.run).not.toHaveBeenCalled();
   expect(lease.dispose).toHaveBeenCalledOnce();

@@ -6,7 +6,12 @@ import type { AssetDraft } from '../../../domain/models';
 import { useApp } from '../../app/store';
 import { Loading, Modal, PendingLabel } from '../../shared/ui';
 import { fallbackAssetKind, parseAssetTags } from './asset-index';
-import { errorText } from '../../app/diagnostics';
+import { diagnosticText } from '../../app/diagnostics';
+import { diagnosticFromBridge } from '../../../domain/diagnostics';
+import type { Diagnostic } from '../../../domain/diagnostics';
+import type { AudioCategory } from '../../../domain/transcription';
+import { AudioCategoryPicker } from '../transcription/AudioCategoryPicker';
+import { TranscriptionStatus, useTranscriptionProgress } from '../transcription/TranscriptionStatus';
 
 export function AssetImport({ paths, onClose }: { paths: string[]; onClose: () => void }) {
   const { t } = useTranslation();
@@ -17,24 +22,37 @@ export function AssetImport({ paths, onClose }: { paths: string[]; onClose: () =
   const [describing, setDescribing] = useState(true);
   const [saving, setSaving] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [categoryChoice, setCategoryChoice] = useState<{ index: number; category: AudioCategory } | null>(
+    null,
+  );
+  const transcriptionProgress = useTranscriptionProgress();
+  const importOwner = useRef(false);
   const inspectionId = useRef('');
   const pending = useRef<{
     scope: string;
     path: string;
     requestId: string;
+    category: AudioCategory | undefined;
     promise: Promise<AssetDraft>;
   } | null>(null);
-  const [failure, setFailure] = useState<string | null>(null);
+  const [failure, setFailure] = useState<Diagnostic | null>(null);
   const [inspection, setInspection] = useState<AssetInspectionProgress | null>(null);
   const path = paths[index];
+  const category = categoryChoice?.index === index ? categoryChoice.category : undefined;
+  const awaitingCategory = !!path && fallbackAssetKind(path) === 'audio' && !category;
   const brandId = workspace?.scope.brandId;
   const videoId = workspace?.scope.videoId ?? null;
   const clipId = workspace?.scope.clipId ?? null;
   const scope = useMemo(() => (brandId ? { brandId, videoId, clipId } : null), [brandId, videoId, clipId]);
   useEffect(() => {
     if (!path || !scope) return;
+    setDirty(true);
+    if (awaitingCategory) return;
     const previous = pending.current;
-    const sameRequest = previous?.scope === scopeKey(scope) && previous.path === path ? previous : null;
+    const sameRequest =
+      previous?.scope === scopeKey(scope) && previous.path === path && previous.category === category
+        ? previous
+        : null;
     const requestId = sameRequest?.requestId ?? crypto.randomUUID();
     inspectionId.current = requestId;
     let disposed = false;
@@ -54,7 +72,8 @@ export function AssetImport({ paths, onClose }: { paths: string[]; onClose: () =
       scope: scopeKey(scope),
       path,
       requestId,
-      promise: api.describeAsset({ scope, path, requestId }),
+      category,
+      promise: api.describeAsset({ scope, path, requestId, ...(category ? { category } : {}) }),
     };
     pending.current = request;
     void request.promise
@@ -66,9 +85,10 @@ export function AssetImport({ paths, onClose }: { paths: string[]; onClose: () =
       })
       .catch((error: unknown) => {
         if (disposed) return;
-        setFailure(errorText(error));
+        setFailure(diagnosticFromBridge(error));
         setDraft({
           sourcePath: path,
+          ...(category ? { audioCategory: category } : {}),
           title:
             path
               .replaceAll('\\', '/')
@@ -87,7 +107,7 @@ export function AssetImport({ paths, onClose }: { paths: string[]; onClose: () =
       disposed = true;
       unsubscribe();
     };
-  }, [api, path, scope, setDirty]);
+  }, [api, path, scope, setDirty, category, awaitingCategory]);
   const advance = (): void => {
     if (index >= paths.length - 1) {
       setDirty(false);
@@ -102,7 +122,8 @@ export function AssetImport({ paths, onClose }: { paths: string[]; onClose: () =
     setIndex(index + 1);
   };
   const importAsset = async (): Promise<void> => {
-    if (!draft || !scope) return;
+    if (!draft || !scope || importOwner.current) return;
+    importOwner.current = true;
     setSaving(true);
     await run(async () => {
       const imported = await api.importAsset({
@@ -110,6 +131,7 @@ export function AssetImport({ paths, onClose }: { paths: string[]; onClose: () =
         draft: {
           sourcePath: draft.sourcePath,
           ...(draft.sourceHash ? { sourceHash: draft.sourceHash } : {}),
+          ...(draft.audioCategory ? { audioCategory: draft.audioCategory } : {}),
           kind: draft.kind,
           title: draft.title.trim(),
           description: draft.description.trim(),
@@ -121,6 +143,7 @@ export function AssetImport({ paths, onClose }: { paths: string[]; onClose: () =
       await reload();
       advance();
     });
+    importOwner.current = false;
     setSaving(false);
   };
   const cancelInspection = async (): Promise<void> => {
@@ -134,29 +157,44 @@ export function AssetImport({ paths, onClose }: { paths: string[]; onClose: () =
   };
   return (
     <Modal
-      locked={describing || saving || cancelling}
+      locked={(describing && !awaitingCategory) || saving || cancelling}
       title={t('importAsset')}
       open
       onClose={() => {
-        if (!describing && !saving && !cancelling) {
+        if ((!describing || awaitingCategory) && !saving && !cancelling) {
           setDirty(false);
           onClose();
         }
       }}
     >
-      {describing ? (
+      {awaitingCategory ? (
         <div className="form">
-          <Loading
-            label={t(
-              inspection?.phase === 'model-download'
-                ? 'assetInspectionDownload'
-                : inspection?.phase === 'frames'
-                  ? 'assetInspectionFrames'
-                  : inspection?.phase === 'speech'
-                    ? 'assetInspectionSpeech'
-                    : 'describeAsset',
-            )}
+          <p className="muted">{t('audioCategoryHelp')}</p>
+          <p className="transcription-file">{path.replaceAll('\\', '/').split('/').at(-1)}</p>
+          <AudioCategoryPicker
+            value=""
+            onChange={(value) => {
+              setCategoryChoice({ index, category: value });
+            }}
           />
+        </div>
+      ) : describing ? (
+        <div className="form">
+          {transcriptionProgress ? (
+            <TranscriptionStatus progress={transcriptionProgress} />
+          ) : (
+            <Loading
+              label={t(
+                inspection?.phase === 'model-download'
+                  ? 'assetInspectionDownload'
+                  : inspection?.phase === 'frames'
+                    ? 'assetInspectionFrames'
+                    : inspection?.phase === 'speech'
+                      ? 'assetInspectionSpeech'
+                      : 'describeAsset',
+              )}
+            />
+          )}
           {inspection?.phase === 'model-download' && (
             <progress aria-label={t('assetInspectionDownload')} value={inspection.progress} max={1} />
           )}
@@ -169,7 +207,7 @@ export function AssetImport({ paths, onClose }: { paths: string[]; onClose: () =
             </div>
             {failure && (
               <p className="field-error" role="alert">
-                {failure}
+                {diagnosticText(failure)}
               </p>
             )}
             {draft.inspection && (
@@ -230,10 +268,10 @@ export function AssetImport({ paths, onClose }: { paths: string[]; onClose: () =
         <button
           className="button"
           type="button"
-          disabled={saving || cancelling || (describing && !inspection)}
+          disabled={saving || cancelling}
           aria-busy={cancelling}
           onClick={() => {
-            if (describing) void cancelInspection();
+            if (describing && !awaitingCategory) void cancelInspection();
             else advance();
           }}
         >

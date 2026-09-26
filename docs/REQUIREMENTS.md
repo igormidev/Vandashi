@@ -638,3 +638,27 @@ remain unaccepted by this documentation update.
       icon resources, Home folder picker/cancel and Settings update check were inspected.
 
 The final two items require delivery evidence rather than source compilation alone.
+
+## User addition — full-file audio/video transcription (2026-09-26)
+
+The user explicitly extended the original brief with durable transcription metadata;
+this supersedes the earlier boundary limiting speech work to sampled descriptions.
+
+- TRANSCRIPT-01 — Full-file, source-timed WhisperX segments and available aligned words
+  accompany dialogue assets; music/effects and no-audio results have explicit metadata.
+- TRANSCRIPT-02 — Shared sources are verified on startup with automatic conservative
+  classification. Local workspace entry asks about unclassified audio. Both paths
+  show file/stage feedback, retain ownership through commits, and offer retry.
+- TRANSCRIPT-03 — Imports ask audio category before analysis and persist verified
+  evidence before publication; videos always check speech. Shared copies remain derived.
+- TRANSCRIPT-04 — An app-owned README and bundled CLI share the production pipeline.
+  Every edit prompt mandates it, and deterministic post-AI checks cover all captured
+  repositories before synchronization, commits, receipts and operation release.
+- TRANSCRIPT-05 — Creation, manual-script handoff, and default script/edit guides require
+  transcript timing for captions and visual synchronization, preserving custom guides.
+- TRANSCRIPT-06 — Managed private runtime installation and default large-v3-turbo setup;
+  selectable models install with visible progress and locked Settings controls.
+
+Focused acceptance evidence is recorded in docs/TRANSCRIPTION.md and the change's
+verification record. Broader model accuracy, every spoken language and other operating
+systems are not implied by one native sample.

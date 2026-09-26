@@ -283,5 +283,13 @@
   "updatePlatformUnavailable": "Esta versão ainda não tem instalador para este computador. Tente mais tarde.",
   "updateDownloadFailed": "O download não foi concluído. Tente novamente para baixar uma cópia verificada.",
   "updateOpenFailed": "Não foi possível abrir o instalador. Tente novamente.",
-  "updateUnsupported": "As atualizações estão disponíveis no app instalado."
+  "updateUnsupported": "As atualizações estão disponíveis no app instalado.",
+  "appTranscriptionSetupFailed": "A configuração da transcrição falhou. Verifique a conexão e o espaço disponível e tente novamente.",
+  "appTranscriptionFailed": "Não foi possível transcrever a mídia. Seu arquivo foi preservado. Tente novamente para completar os metadados.",
+  "appTranscriptionCancelled": "A transcrição foi cancelada.",
+  "appTranscriptionChanged": "A mídia mudou durante a transcrição. Tente novamente com o arquivo atual.",
+  "appTranscriptionUnavailable": "As ferramentas de transcrição estão indisponíveis. Conclua a configuração e tente novamente.",
+  "appTranscriptionClassificationRequired": "Escolha o tipo de áudio antes de importar este arquivo.",
+  "appTranscriptionChoiceStale": "O áudio mudou após a revisão. Escolha o tipo novamente.",
+  "appTranscriptionInvalid": "Os metadados de transcrição são inválidos. Tente gerá-los novamente."
 }

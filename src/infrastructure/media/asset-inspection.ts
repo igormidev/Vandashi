@@ -68,6 +68,7 @@ export class AssetInspector {
     path: string,
     progress: (value: AssetInspectionProgress) => void = () => undefined,
     signal?: AbortSignal,
+    options?: { speech?: boolean },
   ): Promise<AssetInspectionLease> {
     if (this.disposed) throw new AppFault({ id: 'mediaInspectionClosed' });
     const controller = new AbortController();
@@ -122,7 +123,7 @@ export class AssetInspector {
         lease.note.frames = lease.images.length;
         progress({ phase: 'frames', progress: 1 });
       }
-      if (probe.hasAudio && probe.duration > 0) {
+      if (options?.speech !== false && probe.hasAudio && probe.duration > 0) {
         progress({ phase: 'speech', progress: 0 });
         try {
           const samples = await sampleSpeech(this.runtime, path, probe.duration, temporary, combined);

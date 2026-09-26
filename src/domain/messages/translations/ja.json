@@ -283,5 +283,13 @@
   "updatePlatformUnavailable": "このバージョンには、このコンピューター用のインストーラーがまだありません。後で再試行してください。",
   "updateDownloadFailed": "ダウンロードが完了しませんでした。再試行して検証済みのファイルをダウンロードしてください。",
   "updateOpenFailed": "インストーラーを開けませんでした。再試行してください。",
-  "updateUnsupported": "アップデートはインストール済みのアプリで利用できます。"
+  "updateUnsupported": "アップデートはインストール済みのアプリで利用できます。",
+  "appTranscriptionSetupFailed": "文字起こしの設定に失敗しました。接続と空き容量を確認して、再試行してください。",
+  "appTranscriptionFailed": "メディアを文字起こしできませんでした。ファイルは保持されています。再試行してメタデータを完成させてください。",
+  "appTranscriptionCancelled": "文字起こしをキャンセルしました。",
+  "appTranscriptionChanged": "文字起こし中にメディアが変更されました。現在のファイルで再試行してください。",
+  "appTranscriptionUnavailable": "文字起こしツールを利用できません。設定を完了して再試行してください。",
+  "appTranscriptionClassificationRequired": "このファイルを取り込む前に、音声の種類を選択してください。",
+  "appTranscriptionChoiceStale": "確認後に音声が変更されました。種類を選び直してください。",
+  "appTranscriptionInvalid": "文字起こしメタデータが無効です。再試行して作成し直してください。"
 }

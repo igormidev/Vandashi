@@ -34,7 +34,7 @@
   "promptLabel": "コーディングエージェント向けセットアップ用プロンプト",
   "setupPrompt": "https://github.com/igormidev/Vandashi からVandashiをインストールして起動してください。最初にREADMEとAGENTS.mdを読んでください。リポジトリの最新の状態とNode.js 24を使用してください。インストール時の環境変数にONNXRUNTIME_NODE_INSTALL=skipを設定し、npm ciを実行して、CUDAをダウンロードせずに同梱のCPU推論ランタイムを使用してください。GitとCodex CLIを確認し、不足する前提ソフトウェアは公式の配布元からインストールしてください。既存の設定を置き換えないでください。Codexの認証が必要な場合は、私自身が直接サインインするように案内してください。`node node_modules/hyperframes/bin/hyperframes.mjs skills update --json`で同梱のHyperframesスキルをインストールし、メディア処理の前提条件を確認して各種チェックを実行した後、`npm run dev`を実行してデスクトップアプリを開いてください。既存のプロジェクトと認証情報はそのまま保持してください。依存関係のチェックに失敗した場合は、エラーの原文を報告してください。",
   "guide": "セットアップガイドを読む",
-  "requirements": "Node.js 24、Git、サインイン済みのCodex CLIが必要です。レンダリングにはFFmpeg、FFprobe、対応するChromeランタイムも必要です。",
+  "requirements": "Node.js 24、Git、サインイン済みのCodex CLIが必要です。レンダリングにはFFmpeg、FFprobe、対応するChromeランタイムも必要です。 初回起動時にはローカル文字起こしツールと音声モデルもダウンロードします。設定には数 GB の空き容量とインターネット接続が必要です。",
   "platforms": "macOS、Windows、Linux向けに開発。",
   "license": "ソースコードのMITライセンス",
   "notices": "サードパーティーの権利表記",

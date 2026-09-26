@@ -1,4 +1,4 @@
 {
-  "version": "0.1.8",
-  "notes": ["Open existing brands and download updates with clear confirmation."]
+  "version": "0.1.9",
+  "notes": ["Add local asset transcription and timing-aware editing"]
 }

@@ -79,8 +79,9 @@ export class HyperframesMediaAdapter implements MediaPort {
     path: string,
     onProgress?: (progress: AssetInspectionProgress) => void,
     signal?: AbortSignal,
+    options?: { speech?: boolean },
   ): Promise<AssetInspectionLease> {
-    return this.inspector.inspect(path, onProgress, signal);
+    return this.inspector.inspect(path, onProgress, signal, options);
   }
 
   async checks(onCheck?: (check: DependencyCheck) => void): Promise<DependencyCheck[]> {

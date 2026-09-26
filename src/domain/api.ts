@@ -24,6 +24,12 @@ import type {
 } from './models';
 import type { UpdateState } from './updates';
 import type { Diagnostic } from './diagnostics';
+import type {
+  AudioCategory,
+  AssetCategoryChoice,
+  TranscriptionModel,
+  TranscriptionPreparation,
+} from './transcription';
 
 export interface CreatedClip {
   clip: Clip;
@@ -34,6 +40,11 @@ export interface CreatedClip {
 export type OpenedChat = ChatSession & { historyDeferred?: true };
 
 export interface DesktopApi {
+  prepareTranscriptions(input: {
+    scope: Scope | null;
+    categories?: AssetCategoryChoice[];
+  }): Promise<TranscriptionPreparation>;
+  prepareTranscriptionModel(model: TranscriptionModel): Promise<void>;
   getUpdateState(): Promise<UpdateState>;
   checkForUpdates(): Promise<UpdateState>;
   downloadUpdate(version: string): Promise<UpdateState>;
@@ -62,7 +73,12 @@ export interface DesktopApi {
   cancelChat(): Promise<void>;
   undoChat(id: string): Promise<ChatSession>;
   importAsset(input: { scope: Scope; draft: AssetDraft }): Promise<Asset>;
-  describeAsset(input: { scope: Scope; path: string; requestId: string }): Promise<AssetDraft>;
+  describeAsset(input: {
+    scope: Scope;
+    path: string;
+    requestId: string;
+    category?: AudioCategory;
+  }): Promise<AssetDraft>;
   cancelAssetInspection(requestId: string): Promise<void>;
   updateAsset(input: {
     scope: Scope;

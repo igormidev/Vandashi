@@ -5,11 +5,12 @@ import type { AssetDraft } from '../src/domain/models';
 import { AssetStore } from '../src/infrastructure/storage/assets';
 import { hashFile } from '../src/infrastructure/storage/files';
 import { parseInvocation } from '../src/desktop/validation';
+import { transcriptionFixture } from './transcription-fixture';
 import { applicationFixture, type ApplicationFixture } from './application-fixture';
 
 const fixtures: ApplicationFixture[] = [];
 async function setup() {
-  const app = await applicationFixture();
+  const app = await applicationFixture(transcriptionFixture());
   fixtures.push(app);
   const sourcePath = join(app.root, 'selected.ogg');
   await writeFile(sourcePath, 'Recording A');
@@ -52,6 +53,7 @@ describe('reviewed asset source integrity', () => {
         requestId: 'first',
         scope: app.scope,
         path: app.sourcePath,
+        category: 'dialog',
       });
       expect(draft.sourceHash).toBe(originalHash);
       expect(draft.description).toBe('Speech about Recording A');
@@ -68,6 +70,7 @@ describe('reviewed asset source integrity', () => {
         requestId: 'second',
         scope: app.scope,
         path: app.sourcePath,
+        category: 'dialog',
       });
       expect(inspected.sourceHash).toBe(await hashFile(app.sourcePath));
       expect(inspected.sourceHash).not.toBe(draft.sourceHash);
@@ -91,10 +94,16 @@ describe('reviewed asset source integrity', () => {
         description: 'Already approved',
         tags: [],
         kind: 'audio',
+        audioCategory: 'dialog',
       },
     });
     app.agent.run.mockResolvedValueOnce(app.described('Recording A'));
-    const draft = await app.api.describeAsset({ requestId: 'first', scope: app.scope, path: app.sourcePath });
+    const draft = await app.api.describeAsset({
+      requestId: 'first',
+      scope: app.scope,
+      path: app.sourcePath,
+      category: 'dialog',
+    });
     await writeFile(app.sourcePath, 'Recording B');
     const head = await app.git.head(app.path);
     await expect(app.api.importAsset({ scope: app.scope, draft })).rejects.toMatchObject({
@@ -121,6 +130,7 @@ describe('reviewed asset source integrity', () => {
       description: 'Inspected A',
       tags: [],
       kind: 'audio',
+      audioCategory: 'dialog',
     };
     const store = new AssetStore((path) => path);
     vi.spyOn(store, 'list').mockImplementationOnce(async () => {

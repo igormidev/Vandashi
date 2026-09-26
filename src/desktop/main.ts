@@ -19,6 +19,8 @@ import { LocalStorage } from '../infrastructure/storage/local-storage';
 import { LocalGit } from '../infrastructure/git/local-git';
 import { CodexAgent } from '../infrastructure/codex/client';
 import { HyperframesMediaAdapter } from '../infrastructure/media/hyperframes';
+import { ManagedTranscriptionAdapter } from '../infrastructure/transcription/adapter';
+import { writeTranscriptionGuide } from '../infrastructure/transcription-guide';
 import { createBackend } from '../application/backend';
 import {
   externalUrl,
@@ -55,10 +57,25 @@ let mainWindow: BrowserWindow | null = null;
 const git = new LocalGit();
 const agent = new CodexAgent();
 const media = new HyperframesMediaAdapter({ cacheDirectory: join(app.getPath('userData'), 'models') });
+const transcriptionCache = join(userData, 'transcription');
+const transcriptionGuide = join(transcriptionCache, 'ASSET_TRANSCRIPTION.md');
+const transcriptionWorker = join(import.meta.dirname, 'transcription-resources/worker.py');
+const transcription = new ManagedTranscriptionAdapter({
+  cacheDirectory: transcriptionCache,
+  workerPath: transcriptionWorker,
+  guidePath: transcriptionGuide,
+});
 let closing = false;
 let updates: Updates | null = null;
 
 async function createWindow(): Promise<void> {
+  await writeTranscriptionGuide({
+    path: transcriptionGuide,
+    executable: process.execPath,
+    cli: join(import.meta.dirname, 'transcribe.js'),
+    cache: transcriptionCache,
+    worker: transcriptionWorker,
+  });
   if (process.platform === 'darwin') app.dock?.setIcon(nativeImage.createFromPath(iconPath));
   let nativeLocale = defaultLocale;
   const mediaUrl = (path: string) => `vandashi-media://local/file?path=${encodeURIComponent(path)}`;
@@ -177,6 +194,7 @@ async function createWindow(): Promise<void> {
       if (!window.isDestroyed()) window.webContents.send('vandashi:event', event);
     },
     updates,
+    transcription,
   );
   ipcMain.handle('vandashi:invoke', async (event, method: unknown, args: unknown) => {
     try {
@@ -265,7 +283,7 @@ app.on('will-quit', (event) => {
   event.preventDefault();
   closing = true;
   agent.dispose();
-  void media.dispose().finally(() => {
+  void Promise.allSettled([media.dispose(), transcription.dispose()]).finally(() => {
     setImmediate(() => {
       app.quit();
     });

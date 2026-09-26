@@ -52,6 +52,8 @@ test('development StrictMode reattaches one asset inspection and retains cancell
       });
       ipcMain.removeHandler('vandashi:invoke');
       ipcMain.handle('vandashi:invoke', (_event, method: string, args: unknown[]) => {
+        if (method === 'prepareTranscriptions') return { status: 'ready' };
+        if (method === 'prepareTranscriptionModel') return undefined;
         if (method === 'getState') return fixture.state;
         if (method === 'models') return fixture.models;
         if (method === 'openBrand' || method === 'openWorkspace') return fixture.workspace;

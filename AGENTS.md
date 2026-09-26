@@ -200,3 +200,16 @@ ownership after windows close. Unsigned macOS uses the verified installer fallba
 until Developer ID signing/notarization and a real signed update are verified.
 Release publication follows the entire platform test matrix, uploads to a draft,
 validates any existing tag against the tested commit, and publishes last.
+
+Full-file audio/video evidence belongs to the shared TranscriptionPort/AssetStore path.
+Never replace it with sampled inspection speech, trust renderer-provided analysis, or
+write derived `_shared` metadata. Bind category decisions to exact asset revisions;
+completed empty speech and explicit music/effect skips must not loop on entry.
+Keep transcript source hashes distinct from stored container hashes across embedding.
+AI preflight and final verification include every captured child repository, hold the
+same operation lease, and preserve partial changes before reporting a failed repair.
+The app-owned ASSET_TRANSCRIPTION.md and bundled CLI use the same production pipeline;
+Codex receives read-only prepared caches, never expanded global writable roots.
+New transcription model/runtime downloads must stay pinned and verified. Do not
+substitute an unpinned torch.hub load. Keep word alignment limits truthful and retain
+full ASR text when an alignment model cannot align individual words.

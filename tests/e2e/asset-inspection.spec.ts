@@ -24,6 +24,8 @@ test('reviews a multi-file queue with scoped inspection notes and imports only c
       });
       ipcMain.removeHandler('vandashi:invoke');
       ipcMain.handle('vandashi:invoke', (_event, method: string, args: unknown[]) => {
+        if (method === 'prepareTranscriptions') return { status: 'ready' };
+        if (method === 'prepareTranscriptionModel') return undefined;
         if (method === 'getState') return fixture.state;
         if (method === 'models') return fixture.models;
         if (method === 'openBrand' || method === 'openWorkspace') return workspace;
@@ -148,6 +150,8 @@ test('cancels a first-use inspection and keeps the dialog locked until cleanup c
       });
       ipcMain.removeHandler('vandashi:invoke');
       ipcMain.handle('vandashi:invoke', (_event, method: string, args: unknown[]) => {
+        if (method === 'prepareTranscriptions') return { status: 'ready' };
+        if (method === 'prepareTranscriptionModel') return undefined;
         if (method === 'getState') return fixture.state;
         if (method === 'models') return fixture.models;
         if (method === 'openBrand' || method === 'openWorkspace') return fixture.workspace;
@@ -187,6 +191,7 @@ test('cancels a first-use inspection and keeps the dialog locked until cleanup c
   await navigation.getByRole('button', { name: 'Shared assets', exact: true }).click();
   await page.getByRole('button', { name: 'Add assets', exact: true }).click();
   const modal = page.getByRole('dialog', { name: 'Add to library', exact: true });
+  await modal.getByRole('combobox', { name: 'Audio type', exact: true }).selectOption('dialog');
   await expect(modal.getByRole('progressbar')).toHaveAttribute('value', '0.1');
   await modal.getByRole('button', { name: 'Cancel', exact: true }).click();
   await expect(modal.getByRole('button', { name: 'Stopping inspection…', exact: true })).toBeDisabled();

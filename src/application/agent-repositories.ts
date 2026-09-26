@@ -11,13 +11,22 @@ export async function prepareAgentScope(
   commits: Commits,
   scope: Scope,
   beforeSync?: () => void,
+  prepareMetadata?: (repositories: string[]) => Promise<void>,
 ): Promise<{ repositories: string[]; sharedScopes: Scope[]; heads: Record<string, string>; cwd: string }> {
   const { repositories: paths, sharedScopes, cwd } = await store.discoverAgentScope(scope);
   for (const repository of paths)
     if ((await git.status(repository)).dirty) throw new AppFault({ id: 'appSaveBeforeAi' });
   // Settle derived copies only after rejecting all pre-existing manual changes.
   beforeSync?.();
+  let metadataFailure: Error | undefined;
+  try {
+    await prepareMetadata?.(paths);
+  } catch (error) {
+    metadataFailure =
+      error instanceof Error ? error : new AppFault({ id: 'appTranscriptionFailed' }, String(error));
+  }
   await commits.syncBaseline(paths, sharedScopes);
+  if (metadataFailure) throw metadataFailure;
   return {
     repositories: paths,
     sharedScopes,

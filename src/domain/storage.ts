@@ -15,6 +15,7 @@ import type {
   VideoSummary,
   Workspace,
 } from './models';
+import type { AssetAnalysis } from './transcription';
 
 export interface GitStatus {
   dirty: boolean;
@@ -72,6 +73,9 @@ export type ProjectPreparation = (project: {
   name: string;
   ratio: AspectRatio;
 }) => Promise<void>;
+export type ImportedMediaPreparation = (path: string) => Promise<void> | Promise<AssetAnalysis | undefined>;
+export type TranscriptionAssetSelection =
+  { kind: 'shared' } | { kind: 'scope'; scope: Scope } | { kind: 'repositories'; paths: string[] };
 
 /** Registered paths only: discovery must never synchronize assets or repair project files. */
 export interface AgentScopePaths {
@@ -92,17 +96,23 @@ export interface StoragePort {
     input: { brandId: string; name: string; ratio: '16:9' | '9:16' },
     prepare?: ProjectPreparation,
   ): Promise<Workspace>;
-  importVideo(input: ImportedVideo, validateCopy: (path: string) => Promise<void>): Promise<Workspace>;
+  importVideo(input: ImportedVideo, validateCopy: ImportedMediaPreparation): Promise<Workspace>;
   openWorkspace(scope: Scope): Promise<Workspace>;
   saveWorkspace(input: SaveInput): Promise<Workspace>;
   createClip(input: NewClip, prepare?: ProjectPreparation): Promise<Clip>;
-  importClip(input: ImportedClip, validateCopy: (path: string) => Promise<void>): Promise<Clip>;
+  importClip(input: ImportedClip, validateCopy: ImportedMediaPreparation): Promise<Clip>;
   repositories(scope: Scope): Promise<string[]>;
   discoverAgentScope(scope: Scope): Promise<AgentScopePaths>;
   projectPath(scope: Scope): Promise<string>;
   setRenderedPath(scope: Scope, path: string): Promise<void>;
   assetDirectory(scope: Scope): Promise<string>;
   syncSharedAssets(scope: Scope): Promise<void>;
+  transcriptionAssets(selection: TranscriptionAssetSelection): Promise<Asset[]>;
+  saveAssetAnalysis(input: {
+    assetPath: string;
+    expectedRevision: string;
+    analysis: AssetAnalysis;
+  }): Promise<Asset>;
   writeScript(input: { scope: Scope; revision: string; content: string }): Promise<void>;
   sessions(scope: Scope): Promise<ChatSession[]>;
   getSession(id: string): Promise<ChatSession>;

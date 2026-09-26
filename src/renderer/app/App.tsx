@@ -26,6 +26,7 @@ import { StudioLeaveDialog } from '../features/creation/StudioLeaveDialog';
 import type { FileChange } from '../../domain/models';
 import type { Page, Destination } from './navigation-tabs';
 import { WorkspaceNavigation } from './WorkspaceNavigation';
+import { PrepareTranscriptions } from '../features/transcription/PrepareTranscriptions';
 
 export function App() {
   const updates = useUpdates();
@@ -47,6 +48,7 @@ export function App() {
   } = useApp();
   const [page, setPage] = useState<Page>('home');
   const [settings, setSettings] = useState(false);
+  const [transcriptionsReady, setTranscriptionsReady] = useState(false);
   const [checking, setChecking] = useState(false);
   const [pending, setPending] = useState<Destination | null>(null);
   const [studioFiles, setStudioFiles] = useState<FileChange[]>([]);
@@ -69,13 +71,13 @@ export function App() {
     [setWorkspace, setChatTarget, setDirty],
   );
   useEffect(() => {
-    if (!state || restored.current) return;
+    if (!state || !transcriptionsReady || restored.current) return;
     restored.current = true;
     if (state.lastBrandId)
       void run(async () => {
         open(await api.openBrand(state.lastBrandId ?? ''));
       });
-  }, [api, state, run, open]);
+  }, [api, state, run, open, transcriptionsReady]);
   useEffect(() => {
     if (!dirty && !busy && page !== 'manual') return;
     const protect = (event: BeforeUnloadEvent) => {
@@ -139,6 +141,19 @@ export function App() {
   if (!state) return <Loading />;
   const revisionKey = `${workspace?.scope.videoId ?? 'brand'}:${workspace?.revision ?? ''}`;
   const renderPage = () => {
+    if (!transcriptionsReady)
+      return (
+        <PrepareTranscriptions
+          scope={null}
+          onReady={() => {
+            setTranscriptionsReady(true);
+          }}
+          onDefer={() => {
+            restored.current = true;
+            setTranscriptionsReady(true);
+          }}
+        />
+      );
     if (checking)
       return (
         <Checks

@@ -3,7 +3,8 @@ import { importedMediaFilename } from '../../domain/import-names';
 import { constants, type Stats } from 'node:fs';
 import { copyFile, lstat, mkdir, mkdtemp, readdir, rm, rmdir, stat } from 'node:fs/promises';
 import { basename, join } from 'node:path';
-import type { GitPort, ImportedVideo } from '../../domain/storage';
+import type { GitPort, ImportedVideo, ImportedMediaPreparation } from '../../domain/storage';
+import { parseAssetAnalysis } from '../../domain/transcription';
 import type { VideoRecord } from './schemas';
 import { assetKind, metadataSuffix } from './assets';
 import { atomicWrite, containedPath, errorCode, hashFile, safeName } from './files';
@@ -45,7 +46,7 @@ export async function initializeImportedVideo(
   record: VideoRecord,
   git: GitPort,
   initialize: (path: string) => Promise<void>,
-  validateCopy: (path: string) => Promise<void>,
+  validateCopy: ImportedMediaPreparation,
 ): Promise<VideoRecord> {
   const source = await lstat(input.sourcePath);
   if (!source.isFile() || source.isSymbolicLink() || assetKind(input.sourcePath) !== 'video')
@@ -72,18 +73,26 @@ export async function initializeImportedVideo(
     const copiedHash = await hashFile(copied);
     if (before !== copiedHash || (await hashFile(input.sourcePath)) !== before)
       throw new AppFault({ id: 'appImportedVideoChanged' });
-    await validateCopy(copied);
+    const prepared = await validateCopy(copied);
+    const analysis = prepared === undefined ? undefined : parseAssetAnalysis(prepared);
+    if (
+      analysis === null ||
+      (analysis && analysis.sourceHash !== copiedHash) ||
+      (await hashFile(copied)) !== copiedHash
+    )
+      throw new AppFault({ id: 'storageAssetInspectionStale' });
     await guardStaging(staging, stagingIdentity);
     await atomicWrite(
       copied + metadataSuffix,
       JSON.stringify({
         title: record.name,
         description: 'Imported finished video.',
-        tags: [],
+        tags: analysis ? [`audio:${analysis.category}`] : [],
         hash: copiedHash,
         contentHash: copiedHash,
         metadataStorage: 'sidecar',
         preserveBytes: true,
+        ...(analysis ? { analysis, analysisContentHash: copiedHash } : {}),
       }),
     );
     const importedRecord: VideoRecord = {

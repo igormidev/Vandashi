@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import type { AgentRunResult } from '../src/domain/agent';
 import type { AssetInspectionLease } from '../src/domain/asset-inspection';
+import { transcriptionFixture } from './transcription-fixture';
 import { applicationFixture, type ApplicationFixture } from './application-fixture';
 
 let app: ApplicationFixture;
 beforeEach(async () => {
-  app = await applicationFixture();
+  app = await applicationFixture(transcriptionFixture());
 });
 afterEach(async () => {
   await app.idle();
@@ -23,7 +24,12 @@ it('cancels only the matching media inspection and retains the lease until worke
       };
     });
   });
-  const pending = app.api.describeAsset({ scope: app.scope, path: '/tmp/speech.wav', requestId: 'audio' });
+  const pending = app.api.describeAsset({
+    scope: app.scope,
+    path: '/tmp/speech.wav',
+    requestId: 'audio',
+    category: 'dialog',
+  });
   const rejected = expect(pending).rejects.toMatchObject({
     diagnostic: { kind: 'app', message: { id: 'mediaInspectionCancelled' } },
   });

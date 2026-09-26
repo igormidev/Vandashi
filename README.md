@@ -22,7 +22,7 @@ node node_modules/hyperframes/bin/hyperframes.mjs skills update --json
 npm run dev
 ```
 
-In Windows PowerShell, run `$env:ONNXRUNTIME_NODE_INSTALL='skip'` before `npm ci` instead. This keeps the included CPU inference runtime and skips an unnecessary CUDA download. Local speech inspection downloads a pinned 80 MB model on first use and can temporarily use about 2.3 GB of memory; its worker exits afterward.
+In Windows PowerShell, run `$env:ONNXRUNTIME_NODE_INSTALL='skip'` before `npm ci` instead. This keeps the included CPU inference runtime and skips an unnecessary CUDA download. On first launch, Vandashi installs its private Python/WhisperX tools and downloads the default large-v3-turbo speech model. Initial setup needs internet and several GB of free disk space (the speech model alone is about 1.62 GB). Audio/video metadata includes full-file speech timing; choose another local model in Settings. See [audio/video transcription](docs/TRANSCRIPTION.md).
 
 The pinned Hyperframes CLI, Studio, and player are included in npm dependencies. Its first render also needs FFmpeg, FFprobe, and a supported Chrome runtime. The workspace preparation screen checks these tools and offers the appropriate setup or recovery guide. Install or repair host tools outside Vandashi, then restart it and check again. Existing Codex settings and conversations are preserved.
 

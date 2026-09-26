@@ -10,6 +10,7 @@ import { Split } from '../../shared/Split';
 import { formatPercent } from '../../shared/format';
 import { ChatPane } from '../chat/ChatPane';
 import { OwnedRequest } from '../../shared/owned-request';
+import { PrepareTranscriptions } from '../transcription/PrepareTranscriptions';
 
 interface CheckProgress {
   key: string;
@@ -34,7 +35,6 @@ export function Checks({ video, onReady }: { video: boolean; onReady: () => void
   const [validated, setValidated] = useState('');
   const pending = useRef(new OwnedRequest<DependencyCheck[]>());
   const delivered = useRef('');
-  const readyDelivered = useRef('');
   const brandId = workspace?.scope.brandId;
   const videoId = workspace?.scope.videoId;
   const clipId = workspace?.scope.clipId;
@@ -106,13 +106,16 @@ export function Checks({ video, onReady }: { video: boolean; onReady: () => void
     validated === requestKey &&
     checks.length > 0 &&
     checks.every((check) => check.status === 'ready');
-  useEffect(() => {
-    if (ready && readyDelivered.current !== requestKey) {
-      readyDelivered.current = requestKey;
-      setChatTarget(null);
-      onReady();
-    }
-  }, [ready, requestKey, onReady, setChatTarget]);
+  if (ready)
+    return (
+      <PrepareTranscriptions
+        scope={scope}
+        onReady={() => {
+          setChatTarget(null);
+          onReady();
+        }}
+      />
+    );
   const content = (
     <div className="page">
       <div className="check-list">

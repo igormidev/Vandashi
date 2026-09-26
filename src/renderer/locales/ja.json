@@ -400,5 +400,22 @@
   "updateRestartHelp": "Vandashiを再起動して、ダウンロード済みのアップデートを適用します。",
   "updateDownloadHelp": "このバージョンをダウンロードしますか？インストールには、もう一度確認が必要です。",
   "updateFinishWork": "アップデートを適用する前に、変更を保存し、実行中の作業を完了してください。",
-  "updateLater": "後で"
+  "updateLater": "後で",
+  "transcriptionPreparing": "音声と動画を準備",
+  "transcriptionInstalling": "文字起こしツールをインストール中…",
+  "transcriptionDownloading": "音声モデルをダウンロード中…",
+  "transcriptionChecking": "音声メタデータを確認中…",
+  "transcriptionClassifying": "音声の種類を判定中…",
+  "transcriptionTranscribing": "音声を文字起こし中…",
+  "transcriptionAligning": "単語のタイミングを調整中…",
+  "transcriptionSaving": "文字起こしを保存中…",
+  "transcriptionCount": "{{completed}} / {{total}} ファイル",
+  "transcriptionModel": "文字起こしモデル",
+  "transcriptionModelHelp": "WhisperX を使ってローカルで処理します。未導入のモデルは選択時にダウンロードします。大きいモデルほど容量と処理時間が必要です。既存の文字起こしは保持されます。",
+  "audioCategory": "音声の種類",
+  "audioCategoryChoose": "音声の種類を選択",
+  "audioDialog": "会話",
+  "audioMusic": "音楽",
+  "audioSoundEffect": "効果音",
+  "audioCategoryHelp": "会話にはタイムスタンプ付きの文字起こしを作成します。音楽と効果音は分類のみ行います。"
 }

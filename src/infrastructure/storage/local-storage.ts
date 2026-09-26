@@ -22,6 +22,7 @@ import type {
   ProjectPreparation,
   RecoveryListener,
   StoragePort,
+  ImportedMediaPreparation,
 } from '../../domain/storage';
 import { AssetStore, assetKind } from './assets';
 import { assetReferences } from './asset-references';
@@ -37,6 +38,8 @@ import { brandImageRevision } from './brand-image';
 import { syncProjectAssets } from './sync-project-assets';
 import { discoverAgentScope } from './agent-scope';
 import { importBrand } from './brand-import';
+import { TranscriptionAssets } from './transcription-assets';
+import { importAssetWithCommit } from './asset-import';
 
 export class LocalStorage implements StoragePort {
   private readonly registry: Registry;
@@ -44,6 +47,8 @@ export class LocalStorage implements StoragePort {
   private readonly projects: ProjectStore;
   private readonly writes = new SerialQueue();
   private readonly manual: ManualMutation;
+  readonly transcriptionAssets: StoragePort['transcriptionAssets'];
+  readonly saveAssetAnalysis: StoragePort['saveAssetAnalysis'];
 
   constructor(
     userData: string,
@@ -55,6 +60,9 @@ export class LocalStorage implements StoragePort {
     this.assets = new AssetStore(mediaUrl);
     this.projects = new ProjectStore(this.registry, git, this.assets, onRecovery);
     this.manual = new ManualMutation(git);
+    const transcription = new TranscriptionAssets(this.registry, git, this.assets, this.writes);
+    this.transcriptionAssets = (selection) => transcription.list(selection);
+    this.saveAssetAnalysis = (input) => transcription.save(input);
   }
 
   async getState(): Promise<AppState> {
@@ -89,7 +97,7 @@ export class LocalStorage implements StoragePort {
       }
     });
   }
-  async importVideo(input: ImportedVideo, validateCopy: (path: string) => Promise<void>): Promise<Workspace> {
+  async importVideo(input: ImportedVideo, validateCopy: ImportedMediaPreparation): Promise<Workspace> {
     return this.writes.run(async () =>
       this.openWorkspace(await this.projects.importVideo(input, validateCopy)),
     );
@@ -99,7 +107,7 @@ export class LocalStorage implements StoragePort {
   }
   importClip(
     input: Parameters<StoragePort['importClip']>[0],
-    validateCopy: (path: string) => Promise<void>,
+    validateCopy: ImportedMediaPreparation,
   ): Promise<Clip> {
     return this.writes.run(() => this.projects.importClip(input, validateCopy));
   }
@@ -135,9 +143,7 @@ export class LocalStorage implements StoragePort {
   syncSharedAssets(scope: Scope): Promise<void> {
     return this.writes.run(() => syncProjectAssets(this.registry, this.git, this.assets, scope));
   }
-  discoverAgentScope(scope: Scope) {
-    return discoverAgentScope(this.registry, this.git, scope);
-  }
+  discoverAgentScope = (scope: Scope) => discoverAgentScope(this.registry, this.git, scope);
 
   repositories(scope: Scope): Promise<string[]> {
     return this.projects.repositories(scope);
@@ -227,24 +233,17 @@ export class LocalStorage implements StoragePort {
     return this.registry.saveSession(session);
   }
 
-  private async assetCommit(scope: Scope, title: string, body: string): Promise<void> {
-    const root = scope.videoId === null ? await this.assetDirectory(scope) : await this.projectPath(scope);
-    await this.git.commit(root, title, body);
-  }
-
   importAsset(input: { scope: Scope; draft: AssetDraft }): Promise<Asset> {
     return this.writes.run(async () => {
-      const asset = await this.assets.import(
-        await this.assetDirectory(input.scope),
+      const root = await this.assetDirectory(input.scope);
+      return importAssetWithCommit(
+        this.assets,
+        this.git,
+        root,
+        input.scope.videoId === null ? root : await this.projectPath(input.scope),
         input.draft,
         input.scope.videoId === null,
       );
-      await this.assetCommit(
-        input.scope,
-        `Add asset: ${asset.title}`,
-        `Import ${asset.relativePath} with its title, description, and tags.`,
-      );
-      return asset;
     });
   }
 

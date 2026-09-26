@@ -9,6 +9,7 @@ import type {
   GitPort,
   ImportedClip,
   ImportedVideo,
+  ImportedMediaPreparation,
   NewClip,
   ProjectPreparation,
   RecoveryListener,
@@ -199,7 +200,7 @@ export class ProjectStore {
     return { scope: prepared, path };
   }
 
-  async importVideo(input: ImportedVideo, validateCopy: (path: string) => Promise<void>): Promise<Scope> {
+  async importVideo(input: ImportedVideo, validateCopy: ImportedMediaPreparation): Promise<Scope> {
     const brand = await this.brand(input.brandId);
     const name = safeName(input.name, 3);
     if (name.startsWith('.')) throw new AppFault({ id: 'storageProjectNameHidden' });
@@ -280,7 +281,7 @@ export class ProjectStore {
     });
   }
 
-  async importClip(input: ImportedClip, validateCopy: (path: string) => Promise<void>): Promise<Clip> {
+  async importClip(input: ImportedClip, validateCopy: ImportedMediaPreparation): Promise<Clip> {
     const parent = await this.video({ ...input.scope, clipId: null });
     if (parent?.ratio !== '16:9') throw new AppFault({ id: 'storageClipLandscapeRequired' });
     const brand = await this.brand(input.scope.brandId);

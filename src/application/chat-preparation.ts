@@ -9,6 +9,7 @@ import type { Commits } from './commits';
 import type { Prepared, ScriptInput } from './chat-types';
 import { prepareAgentScope } from './agent-repositories';
 import { publishScope, publishScopeGuidance, publishTarget, verifyPublishMedia } from './publish-scope';
+import type { Transcriptions } from './transcriptions';
 
 export class ChatPreparation {
   constructor(
@@ -18,6 +19,7 @@ export class ChatPreparation {
     private readonly commits: Commits,
     private readonly notify: (event: AppEvent) => void,
     private readonly media?: MediaPort,
+    private readonly transcriptions?: Transcriptions,
   ) {}
   async prepare(
     session: ChatSession,
@@ -32,9 +34,19 @@ export class ChatPreparation {
     }
     const scope = publishTarget(session.scope, session.topic)?.scope ?? session.scope;
     if (request.mode === 'edit' && scope.videoId) await this.media?.stopStudio();
-    const files = await prepareAgentScope(this.store, this.git, this.commits, scope, () => {
-      state.filesTouched = true;
-    });
+    const transcriptions = this.transcriptions;
+    const files = await prepareAgentScope(
+      this.store,
+      this.git,
+      this.commits,
+      scope,
+      () => {
+        state.filesTouched = true;
+      },
+      request.mode === 'edit' && transcriptions
+        ? (repositories) => transcriptions.reconcileRepositories(repositories)
+        : undefined,
+    );
     const { repositories, sharedScopes, heads, cwd } = files;
     const publication = await publishScope(this.store, session.scope, session.topic);
     if (publication && request.mode === 'edit') await verifyPublishMedia(publication, this.media);
@@ -71,6 +83,7 @@ export class ChatPreparation {
           text: request.text,
           scriptStaged: !!script,
           ...(skill ? { hyperframesSkill: skill } : {}),
+          ...(transcriptions?.guidePath ? { transcriptionGuidePath: transcriptions.guidePath } : {}),
         });
       const message: ChatMessage = {
         id: crypto.randomUUID(),

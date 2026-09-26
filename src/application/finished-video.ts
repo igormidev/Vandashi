@@ -3,6 +3,7 @@ import type { DesktopApi } from '../domain/api';
 import type { MediaPort, MediaProbe } from '../domain/media';
 import type { AspectRatio } from '../domain/models';
 import type { StoragePort } from '../domain/storage';
+import type { Transcriptions } from './transcriptions';
 
 export function measuredFinishedRatio<T extends AspectRatio>(
   probe: MediaProbe,
@@ -38,6 +39,7 @@ export async function importFinishedVideo(
   input: Parameters<DesktopApi['importFinishedVideo']>[0],
   store: StoragePort,
   media: MediaPort,
+  transcriptions?: Transcriptions,
 ) {
   const original = await media.probeMedia(input.sourcePath);
   const ratio = finishedVideoRatio(original);
@@ -50,5 +52,6 @@ export async function importFinishedVideo(
       Math.abs(copy.duration - original.duration) > 0.01
     )
       throw new AppFault({ id: 'appImportedVideoChanged' });
+    return transcriptions?.analyze({ path, kind: 'video' });
   });
 }

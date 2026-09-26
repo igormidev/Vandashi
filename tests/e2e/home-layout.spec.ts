@@ -24,6 +24,8 @@ test('keeps every brand reachable at the minimum size with long names and paths'
     let workspace = fixture.workspace;
     ipcMain.removeHandler('vandashi:invoke');
     ipcMain.handle('vandashi:invoke', (_event, method: string, args: unknown[]) => {
+      if (method === 'prepareTranscriptions') return { status: 'ready' };
+      if (method === 'prepareTranscriptionModel') return undefined;
       if (method === 'getState') return fixture.state;
       if (method === 'models') return fixture.models;
       if (method === 'sessions') return [];

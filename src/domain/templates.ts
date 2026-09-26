@@ -340,6 +340,14 @@ Keep sources and qualifications beside the claim they support. Name what the vie
 should notice; avoid directions such as “add an engaging visual” with no action.
 
 ## Make it implementable
+Before adding or replacing audio/video, read Vandashi's app-owned asset transcription
+guide identified in the chat instructions and run its exact preparation command.
+Read each speech asset's adjacent metadata transcript and source timestamps before
+planning cuts, captions, or supporting images. Align caption words to available word
+timestamps; when only segment timing exists, do not invent individual word timing.
+Convert source timestamps after trims/speed changes instead of treating them as the
+composition timeline. Music/effects carry explicit categories and need no transcript.
+
 Read the asset metadata and reference every asset actually used, including background
 audio, with Vandashi mentions in the form @[asset name](actual asset path). Resolve
 the path from the library; do not invent a plausible file. Mark unavailable material
@@ -381,6 +389,10 @@ video, sound effect, and music track. Resolve existing paths; identify missing a
 honestly. Distinguish the parent's source range from the clip's local timeline, which
 starts at zero. Estimate timing only until real media and playback establish it.
 Do not imply a narration file exists merely because spoken words are scripted.
+Read speech transcripts and segment/word timestamps in adjacent .vandashi.json
+metadata when choosing excerpts, caption groups, and visual reveals. Follow the
+app-owned transcription guide and its command for every new/replaced audio or video;
+verify category and saved evidence. Explicitly tagged music/effects are exempt.
 
 ## Finish the standalone version
 Follow EDITS_SHORT_FORM_VIDEOS_TASTE.md and the installed Hyperframes instructions.
@@ -412,6 +424,13 @@ actions rather than every cut. Inspect the full mix on ordinary listening equipm
 do not impose a single loudness number as a universal platform requirement.
 
 ## Implement and verify
+MANDATORY: inspect every used audio/video's .vandashi.json analysis before editing.
+Use speech segment/word timestamps for cuts, captions, and synchronized supporting
+imagery. Transform source times into composition times after trims and speed changes.
+Never invent word alignment from segment-only evidence. Before adding or replacing
+media, follow the app-owned transcription README linked in the chat, run its exact
+command, and verify the saved category and transcript or music/effects exemption.
+
 Read the installed Hyperframes entry skill and the relevant current guidance. Preserve
 the existing project, media bindings, and scene identities unless the change requires
 otherwise. Use framework-owned timing and seekable animation; do not introduce random
@@ -448,6 +467,13 @@ alone are not complete captions. Do not stack subtitles over labels needed to fo
 the demonstration. Avoid flashing, constant punch-ins, and arbitrary speed changes.
 
 ## Sound, source, and completion
+Read source-timed speech evidence in each asset's adjacent .vandashi.json analysis.
+Time captions and image changes to actual spoken words, converting source timestamps
+to clip-local time after trims and speed changes. Do not invent word timing when only
+segments exist. Every new or replaced audio/video must pass the command documented in
+Vandashi's app-owned transcription README (linked in the chat); verify its category
+and transcript. Explicitly categorized music and sound effects need no transcript.
+
 Keep speech intelligible over music and effects. Protect first and last syllables,
 clean audio joins, and let the final sound finish deliberately. A seamless loop is an
 option only when it serves the idea. Cropping, captions, borders, or speed changes do

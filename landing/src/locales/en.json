@@ -34,7 +34,7 @@
   "promptLabel": "Setup prompt for your coding agent",
   "setupPrompt": "Install and open Vandashi from https://github.com/igormidev/Vandashi. Inspect its README and AGENTS.md first. Use the latest repository state and Node.js 24. Set ONNXRUNTIME_NODE_INSTALL=skip in the installation environment, then run npm ci to use the included CPU inference runtime without downloading CUDA. Check Git and Codex CLI; install missing prerequisites from their official sources without replacing my existing configurations. Ask me to sign in directly if Codex needs authentication. Install the bundled Hyperframes skill with `node node_modules/hyperframes/bin/hyperframes.mjs skills update --json`, verify the media prerequisites, run the checks, then start `npm run dev` and open the desktop app. Keep my existing projects and credentials intact. Report any failed dependency check with the exact error.",
   "guide": "Read the setup guide",
-  "requirements": "Requires Node.js 24, Git, and a signed-in Codex CLI. Rendering also needs FFmpeg, FFprobe, and a supported Chrome runtime.",
+  "requirements": "Requires Node.js 24, Git, and a signed-in Codex CLI. Rendering also needs FFmpeg, FFprobe, and a supported Chrome runtime. First launch also downloads local transcription tools and a speech model; allow several GB of disk space and an internet connection for setup.",
   "platforms": "Built for macOS, Windows, and Linux.",
   "license": "MIT source license",
   "notices": "Third-party notices",

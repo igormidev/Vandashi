@@ -4,6 +4,7 @@ import { parseAppMessage, parseDiagnostic } from '../../domain/diagnostics';
 import type { Diagnostic } from '../../domain/diagnostics';
 import type { AppMessage } from '../../domain/messages';
 import { supportedLocales } from '../../domain/locales';
+import { transcriptionModels } from '../../domain/transcription';
 
 export const scopeSchema = z.object({
   brandId: z.string().min(1),
@@ -42,6 +43,7 @@ export const settingsSchema = z.object({
   splits: z.record(z.string(), z.number().min(25).max(75)),
   assetMetadata: selectionSchema.default(defaultSettings.assetMetadata),
   chapters: selectionSchema.default(defaultSettings.chapters),
+  transcriptionModel: z.enum(transcriptionModels).default('large-v3-turbo'),
 });
 const brandSummarySchema = z.object({
   id: z.string(),
@@ -85,6 +87,9 @@ export const metadataSchema = z.object({
   embeddingWarning: z.string().nullable().optional(),
   embeddingDiagnostic: z.custom<Diagnostic>((value) => parseDiagnostic(value) !== null).optional(),
   preserveBytes: z.boolean().optional(),
+  // Invalid analysis is repairable; it must not prevent listing the source media.
+  analysis: z.unknown().optional(),
+  analysisContentHash: z.string().optional(),
 });
 const fileChangeSchema = z.object({
   path: z.string(),

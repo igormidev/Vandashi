@@ -7,6 +7,8 @@ import { Modal, InfoTip, PendingLabel } from '../../shared/ui';
 import { ModelPicker } from '../chat/ModelPicker';
 import { availableLocales, normalizeLocale } from '../../../domain/locales';
 import { languageLabels } from '../../locales/catalogs';
+import { transcriptionModels } from '../../../domain/transcription';
+import { TranscriptionStatus, useTranscriptionProgress } from '../transcription/TranscriptionStatus';
 
 export function Settings({
   onClose,
@@ -21,8 +23,10 @@ export function Settings({
   const { state, api, run, refresh } = useApp();
   const [settings, setSettings] = useState(state?.settings);
   const [saving, setSaving] = useState(false);
+  const [installing, setInstalling] = useState(false);
+  const progress = useTranscriptionProgress();
   const saveOwner = useRef(false);
-  const locked = saving || updates.working;
+  const locked = saving || installing || updates.working;
   if (!settings) return null;
   return (
     <Modal title={t('settings')} open onClose={onClose} locked={locked}>
@@ -85,6 +89,39 @@ export function Settings({
             }}
           />
         </div>
+        <label className="field">
+          <span>
+            {t('transcriptionModel')}
+            <InfoTip text={t('transcriptionModelHelp')} />
+          </span>
+          <select
+            value={settings.transcriptionModel}
+            aria-label={t('transcriptionModel')}
+            aria-busy={installing}
+            onChange={(event) => {
+              const model = transcriptionModels.find((entry) => entry === event.target.value);
+              if (!model || saveOwner.current) return;
+              saveOwner.current = true;
+              setInstalling(true);
+              void run(async () => {
+                try {
+                  await api.prepareTranscriptionModel(model);
+                  setSettings((current) => (current ? { ...current, transcriptionModel: model } : current));
+                } finally {
+                  saveOwner.current = false;
+                  setInstalling(false);
+                }
+              });
+            }}
+          >
+            {transcriptionModels.map((model) => (
+              <option value={model} key={model}>
+                {model}
+              </option>
+            ))}
+          </select>
+        </label>
+        {installing && <TranscriptionStatus progress={progress ?? { phase: 'installing' }} />}
         <div className="field">
           <span className="field-label">
             <span>
@@ -104,7 +141,7 @@ export function Settings({
         </button>
       </fieldset>
       <div className="modal-actions settings-actions">
-        <UpdateCheck updates={updates} disabled={saving} />
+        <UpdateCheck updates={updates} disabled={saving || installing} />
         <button
           type="button"
           className="button primary"

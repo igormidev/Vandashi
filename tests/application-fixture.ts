@@ -8,8 +8,9 @@ import type { AppEvent, ChatRequest } from '../src/domain/models';
 import { createBackend, type HostMethods } from '../src/application/backend';
 import { LocalGit } from '../src/infrastructure/git/local-git';
 import { LocalStorage } from '../src/infrastructure/storage/local-storage';
+import type { TranscriptionPort } from '../src/domain/transcription';
 
-export async function applicationFixture() {
+export async function applicationFixture(transcription?: TranscriptionPort) {
   const root = await mkdtemp(join(tmpdir(), 'vandashi-application-'));
   const git = new LocalGit();
   const store = new LocalStorage(join(root, 'settings'), git);
@@ -98,9 +99,18 @@ export async function applicationFixture() {
     flushStudio: vi.fn<(url: string) => Promise<void>>(() => Promise.resolve(undefined)),
   } satisfies HostMethods;
   const events: AppEvent[] = [];
-  const api = createBackend(store, git, agent, media, host, (event) => {
-    events.push(event);
-  });
+  const api = createBackend(
+    store,
+    git,
+    agent,
+    media,
+    host,
+    (event) => {
+      events.push(event);
+    },
+    undefined,
+    transcription,
+  );
   await api.openWorkspace(scope);
   const session = await api.openChat({ scope, topic: 'creation', title: 'Creation' });
   const request: ChatRequest = {

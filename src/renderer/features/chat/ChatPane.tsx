@@ -1,5 +1,6 @@
 import { LoaderCircle, MessageSquare, RotateCcw, Sparkles, Undo2, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { TranscriptionStatus, useTranscriptionProgress } from '../transcription/TranscriptionStatus';
 import { useTranslation } from 'react-i18next';
 import type { ChatMessage, Scope } from '../../../domain/models';
 import { scopeKey } from '../../../domain/defaults';
@@ -81,6 +82,7 @@ export function ChatPane() {
 function Conversation({ scope }: { scope: Scope }) {
   const { t } = useTranslation();
   const { api, run, chatTarget, setChatTarget, busy, activity, dirty, workspace } = useApp();
+  const transcriptionProgress = useTranscriptionProgress();
   const {
     sessions,
     selected,
@@ -212,7 +214,11 @@ function Conversation({ scope }: { scope: Scope }) {
             {activity?.sessionId === session.id && (
               <div className="activity">
                 <span className="status-dot busy" />
-                <span>{t(activity.phase === 'committing' ? 'committing' : 'working')}</span>
+                {transcriptionProgress ? (
+                  <TranscriptionStatus progress={transcriptionProgress} />
+                ) : (
+                  <span>{t(activity.phase === 'committing' ? 'committing' : 'working')}</span>
+                )}
               </div>
             )}
           </div>

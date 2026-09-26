@@ -31,6 +31,8 @@ test('returning from failed video validation does not bypass unfinished brand va
       let release: (() => void) | undefined;
       ipcMain.removeHandler('vandashi:invoke');
       ipcMain.handle('vandashi:invoke', (_event, method: string, args: unknown[]) => {
+        if (method === 'prepareTranscriptions') return { status: 'ready' };
+        if (method === 'prepareTranscriptionModel') return undefined;
         if (method === 'getState') return fixture.state;
         if (method === 'models') return fixture.models;
         if (method === 'openBrand') {

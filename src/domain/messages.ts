@@ -4,9 +4,11 @@ import { codexMessagesEn } from './messages/codex-en';
 import { storageMessagesEn } from './messages/storage-en';
 import { desktopMessagesEn } from './messages/desktop-en';
 import { mediaMessagesEn } from './messages/media-en';
+import { transcriptionMessagesEn } from './messages/transcription-en';
 
 /** App-authored messages remain distinct from raw agent output and user content. */
 export const appMessagesEn = {
+  ...transcriptionMessagesEn,
   ...applicationMessagesEn,
   ...codexMessagesEn,
   ...storageMessagesEn,

@@ -34,7 +34,7 @@
   "promptLabel": "코딩 에이전트용 설치 프롬프트",
   "setupPrompt": "https://github.com/igormidev/Vandashi 에서 Vandashi를 설치하고 실행해 주세요. 먼저 README와 AGENTS.md를 읽어 주세요. 저장소의 최신 상태와 Node.js 24를 사용하세요. 설치 환경에 ONNXRUNTIME_NODE_INSTALL=skip을 설정한 뒤 npm ci를 실행하여 CUDA를 다운로드하지 않고 포함된 CPU 추론 런타임을 사용하세요. Git과 Codex CLI를 확인하고, 없는 필수 구성 요소는 공식 출처에서 설치하되 기존 설정은 덮어쓰지 마세요. Codex 인증이 필요하면 제가 직접 로그인하도록 안내하세요. `node node_modules/hyperframes/bin/hyperframes.mjs skills update --json`으로 포함된 Hyperframes 스킬을 설치하고, 미디어 관련 필수 구성 요소를 확인한 후 검증 절차를 실행하세요. 그런 다음 `npm run dev`를 실행하고 데스크톱 앱을 열어 주세요. 기존 프로젝트와 인증 정보는 그대로 보존하세요. 의존성 확인에 실패하면 정확한 오류 내용을 보고해 주세요.",
   "guide": "설치 가이드 읽기",
-  "requirements": "Node.js 24, Git, 로그인된 Codex CLI가 필요합니다. 렌더링에는 FFmpeg, FFprobe와 지원되는 Chrome 런타임도 필요합니다.",
+  "requirements": "Node.js 24, Git, 로그인된 Codex CLI가 필요합니다. 렌더링에는 FFmpeg, FFprobe와 지원되는 Chrome 런타임도 필요합니다. 처음 실행하면 로컬 받아쓰기 도구와 음성 모델도 다운로드합니다. 설정 시 수 GB의 저장 공간과 인터넷 연결이 필요합니다.",
   "platforms": "macOS, Windows, Linux를 위해 개발했습니다.",
   "license": "소스 코드 MIT 라이선스",
   "notices": "타사 소프트웨어 고지",

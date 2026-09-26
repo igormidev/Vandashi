@@ -13,6 +13,7 @@ import type { Commits } from './commits';
 import type { OperationGate } from './operation-gate';
 import type { Prepared, ScriptInput } from './chat-types';
 import { ChatPreparation } from './chat-preparation';
+import type { Transcriptions } from './transcriptions';
 
 export class Chats {
   private readonly preparation: ChatPreparation;
@@ -24,6 +25,7 @@ export class Chats {
     private readonly gate: OperationGate,
     private readonly emit: (event: AppEvent) => void,
     media?: MediaPort,
+    private readonly transcriptions?: Transcriptions,
   ) {
     this.preparation = new ChatPreparation(
       store,
@@ -34,6 +36,7 @@ export class Chats {
         this.notify(event);
       },
       media,
+      transcriptions,
     );
   }
   private notify(event: AppEvent): void {
@@ -257,6 +260,7 @@ export class Chats {
         await prepared.rollback();
         await this.store.saveSession(original);
       } else {
+        const transcriptions = this.transcriptions;
         this.notify({
           type: 'activity',
           activity: { sessionId: session.id, phase: 'committing', detail: '' },
@@ -266,6 +270,9 @@ export class Chats {
           prepared.request.mode === 'edit',
           Object.keys(heads),
           prepared.request.mode === 'edit' ? prepared.sharedScopes : [],
+          prepared.request.mode === 'edit' && transcriptions
+            ? () => transcriptions.reconcileRepositories(Object.keys(heads))
+            : undefined,
         );
         const latest = lifecycle.started ? session.checkpoints?.at(-1) : undefined;
         if (latest) latest.postHeads = await repositoryHeads(this.git, Object.keys(heads));
