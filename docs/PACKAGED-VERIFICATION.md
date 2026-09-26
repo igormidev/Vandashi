@@ -443,3 +443,28 @@ path through `--electron`, retaining all hosted-runner and exact-path guards. A 
 package regression creates its previously missing executable during resolution;
 explicit packaged paths bypass that resolver. No AppArmor change occurred in the
 failed attempt. That functional fix still requires a new CI run.
+
+## Update-delivery matrix — September 26, 2026
+
+The desktop workflow [36261488348](https://github.com/igormidev/Vandashi/actions/runs/36261488348)
+verified source revision `672e790` (0.1.5) on all three native runners:
+
+| Runner      | Source tests                  | Native scenarios | Packaged runtime tests |
+| ----------- | ----------------------------- | ---------------- | ---------------------- |
+| macOS ARM64 | 938 passed, 13 explicit skips | 234 passed       | 2 passed               |
+| Windows x64 | 921 passed, 30 explicit skips | 234 passed       | 2 passed               |
+| Linux x64   | 938 passed, 13 explicit skips | 234 passed       | 2 passed               |
+
+Linux executed the extracted AppImage launcher with the OS sandbox checks above.
+The final publishing job failed before creating a release because its filename
+expectation used `x64` where Electron Builder emits `x86_64` for AppImage and
+`amd64` for Debian packages. That failure did not invalidate the runtime results,
+but this workflow did not publish an update.
+
+The corrected manifest generator was run against all five downloaded installers
+from that exact workflow. Every byte length and SHA-512 matched the corresponding
+native updater metadata. Discovery then accepted the complete generated manifest
+for each supported target. The regression exercises generation and discovery
+together, including the AppImage underscore; separate cases retain rejection of
+path separators and encoded paths. A later successful release run and actual Mac
+download remain separate delivery evidence.

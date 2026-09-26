@@ -16,6 +16,13 @@ sources are uploaded to a draft; publication happens last. Published versions
 are immutable: fixes need another version. An interrupted draft can resume only
 for the same commit. PRs and manual verification runs do not publish.
 
+Target keys use Node's platform/architecture names. Installer basenames follow
+Electron Builder: Linux `linux-x64-AppImage` maps to `linux-x86_64.AppImage`,
+while `linux-x64-deb` maps to `linux-amd64.deb`. Discovery validates the entire
+cross-platform manifest before selecting its local artifact. The release regression
+passes the generated five-installer manifest through every supported target, so a
+filename from another platform cannot silently break local update discovery.
+
 The installed app checks the public GitHub Releases API at startup and every
 20 minutes. `Updates` serializes checks/downloads/apply requests. Concurrent checks
 coalesce; polling cannot replace a download awaiting approval. Checks continue
