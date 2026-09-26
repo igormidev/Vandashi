@@ -1,5 +1,19 @@
 # Architecture
 
+Existing brands can be registered from Home through `importBrand`. The native picker
+grants the exact canonical directory; the storage adapter validates brand repositories,
+configuration, guides and video/clip identity records without rewriting project content. A manifest
+or legacy video record supplies the stable brand ID. Known paths are idempotent, missing
+paths can relocate, and existing copies with the same ID are rejected. Legacy folders
+receive an exclusively published identity manifest before registry persistence, so
+moves and failed registration retries preserve their ID. Unrelated stale recents do
+not block import; an inaccessible matching identity cannot be relocated. The regular
+`openBrand` pipeline performs subsequent workspace recovery and commit reconciliation.
+
+The app name and Dock/window icon are also set for development runs. The existing
+profile location is captured before changing the display name. Packaged builds include
+the source icon as a native resource as well as their platform-specific bundle icon.
+
 Vandashi is an Electron desktop application. There is no hosted backend. The renderer talks to a narrow, validated preload bridge; the main process composes use cases and adapters. Hyperframes runs its own loopback-only editor service while a project is open.
 
 ## Dependency direction

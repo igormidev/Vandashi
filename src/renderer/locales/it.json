@@ -380,5 +380,7 @@
   "launchThumbnailUnavailable": "Miniatura non disponibile",
   "launchPlatformItem": "{{platform}} · {{name}}",
   "launchStatusLabel": "Stato di {{name}}",
-  "launchUrlLabel": "URL del video pubblicato di {{name}}"
+  "launchUrlLabel": "URL del video pubblicato di {{name}}",
+  "openExistingBrand": "Apri un brand esistente",
+  "openingBrand": "Apertura del brand…"
 }

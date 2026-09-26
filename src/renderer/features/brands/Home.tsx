@@ -1,5 +1,5 @@
-import { ArrowRight, Clapperboard, FolderPlus, HardDrive, Plus } from 'lucide-react';
-import { useState } from 'react';
+import { ArrowRight, Clapperboard, FolderOpen, FolderPlus, HardDrive, Plus } from 'lucide-react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Workspace } from '../../../domain/models';
 import { diagnosticFromBridge, type Diagnostic } from '../../../domain/diagnostics';
@@ -17,7 +17,13 @@ export function Home({ onOpen }: { onOpen: (workspace: Workspace) => void }) {
   const [opening, setOpening] = useState<string | null>(null);
   const [failure, setFailure] = useState<Diagnostic | null>(null);
   const [createdId, setCreatedId] = useState<string | null>(null);
+  const [choosing, setChoosing] = useState<'create' | 'open' | null>(null);
+  const actionOwner = useRef(false);
+  const locked = loading || opening !== null || choosing !== null;
   const chooseLocation = () => {
+    if (actionOwner.current) return;
+    actionOwner.current = true;
+    setChoosing('create');
     void run(async () => {
       const value = await api.chooseDirectory();
       if (value) {
@@ -27,10 +33,47 @@ export function Home({ onOpen }: { onOpen: (workspace: Workspace) => void }) {
         setCreatedId(null);
         setCreating(true);
       }
+    }).finally(() => {
+      actionOwner.current = false;
+      setChoosing(null);
     });
   };
+  const openExisting = () => {
+    if (actionOwner.current) return;
+    actionOwner.current = true;
+    setChoosing('open');
+    void run(async () => {
+      const path = await api.chooseDirectory();
+      if (!path) return;
+      const brand = await api.importBrand({ path });
+      await refresh();
+      onOpen(await api.openBrand(brand.id));
+    }).finally(() => {
+      actionOwner.current = false;
+      setChoosing(null);
+    });
+  };
+  const openButton = (
+    <button
+      className="button"
+      type="button"
+      disabled={locked}
+      aria-busy={choosing === 'open'}
+      onClick={openExisting}
+    >
+      {choosing === 'open' ? (
+        <PendingLabel label={t('openingBrand')} />
+      ) : (
+        <>
+          <FolderOpen size={16} />
+          {t('openExistingBrand')}
+        </>
+      )}
+    </button>
+  );
   const create = async () => {
-    if (loading || name.trim().length < 3 || !folder) return;
+    if (actionOwner.current || name.trim().length < 3 || !folder) return;
+    actionOwner.current = true;
     setLoading(true);
     try {
       const id = createdId ?? (await api.createBrand({ name: name.trim(), parentPath: folder })).id;
@@ -43,6 +86,7 @@ export function Home({ onOpen }: { onOpen: (workspace: Workspace) => void }) {
     } catch (error) {
       setFailure(diagnosticFromBridge(error));
     } finally {
+      actionOwner.current = false;
       setLoading(false);
     }
   };
@@ -54,15 +98,25 @@ export function Home({ onOpen }: { onOpen: (workspace: Workspace) => void }) {
           <h1>{t(state?.brands.length ? 'recentBrands' : 'welcome')}</h1>
         </div>
         {!!state?.brands.length && (
-          <button
-            className="button primary"
-            type="button"
-            disabled={opening !== null}
-            onClick={chooseLocation}
-          >
-            <Plus size={15} />
-            {t('createBrand')}
-          </button>
+          <div className="toolbar">
+            {openButton}
+            <button
+              className="button primary"
+              type="button"
+              disabled={locked}
+              aria-busy={choosing === 'create'}
+              onClick={chooseLocation}
+            >
+              {choosing === 'create' ? (
+                <PendingLabel label={t('loading')} />
+              ) : (
+                <>
+                  <Plus size={15} />
+                  {t('createBrand')}
+                </>
+              )}
+            </button>
+          </div>
         )}
       </div>
       {state?.brands.length ? (
@@ -72,13 +126,16 @@ export function Home({ onOpen }: { onOpen: (workspace: Workspace) => void }) {
               type="button"
               className="brand-row"
               key={brand.id}
-              disabled={opening !== null}
+              disabled={locked}
               aria-busy={opening === brand.id}
               onClick={() => {
+                if (actionOwner.current) return;
+                actionOwner.current = true;
                 setOpening(brand.id);
                 void run(async () => {
                   onOpen(await api.openBrand(brand.id));
                 }).finally(() => {
+                  actionOwner.current = false;
                   setOpening(null);
                 });
               }}
@@ -100,10 +157,25 @@ export function Home({ onOpen }: { onOpen: (workspace: Workspace) => void }) {
             title={t('createBrand')}
             description={t('noBrands')}
           >
-            <button className="button primary" type="button" onClick={chooseLocation}>
-              <FolderPlus size={16} />
-              {t('createBrand')}
-            </button>
+            <div className="toolbar">
+              {openButton}
+              <button
+                className="button primary"
+                type="button"
+                onClick={chooseLocation}
+                disabled={locked}
+                aria-busy={choosing === 'create'}
+              >
+                {choosing === 'create' ? (
+                  <PendingLabel label={t('loading')} />
+                ) : (
+                  <>
+                    <FolderPlus size={16} />
+                    {t('createBrand')}
+                  </>
+                )}
+              </button>
+            </div>
           </Empty>
         </div>
       )}

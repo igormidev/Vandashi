@@ -36,6 +36,7 @@ import { saveWorkspaceFiles } from './save-workspace';
 import { brandImageRevision } from './brand-image';
 import { syncProjectAssets } from './sync-project-assets';
 import { discoverAgentScope } from './agent-scope';
+import { importBrand } from './brand-import';
 
 export class LocalStorage implements StoragePort {
   private readonly registry: Registry;
@@ -65,6 +66,9 @@ export class LocalStorage implements StoragePort {
   }
   createBrand(input: { parentPath: string; name: string }): Promise<Brand> {
     return this.writes.run(() => this.projects.createBrand(input));
+  }
+  importBrand(input: { path: string }): Promise<Brand> {
+    return this.writes.run(() => importBrand(this.registry, this.git, input.path));
   }
   listVideos(brandId: string): Promise<VideoSummary[]> {
     return this.projects.listVideos(brandId);

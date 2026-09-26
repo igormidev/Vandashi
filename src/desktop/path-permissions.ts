@@ -53,7 +53,14 @@ export class PathPermissions {
   }
 
   async authorize(method: ApiMethod, args: unknown[]): Promise<void> {
-    if (method === 'createBrand') {
+    if (method === 'importBrand') {
+      const input = args[0] as Parameters<DesktopApi['importBrand']>[0];
+      const granted = this.directories.get(input.path);
+      if (!granted) throw new AppFault({ id: 'desktopBrandPickerRequired' });
+      if ((await realpath(input.path)) !== granted)
+        throw new AppFault({ id: 'desktopSelectedLocationChanged' });
+      input.path = granted;
+    } else if (method === 'createBrand') {
       const input = args[0] as Parameters<DesktopApi['createBrand']>[0];
       const canonical = await realpath(input.parentPath);
       if (!this.directories.has(canonical)) throw new AppFault({ id: 'desktopBrandPickerRequired' });

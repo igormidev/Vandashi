@@ -380,5 +380,7 @@
   "launchThumbnailUnavailable": "サムネイルを表示できません",
   "launchPlatformItem": "{{platform}} · {{name}}",
   "launchStatusLabel": "{{name}}の状態",
-  "launchUrlLabel": "{{name}}の公開動画URL"
+  "launchUrlLabel": "{{name}}の公開動画URL",
+  "openExistingBrand": "既存のブランドを開く",
+  "openingBrand": "ブランドを開いています…"
 }

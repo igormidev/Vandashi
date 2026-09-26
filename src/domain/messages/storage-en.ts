@@ -1,5 +1,10 @@
 /** Local workspace, Git, and asset persistence diagnostics. */
 export const storageMessagesEn = {
+  storageBrandImportInvalid:
+    'Choose a Vandashi brand folder containing brand_identity, shared_assets and videos. Its project files and Git history must be intact.',
+  storageBrandImportDuplicate:
+    'This brand is already registered at another existing location. Open the registered brand instead.',
+
   storageImportUnexpectedEntry: 'The import contains an unsupported filesystem entry.',
   storageImportReservationChanged: 'The import destination changed while the media was being prepared.',
   storageImportStagingChanged:

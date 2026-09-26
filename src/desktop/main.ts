@@ -42,6 +42,13 @@ protocol.registerSchemesAsPrivileged([
   },
 ]);
 if (process.env.VANDASHI_USER_DATA) app.setPath('userData', process.env.VANDASHI_USER_DATA);
+// Keep the established profile location when replacing Electron's development identity.
+const userData = app.getPath('userData');
+app.setName('Vandashi');
+app.setPath('userData', userData);
+const iconPath = app.isPackaged
+  ? join(process.resourcesPath, 'icon.png')
+  : join(import.meta.dirname, '../../build/icon.png');
 let mainWindow: BrowserWindow | null = null;
 const git = new LocalGit();
 const agent = new CodexAgent();
@@ -49,6 +56,7 @@ const media = new HyperframesMediaAdapter({ cacheDirectory: join(app.getPath('us
 let closing = false;
 
 async function createWindow(): Promise<void> {
+  if (process.platform === 'darwin') app.dock?.setIcon(nativeImage.createFromPath(iconPath));
   let nativeLocale = defaultLocale;
   const mediaUrl = (path: string) => `vandashi-media://local/file?path=${encodeURIComponent(path)}`;
   const store = new LocalStorage(app.getPath('userData'), git, mediaUrl, ({ path, backupPath }) => {
@@ -89,6 +97,7 @@ async function createWindow(): Promise<void> {
     minHeight: 720,
     backgroundColor: '#0a0a0a',
     title: 'Vandashi',
+    icon: iconPath,
     titleBarStyle: 'hiddenInset',
     webPreferences: {
       preload: join(import.meta.dirname, '../preload/preload.cjs'),

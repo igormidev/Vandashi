@@ -37,6 +37,7 @@ export interface DesktopApi {
   chooseDirectory(): Promise<string | null>;
   chooseFiles(kind: 'assets' | 'images' | 'video'): Promise<string[]>;
   createBrand(input: { parentPath: string; name: string }): Promise<Brand>;
+  importBrand(input: { path: string }): Promise<Brand>;
   openBrand(id: string): Promise<Workspace>;
   listVideos(brandId: string): Promise<VideoSummary[]>;
   createVideo(input: { brandId: string; name: string; ratio: '16:9' | '9:16' }): Promise<Workspace>;

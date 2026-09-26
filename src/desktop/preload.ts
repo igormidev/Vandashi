@@ -25,6 +25,7 @@ const api: DesktopApi = {
   chooseDirectory: () => invoke('chooseDirectory'),
   chooseFiles: (kind) => invoke('chooseFiles', kind),
   createBrand: (input) => invoke('createBrand', input),
+  importBrand: (input) => invoke('importBrand', input),
   openBrand: (id) => invoke('openBrand', id),
   listVideos: (id) => invoke('listVideos', id),
   createVideo: (input) => invoke('createVideo', input),

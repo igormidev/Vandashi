@@ -274,5 +274,7 @@
   "mediaBundledRuntimeRecovery": "No se pudo verificar el entorno de vídeo incluido en Vandashi. Repara o reinstala Vandashi siguiendo la guía de configuración, reinicia la aplicación y vuelve a comprobar.",
   "mediaEnvironmentRecovery": "Falló la comprobación de las dependencias de vídeo. Sigue la guía de configuración para reparar las herramientas fuera de Vandashi, reinicia la aplicación y vuelve a comprobar.",
   "mediaToolSetupRequired": "{{name}} no está disponible. Instálalo o repáralo fuera de Vandashi siguiendo la guía, reinicia Vandashi y vuelve a comprobar.",
-  "mediaBrowserSetupRequired": "El navegador de renderizado no está disponible. Sigue la guía para instalar o reparar el navegador de Hyperframes fuera de Vandashi, reinicia Vandashi y vuelve a comprobar."
+  "mediaBrowserSetupRequired": "El navegador de renderizado no está disponible. Sigue la guía para instalar o reparar el navegador de Hyperframes fuera de Vandashi, reinicia Vandashi y vuelve a comprobar.",
+  "storageBrandImportInvalid": "Elige una carpeta de marca de Vandashi con brand_identity, shared_assets y videos. Los archivos del proyecto y el historial Git deben estar intactos.",
+  "storageBrandImportDuplicate": "Esta marca ya está registrada en otra ubicación existente. Abre la marca registrada."
 }

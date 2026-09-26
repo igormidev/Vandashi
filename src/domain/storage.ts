@@ -85,6 +85,7 @@ export interface StoragePort {
   getState(): Promise<AppState>;
   settings(settings: Settings): Promise<void>;
   createBrand(input: { parentPath: string; name: string }): Promise<Brand>;
+  importBrand(input: { path: string }): Promise<Brand>;
   openBrand(id: string): Promise<Workspace>;
   listVideos(brandId: string): Promise<VideoSummary[]>;
   createVideo(

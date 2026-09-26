@@ -380,5 +380,7 @@
   "launchThumbnailUnavailable": "Vorschaubild nicht verfügbar",
   "launchPlatformItem": "{{platform}} · {{name}}",
   "launchStatusLabel": "{{name}}: Status",
-  "launchUrlLabel": "{{name}}: URL des veröffentlichten Videos"
+  "launchUrlLabel": "{{name}}: URL des veröffentlichten Videos",
+  "openExistingBrand": "Vorhandene Marke öffnen",
+  "openingBrand": "Marke wird geöffnet…"
 }

@@ -128,6 +128,11 @@ export function createBackend(
         await git.checkAvailable();
         return store.createBrand(input);
       }),
+    importBrand: (input) =>
+      mutation(async () => {
+        await git.checkAvailable();
+        return store.importBrand(input);
+      }),
     openBrand: (id) =>
       gate.run('open-brand', async () => {
         const workspace = await store.openBrand(id);

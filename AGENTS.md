@@ -4,6 +4,12 @@ Read `genesis_prompt.md` and `docs/REQUIREMENTS.md` before changing a feature. T
 
 ## MANDATORY quality gates
 
+- EVERY commit MUST increase the app version and update the concise release notes. Run
+  `npm run version:bump -- "A short user-facing change summary."` before staging, and
+  stage `release.json`, `package.json`, and `package-lock.json` together. Keep notes to
+  one to three short items. A source version is not an available update until its
+  verified installers and update metadata are published as a complete GitHub Release.
+
 - ALWAYS follow dependency boundaries. NEVER bypass a port to reach the filesystem, Codex, Git, Electron, or Hyperframes from the renderer.
 - ZERO static analysis warnings or errors. Run `npm run check` before EVERY commit. This includes consistent Prettier formatting, strict types, lint, architecture, tests, and a production build. NEVER disable checks to make a commit pass. Git hooks and CI enforce the same gate.
 - Add meaningful tests for business rules, concurrency, recovery, schemas, and edge cases. Avoid tests that merely restate code.
@@ -20,6 +26,14 @@ Read `genesis_prompt.md` and `docs/REQUIREMENTS.md` before changing a feature. T
 Use Hyperframes' studio visual language: quiet dark surfaces, restrained borders, compact controls, sparse copy. Do not put everything in cards or add empty marketing subtitles. Explain with accessible tooltips. Use official platform marks. Horizontal scrollers carry padding INSIDE their content so scrolling reaches the component edge. Keep keyboard navigation, focus visibility, reduced motion, and error recovery usable.
 
 ## Safety and consistency
+
+Opening an existing brand registers its selected canonical folder in place. Validate
+the identity/shared repositories, guides, config and child identity records without
+repairing or rewriting them during registration. Publish a missing legacy identity
+manifest exclusively, so later moves retain the same ID; never overwrite an existing
+manifest. Preserve existing IDs and Git history;
+reopen known folders idempotently, relocate only missing registered paths, and reject
+conflicting live copies. Import authority requires an exact native directory grant.
 
 Only one AI operation runs globally. Dirty manual drafts block AI and navigation; active AI blocks manual writes. All repository changes must be committed after AI, including failure recovery. Script synchronization has an explicit staged-script exception. Preserve user files, validate path containment and symlinks, and keep recovery backups before repairing invalid YAML. Never expose generic shell or unrestricted filesystem IPC.
 

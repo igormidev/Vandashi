@@ -380,5 +380,7 @@
   "launchThumbnailUnavailable": "썸네일을 표시할 수 없음",
   "launchPlatformItem": "{{platform}} · {{name}}",
   "launchStatusLabel": "{{name}} 상태",
-  "launchUrlLabel": "{{name}} 게시된 영상 URL"
+  "launchUrlLabel": "{{name}} 게시된 영상 URL",
+  "openExistingBrand": "기존 브랜드 열기",
+  "openingBrand": "브랜드 여는 중…"
 }

@@ -274,5 +274,7 @@
   "mediaBundledRuntimeRecovery": "Vandashiに同梱されている動画実行環境を確認できませんでした。セットアップガイドに従ってVandashiを修復または再インストールし、アプリを再起動してから、もう一度確認してください。",
   "mediaEnvironmentRecovery": "動画に必要なツールの確認に失敗しました。セットアップガイドに従ってVandashiの外でツールを修復し、アプリを再起動してから、もう一度確認してください。",
   "mediaToolSetupRequired": "{{name}}を利用できません。ガイドに従ってVandashiの外でインストールまたは修復し、Vandashiを再起動してから、もう一度確認してください。",
-  "mediaBrowserSetupRequired": "レンダリング用ブラウザーを利用できません。ガイドに従ってVandashiの外でHyperframesのブラウザーをインストールまたは修復し、Vandashiを再起動してから、もう一度確認してください。"
+  "mediaBrowserSetupRequired": "レンダリング用ブラウザーを利用できません。ガイドに従ってVandashiの外でHyperframesのブラウザーをインストールまたは修復し、Vandashiを再起動してから、もう一度確認してください。",
+  "storageBrandImportInvalid": "brand_identity、shared_assets、videos を含む Vandashi のブランドフォルダーを選択してください。プロジェクトファイルと Git 履歴が揃っている必要があります。",
+  "storageBrandImportDuplicate": "このブランドは別の既存の場所で登録済みです。登録済みのブランドを開いてください。"
 }

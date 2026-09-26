@@ -1,4 +1,7 @@
 export const en = {
+  openExistingBrand: 'Open existing brand',
+  openingBrand: 'Opening brand…',
+
   appName: 'Vandashi',
   languageEnglish: 'English',
   languageJapanese: '日本語',
