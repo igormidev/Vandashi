@@ -1,7 +1,4 @@
 {
-  "version": "0.1.3",
-  "notes": [
-    "Open existing brands and check for updates from Settings.",
-    "Download updates first, then apply them only when you confirm."
-  ]
+  "version": "0.1.4",
+  "notes": ["Open existing brands and download updates with clear confirmation."]
 }
