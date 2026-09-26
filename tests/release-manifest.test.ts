@@ -19,9 +19,14 @@ it('requires every platform artifact and rejects native metadata that describes 
     ]);
   const bytes = Buffer.from('test installer bytes');
   const sha512 = createHash('sha512').update(bytes).digest('base64');
-  const names = ['mac-arm64.dmg', 'mac-arm64.zip', 'win-x64.exe', 'linux-x64.AppImage', 'linux-x64.deb'].map(
-    (suffix) => `Vandashi-0.2.0-${suffix}`,
-  );
+  // These are the actual filename conventions from the three-platform release build.
+  const names = [
+    'mac-arm64.dmg',
+    'mac-arm64.zip',
+    'win-x64.exe',
+    'linux-x86_64.AppImage',
+    'linux-amd64.deb',
+  ].map((suffix) => `Vandashi-0.2.0-${suffix}`);
   try {
     for (const name of names) await writeFile(join(directory, name), bytes);
     for (const [metadata, indexes] of [
@@ -38,6 +43,10 @@ it('requires every platform artifact and rejects native metadata that describes 
       );
     const result = JSON.parse((await run()).stdout) as { assets: Record<string, unknown> };
     expect(Object.keys(result.assets)).toHaveLength(5);
+    expect(result.assets['linux-x64-AppImage']).toMatchObject({
+      name: 'Vandashi-0.2.0-linux-x86_64.AppImage',
+    });
+    expect(result.assets['linux-x64-deb']).toMatchObject({ name: 'Vandashi-0.2.0-linux-amd64.deb' });
     await writeFile(join(directory, 'Vandashi-0.2.0-mac-arm64.dmg'), 'changed');
     await expect(run()).rejects.toThrow('checksum');
     await rm(join(directory, 'Vandashi-0.2.0-mac-arm64.dmg'));

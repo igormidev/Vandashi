@@ -16,8 +16,9 @@ export async function releaseManifest(directory, release) {
     ['darwin-arm64-dmg', 'mac-arm64.dmg'],
     ['darwin-arm64-zip', 'mac-arm64.zip'],
     ['win32-x64-exe', 'win-x64.exe'],
-    ['linux-x64-AppImage', 'linux-x64.AppImage'],
-    ['linux-x64-deb', 'linux-x64.deb'],
+    // Electron Builder uses package-format architecture names in artifact filenames.
+    ['linux-x64-AppImage', 'linux-x86_64.AppImage'],
+    ['linux-x64-deb', 'linux-amd64.deb'],
   ];
   for (const [target, suffix] of targets) {
     const name = `Vandashi-${release.version}-${suffix}`;

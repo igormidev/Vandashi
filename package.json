@@ -1,6 +1,6 @@
 {
   "name": "vandashi",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "A local-first, AI-driven video studio powered by Codex and Hyperframes.",
   "private": true,
   "type": "module",
