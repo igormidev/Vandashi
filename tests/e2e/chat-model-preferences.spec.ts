@@ -113,7 +113,7 @@ for (const failed of ['getState', 'models']) {
     await selectedReasoning.selectOption('low');
     await selectedSpeed.click();
     await installFeedbackHolds(desktopApp, ['settings', 'getState', 'models']);
-    const save = dialog.locator('.modal-actions button');
+    const save = dialog.locator('.modal-actions > button.primary');
     await save.evaluate((button: HTMLButtonElement) => {
       button.click();
       button.click();

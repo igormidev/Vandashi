@@ -703,3 +703,19 @@ controlled Electron tests separately hold the request to verify visible checking
 locked controls/dismissal, and recoverable failure; they also hold the download at
 37% and verify that no installer opens before its separate confirmation.
 The downloaded installer/public release still requires the delivery check after CI.
+
+The 0.1.2 staged source gate subsequently passed 935 tests (13 explicit platform/
+opt-in skips), strict types, zero-warning lint, dependency boundaries and both
+production builds. The full native run passed 231 cases and exposed three outdated
+Settings selectors. After narrowing those selectors to the intended Save control
+and error toast, all nine affected Settings/model regressions passed; all 234
+native cases therefore have passing current-code evidence. The follow-up 0.1.3
+increment contains that selector correction and release metadata; application
+behavior is unchanged from the installed 0.1.2 build.
+
+The independent structural/landing review accepted all five fixes: deferred quit
+cleanup and emitted install errors, native metadata bound to approved artifacts,
+re-download after invalidating upstream's corrupted in-process cache, exact source
+tag verification, and platform-neutral installer guidance. Existing landing claims
+and screenshots remain accurate. These results do not assert native installation
+on Windows/Linux or publication before the release job actually succeeds.
