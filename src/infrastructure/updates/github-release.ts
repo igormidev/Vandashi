@@ -9,7 +9,7 @@ const version = z.string().regex(/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/u);
 const assetSchema = z.object({
   name: z
     .string()
-    .regex(/^Vandashi-[a-zA-Z0-9.-]+$/u)
+    .regex(/^Vandashi-[a-zA-Z0-9._-]+$/u)
     .max(180),
   size: z
     .number()

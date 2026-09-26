@@ -6,6 +6,7 @@ import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
 import { expect, it } from 'vitest';
+import { latestArtifact, type ReleaseArtifact } from '../src/infrastructure/updates/github-release';
 
 it('requires every platform artifact and rejects native metadata that describes different bytes', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'vandashi-release-'));
@@ -41,12 +42,35 @@ it('requires every platform artifact and rejects native metadata that describes 
           files: indexes.map((index) => ({ url: names[index], size: bytes.length, sha512 })),
         }),
       );
-    const result = JSON.parse((await run()).stdout) as { assets: Record<string, unknown> };
+    const result = JSON.parse((await run()).stdout) as {
+      assets: Record<string, ReleaseArtifact['asset']>;
+    };
     expect(Object.keys(result.assets)).toHaveLength(5);
     expect(result.assets['linux-x64-AppImage']).toMatchObject({
       name: 'Vandashi-0.2.0-linux-x86_64.AppImage',
     });
     expect(result.assets['linux-x64-deb']).toMatchObject({ name: 'Vandashi-0.2.0-linux-amd64.deb' });
+    // Discovery parses the whole manifest even when this machine needs only one installer.
+    const feed = 'https://github.com/igormidev/Vandashi/releases/download/v0.2.0/';
+    const published = {
+      tag_name: 'v0.2.0',
+      draft: false,
+      prerelease: false,
+      assets: [
+        { name: 'update.json', size: 1_000, browser_download_url: `${feed}update.json` },
+        ...Object.values(result.assets).map((asset) => ({
+          name: asset.name,
+          size: asset.size,
+          browser_download_url: `${feed}${asset.name}`,
+        })),
+      ],
+    };
+    for (const [target, asset] of Object.entries(result.assets)) {
+      const discovered = await latestArtifact('0.1.0', target, (url) =>
+        Promise.resolve(new Response(JSON.stringify(url.includes('api.github.com') ? published : result))),
+      );
+      expect(discovered).toMatchObject({ asset, artifacts: result.assets, url: `${feed}${asset.name}` });
+    }
     await writeFile(join(directory, 'Vandashi-0.2.0-mac-arm64.dmg'), 'changed');
     await expect(run()).rejects.toThrow('checksum');
     await rm(join(directory, 'Vandashi-0.2.0-mac-arm64.dmg'));

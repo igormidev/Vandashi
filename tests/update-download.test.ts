@@ -139,3 +139,20 @@ it('reports absent releases, API limits and malformed manifests as failures, nev
     ),
   ).rejects.toThrow();
 });
+it.each(['Vandashi-0.2.0-../installer.dmg', 'Vandashi-0.2.0-..\\installer.dmg', 'Vandashi-0.2.0-%2f.dmg'])(
+  'rejects unsafe artifact filenames anywhere in a release: %s',
+  async (name) => {
+    await expect(
+      latestArtifact(
+        '0.1.2',
+        'darwin-arm64-dmg',
+        releaseRequest((value) => {
+          value.assets = {
+            ...artifact.artifacts,
+            'linux-x64-AppImage': { ...artifact.asset, name },
+          };
+        }),
+      ),
+    ).rejects.toThrow();
+  },
+);
