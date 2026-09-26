@@ -22,6 +22,7 @@ import type {
   VideoSummary,
   Workspace,
 } from './models';
+import type { UpdateState } from './updates';
 import type { Diagnostic } from './diagnostics';
 
 export interface CreatedClip {
@@ -33,6 +34,10 @@ export interface CreatedClip {
 export type OpenedChat = ChatSession & { historyDeferred?: true };
 
 export interface DesktopApi {
+  getUpdateState(): Promise<UpdateState>;
+  checkForUpdates(): Promise<UpdateState>;
+  downloadUpdate(version: string): Promise<UpdateState>;
+  applyUpdate(version: string): Promise<UpdateState>;
   getState(): Promise<AppState>;
   chooseDirectory(): Promise<string | null>;
   chooseFiles(kind: 'assets' | 'images' | 'video'): Promise<string[]>;

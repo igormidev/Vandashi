@@ -21,6 +21,10 @@ function invoke<K extends ApiMethod>(
   ) as ReturnType<DesktopApi[K]>;
 }
 const api: DesktopApi = {
+  getUpdateState: () => invoke('getUpdateState'),
+  checkForUpdates: () => invoke('checkForUpdates'),
+  downloadUpdate: (version) => invoke('downloadUpdate', version),
+  applyUpdate: (version) => invoke('applyUpdate', version),
   getState: () => invoke('getState'),
   chooseDirectory: () => invoke('chooseDirectory'),
   chooseFiles: (kind) => invoke('chooseFiles', kind),

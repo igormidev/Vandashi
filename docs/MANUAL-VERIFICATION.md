@@ -683,3 +683,23 @@ Filesystem inspection confirmed the source remained and the target stayed empty.
 that new probe and empty target were removed. The three original optional-drop fixtures
 remain available. This improves the diagnosis of the automation limit and still does
 not establish application drop success or failure.
+
+## Installed brand-opening/update package — September 26, 2026
+
+The macOS ARM64 0.1.2 working build was packaged with signing discovery disabled
+and installed at `/Applications/Vandashi.app`. Its bundle identifier is
+`com.vandashi.studio`; native display name/executable/menu are Vandashi. The actual
+bundle contains the 158,109-byte `icon.icns` and 44,701-byte Dock `icon.png`.
+CUA opened that exact installed path: the renderer URL points inside Applications,
+Home offers Open existing brand, and the actual native directory picker cancels
+back to an enabled Home. Existing user brands were not registered or changed by
+this walkthrough. The independent brand-import native tests register a real
+externally created brand and preserve its video ID and Git history.
+
+Settings displays Check for updates at the left of the Save row. A real manual
+check reached GitHub and correctly retained a retryable HTTP 404 diagnostic while
+there was no published release. It did not claim the app was current. The completed
+controlled Electron tests separately hold the request to verify visible checking,
+locked controls/dismissal, and recoverable failure; they also hold the download at
+37% and verify that no installer opens before its separate confirmation.
+The downloaded installer/public release still requires the delivery check after CI.

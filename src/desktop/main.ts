@@ -1,3 +1,5 @@
+import { Updates } from '../application/updates';
+import { DesktopUpdates } from './updates';
 import {
   app,
   BrowserWindow,
@@ -54,6 +56,7 @@ const git = new LocalGit();
 const agent = new CodexAgent();
 const media = new HyperframesMediaAdapter({ cacheDirectory: join(app.getPath('userData'), 'models') });
 let closing = false;
+let updates: Updates | null = null;
 
 async function createWindow(): Promise<void> {
   if (process.platform === 'darwin') app.dock?.setIcon(nativeImage.createFromPath(iconPath));
@@ -113,6 +116,9 @@ async function createWindow(): Promise<void> {
   });
   mainWindow = window;
   const studioHost = new DesktopStudioHost(window.webContents, STUDIO_BRIDGE_INSTALL, STUDIO_BRIDGE_FLUSH);
+  updates = new Updates(new DesktopUpdates(), (state) => {
+    if (!window.isDestroyed()) window.webContents.send('vandashi:event', { type: 'update', state });
+  });
   const backend = createBackend(
     store,
     git,
@@ -170,6 +176,7 @@ async function createWindow(): Promise<void> {
     (event) => {
       if (!window.isDestroyed()) window.webContents.send('vandashi:event', event);
     },
+    updates,
   );
   ipcMain.handle('vandashi:invoke', async (event, method: unknown, args: unknown) => {
     try {
@@ -240,6 +247,7 @@ async function createWindow(): Promise<void> {
     mainWindow = null;
   });
   await loadInitialRenderer(window.webContents, rendererUrl);
+  updates.start();
 }
 void app
   .whenReady()
@@ -252,6 +260,7 @@ app.on('window-all-closed', () => {
   app.quit();
 });
 app.on('will-quit', (event) => {
+  updates?.stop();
   if (closing) return;
   event.preventDefault();
   closing = true;

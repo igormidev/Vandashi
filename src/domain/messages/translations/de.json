@@ -276,5 +276,12 @@
   "mediaToolSetupRequired": "{{name}} ist nicht verfügbar. Installiere oder repariere es anhand der Anleitung außerhalb von Vandashi. Starte Vandashi danach neu und prüfe erneut.",
   "mediaBrowserSetupRequired": "Der Browser zum Rendern ist nicht verfügbar. Installiere oder repariere den Hyperframes-Browser anhand der Anleitung außerhalb von Vandashi. Starte Vandashi danach neu und prüfe erneut.",
   "storageBrandImportInvalid": "Wähle einen Vandashi-Markenordner mit brand_identity, shared_assets und videos. Projektdateien und Git-Verlauf müssen vollständig sein.",
-  "storageBrandImportDuplicate": "Diese Marke ist bereits an einem anderen vorhandenen Speicherort registriert. Öffne die registrierte Marke."
+  "storageBrandImportDuplicate": "Diese Marke ist bereits an einem anderen vorhandenen Speicherort registriert. Öffne die registrierte Marke.",
+  "updateChanged": "Das Update hat sich geändert oder eine andere Aktion läuft. Prüfe das Update erneut.",
+  "updateInvalid": "Das Update konnte nicht verifiziert werden. Prüfe erneut oder wiederhole den Download.",
+  "updateCheckFailed": "GitHub konnte nicht nach Updates durchsucht werden. Versuche es erneut, sobald du online bist.",
+  "updatePlatformUnavailable": "Für diesen Computer gibt es noch keine Installationsdatei dieser Version. Versuche es später erneut.",
+  "updateDownloadFailed": "Der Download wurde nicht abgeschlossen. Versuche erneut, eine geprüfte Kopie herunterzuladen.",
+  "updateOpenFailed": "Die Installationsdatei konnte nicht geöffnet werden. Versuche es erneut.",
+  "updateUnsupported": "Updates sind in der installierten App verfügbar."
 }

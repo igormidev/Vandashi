@@ -332,6 +332,26 @@
           "sha256": "143764b952fdb1a7c69ce653bfba74a7744d6a8a573bfb73e235fba356c83de3"
         }
       ]
+    },
+    "lazy-val@1.0.5": {
+      "reason": "The exact published archive and matching upstream commit b69ad4119f1b19bdab13c61ee2fcc88d46b89071 declare MIT but omit license text. Retain original metadata/README and the unchanged SPDX MIT template without inventing missing attribution.",
+      "files": [
+        {
+          "file": "third-party/lazy-val-1.0.5-package.json",
+          "source": "npm:lazy-val@1.0.5/package.json",
+          "sha256": "a5096f95098452cf6fe5c8ac9be8f13f59ab7c9f605ba5ef92c91b2c505744f0"
+        },
+        {
+          "file": "third-party/lazy-val-1.0.5-README.md",
+          "source": "npm:lazy-val@1.0.5/readme.md",
+          "sha256": "87dd77cd27b045ab279f6f2c99acedaeec6b7c92e296a354bb2687b9f2965438"
+        },
+        {
+          "file": "third-party/MIT-standard-template.txt",
+          "source": "https://raw.githubusercontent.com/spdx/license-list-data/v3.26.0/text/MIT.txt",
+          "sha256": "6d7c9e9d7d12c8d3753bdb24417b84819ba4d6c2f025c37948113d86dc81eef9"
+        }
+      ]
     }
   }
 }

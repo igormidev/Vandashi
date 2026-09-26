@@ -1,4 +1,24 @@
 export const en = {
+  updateCheck: 'Check for updates',
+  updateChecking: 'Checking…',
+  updateDevelopment: 'Updates are available in the installed app.',
+  updateCurrent: 'Version {{version}} is up to date.',
+  updateAvailable: 'Version {{version}} is available',
+  updateReady: 'Version {{version}} is ready',
+  updateOpenInstaller: 'Open installer',
+  updateRestart: 'Restart and update',
+  updateDownload: 'Download update',
+  updateApplying: 'Preparing update…',
+  updateDownloading: 'Downloading update…',
+  updateButton: 'Update',
+  updateReview: 'Review',
+  updateInstallerHelp:
+    'Open the verified installer and follow its instructions. Quit Vandashi before replacing it. Your brands stay in their folders.',
+  updateRestartHelp: 'Restart Vandashi to apply the downloaded update.',
+  updateDownloadHelp: 'Download this version? Installation waits for your next confirmation.',
+  updateFinishWork: 'Save your changes and finish active work before applying the update.',
+  updateLater: 'Later',
+
   openExistingBrand: 'Open existing brand',
   openingBrand: 'Opening brand…',
 

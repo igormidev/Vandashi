@@ -1,3 +1,5 @@
+import { UpdateCheck } from '../updates/UpdateControls';
+import type { UpdateControl } from '../updates/use-updates';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useApp } from '../../app/store';
@@ -6,16 +8,25 @@ import { ModelPicker } from '../chat/ModelPicker';
 import { availableLocales, normalizeLocale } from '../../../domain/locales';
 import { languageLabels } from '../../locales/catalogs';
 
-export function Settings({ onClose, onChecks }: { onClose: () => void; onChecks: () => void }) {
+export function Settings({
+  onClose,
+  onChecks,
+  updates,
+}: {
+  onClose: () => void;
+  onChecks: () => void;
+  updates: UpdateControl;
+}) {
   const { t } = useTranslation();
   const { state, api, run, refresh } = useApp();
   const [settings, setSettings] = useState(state?.settings);
   const [saving, setSaving] = useState(false);
   const saveOwner = useRef(false);
+  const locked = saving || updates.working;
   if (!settings) return null;
   return (
-    <Modal title={t('settings')} open onClose={onClose} locked={saving}>
-      <fieldset className="form" disabled={saving}>
+    <Modal title={t('settings')} open onClose={onClose} locked={locked}>
+      <fieldset className="form" disabled={locked}>
         <label className="field">
           <span>{t('language')}</span>
           <select
@@ -92,11 +103,12 @@ export function Settings({ onClose, onChecks }: { onClose: () => void; onChecks:
           {t('checkTools')}
         </button>
       </fieldset>
-      <div className="modal-actions">
+      <div className="modal-actions settings-actions">
+        <UpdateCheck updates={updates} disabled={saving} />
         <button
           type="button"
           className="button primary"
-          disabled={saving}
+          disabled={locked}
           aria-busy={saving}
           onClick={() => {
             if (saveOwner.current) return;

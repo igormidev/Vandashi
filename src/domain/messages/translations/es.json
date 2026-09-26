@@ -276,5 +276,12 @@
   "mediaToolSetupRequired": "{{name}} no está disponible. Instálalo o repáralo fuera de Vandashi siguiendo la guía, reinicia Vandashi y vuelve a comprobar.",
   "mediaBrowserSetupRequired": "El navegador de renderizado no está disponible. Sigue la guía para instalar o reparar el navegador de Hyperframes fuera de Vandashi, reinicia Vandashi y vuelve a comprobar.",
   "storageBrandImportInvalid": "Elige una carpeta de marca de Vandashi con brand_identity, shared_assets y videos. Los archivos del proyecto y el historial Git deben estar intactos.",
-  "storageBrandImportDuplicate": "Esta marca ya está registrada en otra ubicación existente. Abre la marca registrada."
+  "storageBrandImportDuplicate": "Esta marca ya está registrada en otra ubicación existente. Abre la marca registrada.",
+  "updateChanged": "La actualización cambió o hay otra acción en curso. Revisa la actualización de nuevo.",
+  "updateInvalid": "No se pudo verificar la actualización. Comprueba de nuevo o repite la descarga.",
+  "updateCheckFailed": "No se pudieron buscar actualizaciones en GitHub. Inténtalo de nuevo cuando tengas conexión.",
+  "updatePlatformUnavailable": "Esta versión aún no tiene instalador para este equipo. Inténtalo más tarde.",
+  "updateDownloadFailed": "La descarga no terminó. Inténtalo de nuevo para descargar una copia verificada.",
+  "updateOpenFailed": "No se pudo abrir el instalador. Inténtalo de nuevo.",
+  "updateUnsupported": "Las actualizaciones están disponibles en la aplicación instalada."
 }

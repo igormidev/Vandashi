@@ -76,6 +76,17 @@ export async function installAssetRefreshFixture(desktop: ElectronApplication, v
       });
       ipcMain.removeHandler('vandashi:invoke');
       ipcMain.handle('vandashi:invoke', (_event, method: string, args: unknown[]) => {
+        if (method === 'getUpdateState')
+          return {
+            revision: 0,
+            currentVersion: '0.1.2',
+            mode: 'installer',
+            phase: 'unsupported',
+            release: null,
+            progress: null,
+            checked: false,
+            diagnostic: null,
+          };
         if (method === 'getState') return fixture.state;
         if (method === 'models') return fixture.models;
         if (method === 'openBrand') return workspace;

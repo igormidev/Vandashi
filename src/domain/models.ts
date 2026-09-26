@@ -1,3 +1,4 @@
+import type { UpdateState } from './updates';
 import type { AssetInspectionNote, AssetInspectionProgress } from './asset-inspection';
 import type { AppMessage } from './messages';
 import type { Diagnostic } from './diagnostics';
@@ -201,6 +202,7 @@ export interface ChatActivity {
   detail: string;
 }
 export type AppEvent =
+  | { type: 'update'; state: UpdateState }
   | {
       type: 'checks';
       scope: Scope | null;

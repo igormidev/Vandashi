@@ -276,5 +276,12 @@
   "mediaToolSetupRequired": "{{name}}を利用できません。ガイドに従ってVandashiの外でインストールまたは修復し、Vandashiを再起動してから、もう一度確認してください。",
   "mediaBrowserSetupRequired": "レンダリング用ブラウザーを利用できません。ガイドに従ってVandashiの外でHyperframesのブラウザーをインストールまたは修復し、Vandashiを再起動してから、もう一度確認してください。",
   "storageBrandImportInvalid": "brand_identity、shared_assets、videos を含む Vandashi のブランドフォルダーを選択してください。プロジェクトファイルと Git 履歴が揃っている必要があります。",
-  "storageBrandImportDuplicate": "このブランドは別の既存の場所で登録済みです。登録済みのブランドを開いてください。"
+  "storageBrandImportDuplicate": "このブランドは別の既存の場所で登録済みです。登録済みのブランドを開いてください。",
+  "updateChanged": "アップデートが変更されたか、別の操作が実行中です。もう一度確認してください。",
+  "updateInvalid": "アップデートを検証できませんでした。再確認するか、ダウンロードをやり直してください。",
+  "updateCheckFailed": "GitHubでアップデートを確認できませんでした。オンラインになってから再試行してください。",
+  "updatePlatformUnavailable": "このバージョンには、このコンピューター用のインストーラーがまだありません。後で再試行してください。",
+  "updateDownloadFailed": "ダウンロードが完了しませんでした。再試行して検証済みのファイルをダウンロードしてください。",
+  "updateOpenFailed": "インストーラーを開けませんでした。再試行してください。",
+  "updateUnsupported": "アップデートはインストール済みのアプリで利用できます。"
 }

@@ -1,3 +1,5 @@
+import { useUpdates } from '../features/updates/use-updates';
+import { UpdateControls } from '../features/updates/UpdateControls';
 import { ChevronRight, LoaderCircle, Settings2, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -26,6 +28,7 @@ import type { Page, Destination } from './navigation-tabs';
 import { WorkspaceNavigation } from './WorkspaceNavigation';
 
 export function App() {
+  const updates = useUpdates();
   const { t } = useTranslation();
   const {
     api,
@@ -219,6 +222,7 @@ export function App() {
           </div>
         )}
         <div className="titlebar-end">
+          <UpdateControls updates={updates} blocked={busy || dirty || page === 'manual' || settings} />
           <div className="status" aria-busy={busy}>
             <span className={`status-dot ${busy ? 'busy' : ''}`} />
             {t(busy ? 'statusBusy' : 'statusReady')}
@@ -253,6 +257,7 @@ export function App() {
       </div>
       {settings && (
         <Settings
+          updates={updates}
           onClose={() => {
             setSettings(false);
           }}

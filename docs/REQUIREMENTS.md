@@ -619,3 +619,22 @@ requires the actual delivered artifacts to include their corresponding materials
 cross-platform integration checkpoint is verified as described above. Final distributed
 packages/current-revision execution, external account workflows and final section audits
 remain unaccepted by this documentation update.
+
+## Requested desktop follow-ups — September 26, 2026
+
+- [x] Open a valid brand already on this computer through a native directory grant,
+      preserving identity, videos and history; handle cancellation, moved folders,
+      legacy identity, duplicate roots, symlinks and invalid files without silent repair.
+      `storage-brand-import.test.ts` and `e2e/brand-import.spec.ts` provide real-storage,
+      Git and native-picker-boundary evidence; the Home picker was also operated directly.
+- [x] Author a version record, per-commit bump command and synchronized version gate.
+- [x] Implement startup/20-minute GitHub release discovery, top-right update notice,
+      explicit download then apply confirmations, Settings loading feedback and the
+      unsigned-macOS installer fallback. Controlled service/native tests verify these
+      states; see [UPDATES.md](UPDATES.md).
+- [ ] Publish the verified release and exercise the actual GitHub download path.
+- [x] Install the current branded package and inspect the actual macOS application.
+      Version 0.1.2 was opened from `/Applications/Vandashi.app`; native menu identity,
+      icon resources, Home folder picker/cancel and Settings update check were inspected.
+
+The final two items require delivery evidence rather than source compilation alone.

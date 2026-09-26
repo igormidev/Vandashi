@@ -1,3 +1,4 @@
+import type { UpdateService } from '../domain/updates';
 import { AppFault } from '../domain/diagnostics';
 import type { DesktopApi } from '../domain/api';
 import type { AgentPort } from '../domain/agent';
@@ -31,6 +32,7 @@ export function createBackend(
   media: MediaPort,
   host: HostMethods,
   emit: (event: AppEvent) => void,
+  updates?: UpdateService,
 ): BackendApi {
   const snapshots = new Map<string, Workspace>();
   const reads = new Map<string, Promise<Workspace>>();
@@ -114,7 +116,15 @@ export function createBackend(
   const publishing = new Publishing(store, agent, media, gate);
   const dependencies = new Dependencies(store, agent, media, commits, notify);
   const mutation = <T>(task: () => Promise<T>): Promise<T> => gate.run('manual', task);
+  const updateService = (): UpdateService => {
+    if (!updates) throw new AppFault({ id: 'updateUnsupported' });
+    return updates;
+  };
   return {
+    getUpdateState: () => Promise.resolve(updateService().state()),
+    checkForUpdates: () => updateService().check(),
+    downloadUpdate: (version) => updateService().download(version),
+    applyUpdate: (version) => gate.run('app-update', () => updateService().apply(version), false),
     chooseDirectory: host.chooseDirectory,
     chooseFiles: host.chooseFiles,
     openExternal: host.openExternal,

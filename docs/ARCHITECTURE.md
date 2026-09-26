@@ -409,3 +409,16 @@ authorized renderer URL. Other URLs, genuine initial/replacement failures, stopp
 and destroyed contents remain failures; temporary listeners are removed on settlement.
 Window-close cleanup is registered before loading. The native regression holds an actual
 initial resource, reloads through Electron's normal action and releases the replacement.
+
+## GitHub-backed desktop updates
+
+The domain `UpdatePort` isolates release discovery, download and application. The
+application `Updates` state machine owns request serialization, stable reviewed
+versions and the 20-minute/startup schedule; update apply also acquires the existing
+operation lease. `DesktopUpdates` composes Electron's native updater with the
+infrastructure GitHub manifest validator and verified installer cache. Its IPC
+methods accept only version strings. Renderer update controls share one subscription
+and monotonic revisions so late hydration cannot replace a newer event. They expose
+local pending feedback, two separate confirmations and persistent diagnostics.
+macOS remains installer-only while signing is unavailable. The source version record
+and verified release workflow are described in [UPDATES.md](UPDATES.md).

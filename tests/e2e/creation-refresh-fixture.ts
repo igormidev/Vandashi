@@ -95,6 +95,17 @@ export async function installCreationRefreshFixture(
       ipcMain.removeHandler('vandashi:invoke');
       ipcMain.handle('vandashi:invoke', (_event, method: string, args: unknown[]) => {
         const input = args[0];
+        if (method === 'getUpdateState')
+          return {
+            revision: 0,
+            currentVersion: '0.1.2',
+            mode: 'installer',
+            phase: 'unsupported',
+            release: null,
+            progress: null,
+            checked: false,
+            diagnostic: null,
+          };
         if (method === 'getState') return fixture.data.state;
         if (method === 'settings') {
           fixture.data.state.settings = input as Parameters<DesktopApi['settings']>[0];

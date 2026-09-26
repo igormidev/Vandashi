@@ -49,6 +49,7 @@ export async function installChatFixture(
       ipcMain.handle('vandashi:invoke', (_event, method: string, args: unknown[]) => {
         calls.push(method);
         const input = args[0];
+        if (method === 'getUpdateState') return fixture.updateState;
         if (method === 'getState') return data;
         if (method === 'models') return fixture.models;
         if (method === 'openBrand' || method === 'openWorkspace') return currentWorkspace;
@@ -90,8 +91,7 @@ export async function installChatFixture(
         if (method === 'resetChat') {
           const session = sessions.find((entry) => entry.id === input);
           if (!session) throw new Error('Missing conversation');
-          session.messages = [];
-          session.threadId = null;
+          Object.assign(session, { messages: [], threadId: null });
           return structuredClone(session);
         }
         if (method === 'closeChat') {

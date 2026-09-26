@@ -1,3 +1,4 @@
+import { updateValidators } from './update-validation';
 import { AppFault } from '../domain/diagnostics';
 import { extname } from 'node:path';
 import { z } from 'zod';
@@ -62,6 +63,7 @@ const draft = z
 const commit = { title: z.string().trim().min(1).max(200), body: z.string().trim().min(1).max(10000) };
 const noArgs = z.tuple([]);
 export const validators: Readonly<Record<ApiMethod, z.ZodType>> = Object.freeze({
+  ...updateValidators,
   getState: noArgs,
   chooseDirectory: noArgs,
   chooseFiles: z.tuple([z.enum(['assets', 'images', 'video'])]),

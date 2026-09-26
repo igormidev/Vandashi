@@ -80,7 +80,7 @@ test('locks settings throughout save and refresh, preserves a failed draft, and 
   await asyncEditorControl(desktopApp, { finishSettings: 'reject' });
   await expect(reasoning).toBeEnabled();
   await expect(reasoning).toHaveValue('high');
-  await expect(page.getByRole('status')).toContainText('Settings could not be saved.');
+  await expect(page.locator('.toast')).toContainText('Settings could not be saved.');
   await asyncEditorControl(desktopApp, { holdModels: true });
   await dialog.getByRole('button', { name: 'Save changes', exact: true }).click();
   await expect.poll(async () => (await asyncEditorStatus(desktopApp)).pendingSettings).toBe(true);

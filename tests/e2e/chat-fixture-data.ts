@@ -202,6 +202,16 @@ export function chatFixtureData(video: boolean, options: ChatFixtureOptions) {
       updatedAt: '',
     });
   return {
+    updateState: {
+      revision: 0,
+      currentVersion: '0.1.2',
+      mode: 'installer',
+      phase: 'unsupported',
+      release: null,
+      progress: null,
+      checked: false,
+      diagnostic: null,
+    },
     state,
     workspace,
     sessions,

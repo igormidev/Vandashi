@@ -189,3 +189,14 @@ checks have no such target and must not advertise unsupported repair turns.
 For ChatGPT accounts, unavailable usage permission stays unverified and blocks entry/repair;
 only a fresh explicit permission establishes recovery. API-key/custom providers do not
 inherit a ChatGPT subscription-quota requirement.
+
+Updates use completed published GitHub Releases, never an unbuilt source version.
+Keep automatic download and install-on-quit disabled. Download and apply require
+separate explicit confirmations tied to the reviewed version. Startup and 20-minute
+checks coalesce without replacing a ready download; offline/missing feeds are not
+up-to-date success. Verify artifact identity, length and digest before download/apply,
+quarantine rejected native cache files before retry, and retain normal quit cleanup
+ownership after windows close. Unsigned macOS uses the verified installer fallback
+until Developer ID signing/notarization and a real signed update are verified.
+Release publication follows the entire platform test matrix, uploads to a draft,
+validates any existing tag against the tested commit, and publishes last.

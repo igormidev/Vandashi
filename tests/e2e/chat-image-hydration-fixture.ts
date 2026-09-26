@@ -93,6 +93,17 @@ export async function installImageHydrationFixture(
       );
       ipcMain.removeHandler('vandashi:invoke');
       ipcMain.handle('vandashi:invoke', (_event, method: string, args: unknown[]) => {
+        if (method === 'getUpdateState')
+          return {
+            revision: 0,
+            currentVersion: '0.1.2',
+            mode: 'installer',
+            phase: 'unsupported',
+            release: null,
+            progress: null,
+            checked: false,
+            diagnostic: null,
+          };
         if (method === 'getState') return input.fixture.state;
         if (method === 'models') return input.fixture.models;
         if (method === 'openBrand' || method === 'openWorkspace') return input.fixture.workspace;

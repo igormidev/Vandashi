@@ -96,3 +96,13 @@ Five published archives (`fontkit` 2.0.4, `bpm-detective` 2.0.5, `react-remove-s
 `third-party/sources.json` records supplemental source URLs, exact versions and content hashes. Source files in that directory are copied verbatim and excluded from formatting. These records include the matching upstream Puppeteer licenses omitted from its published archives, Hyperframes' root license, reference-project attribution and native-license texts. New versions with missing notices require a new reviewed source record; the generator does not silently reuse unrelated license text.
 
 Keep dependency-package notices, GSAP's generated-project header, original ExifTool source/patch records and Electron's Chromium notices when producing installers. Re-run the generator after dependency changes, verify the notice files in the packaged application, and update this version/provenance record when the direct dependencies or copied vendor assets change.
+
+## Update integration reference
+
+T3 Code's update controller and Electron adapter were inspected again at revision
+`95030dc674883f0f2a7fd034b32ce742c8cf55d0` on September 26, 2026 (MIT, T3 Tools Inc.).
+They informed the separate check/download/apply state machine and disabled automatic
+download/install-on-quit policy. Vandashi's implementation is independently authored.
+The distribution additionally includes electron-updater 6.8.9 (MIT,
+[Electron Builder](https://github.com/electron-userland/electron-builder)); its original
+license and transitive dependency notices are collected by the notice generator.

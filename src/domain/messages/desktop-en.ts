@@ -1,5 +1,13 @@
 /** Desktop permission and request-validation diagnostics. */
 export const desktopMessagesEn = {
+  updateChanged: 'The update changed or another update action is running. Review the update again.',
+  updateInvalid: 'The update could not be verified. Check again or retry the download.',
+  updateCheckFailed: 'Could not check GitHub for updates. Try again when you are online.',
+  updatePlatformUnavailable: 'This release has no installer for this computer yet. Try again later.',
+  updateDownloadFailed: 'The download did not finish. Retry to download a verified copy.',
+  updateOpenFailed: 'Could not open the installer. Try again.',
+  updateUnsupported: 'Updates are available in the installed app.',
+
   desktopChooseDirectory: 'Choose a directory.',
   desktopChooseFile: 'Choose a regular file.',
   desktopSelectedLocationChanged: 'The selected file has changed location. Select it again.',
