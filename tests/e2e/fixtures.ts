@@ -22,7 +22,7 @@ export const test = base.extend<DesktopFixtures>({
       await rm(directory, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
     }
   },
-  desktopApp: async ({ userData, rendererUrl }, use) => {
+  desktopApp: async ({ userData, rendererUrl }, use, testInfo) => {
     const environment: Record<string, string> = {};
     for (const [key, value] of Object.entries(process.env))
       if (typeof value === 'string' && key !== 'ELECTRON_RUN_AS_NODE') environment[key] = value;
@@ -35,13 +35,25 @@ export const test = base.extend<DesktopFixtures>({
       timeout: 30_000,
     });
     const child = application.process();
-    // Tests deliberately reload or dispose transient editor state; close-guard tests override this choice.
-    await application.evaluate(({ dialog }) => {
-      dialog.showMessageBoxSync = () => 1;
-    });
+    let diagnostics = '';
+    const capture = (chunk: Buffer) => {
+      diagnostics = (diagnostics + chunk.toString()).slice(-64 * 1024);
+    };
+    child.stdout?.on('data', capture);
+    child.stderr?.on('data', capture);
+    let setupComplete = false;
     try {
+      // Tests deliberately reload or dispose transient editor state; close-guard tests override this choice.
+      await application.evaluate(({ dialog }) => {
+        dialog.showMessageBoxSync = () => 1;
+      });
+      setupComplete = true;
       await use(application);
     } finally {
+      if ((!setupComplete || testInfo.status !== testInfo.expectedStatus) && diagnostics) {
+        await testInfo.attach('electron-process.log', { body: diagnostics, contentType: 'text/plain' });
+        console.error(diagnostics);
+      }
       if (child.exitCode === null) await application.close();
     }
   },

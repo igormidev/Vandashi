@@ -24,6 +24,9 @@ Offline responses, rate limits, missing releases and malformed metadata remain
 errors, never an assertion that the app is current. Development launches show that
 updates require an installed build. Unsupported architectures show an explicit
 installer-unavailable result rather than downloading another architecture.
+Native updater construction is deferred until a native download/apply request.
+Development and installer-only builds never initialize it; Electron's renamed
+Linux development launcher can report `0.0`, which its semver validation rejects.
 
 The header presents an update button and a dismissible top-right notice. The
 first confirmation authorizes downloading only. Progress comes from transferred

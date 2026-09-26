@@ -1,6 +1,6 @@
 import { validateNativeUpdate } from '../infrastructure/updates/native-metadata';
 import { beginUpdateInstall } from './update-install';
-import electronUpdater from 'electron-updater';
+import electronUpdater, { type AppUpdater } from 'electron-updater';
 import { app, shell } from 'electron';
 import { join } from 'node:path';
 import type { UpdatePort, UpdateRelease, UpdateState } from '../domain/updates';
@@ -24,14 +24,21 @@ export class DesktopUpdates implements UpdatePort {
   private downloaded: ReleaseArtifact | null = null;
   private nativeInstaller: string | null = null;
   private readonly installer = new InstallerDownload(join(app.getPath('userData'), 'updates'));
-  private readonly updater = electronUpdater.autoUpdater;
-  constructor() {
-    this.updater.autoDownload = false;
-    this.updater.autoInstallOnAppQuit = false;
-    this.updater.allowDowngrade = false;
-    this.updater.allowPrerelease = false;
-    // Errors are handled through awaited operations; EventEmitter must also have a listener.
-    this.updater.on('error', () => undefined);
+  private nativeUpdater: AppUpdater | null = null;
+  private get updater(): AppUpdater {
+    if (!this.nativeUpdater) {
+      // Development and installer-only builds never need the native updater. In particular,
+      // a renamed Linux development launch can report Electron's non-semver fallback "0.0".
+      const updater = electronUpdater.autoUpdater;
+      updater.autoDownload = false;
+      updater.autoInstallOnAppQuit = false;
+      updater.allowDowngrade = false;
+      updater.allowPrerelease = false;
+      // Errors are handled through awaited operations; EventEmitter also needs a listener.
+      updater.on('error', () => undefined);
+      this.nativeUpdater = updater;
+    }
+    return this.nativeUpdater;
   }
   async check(): Promise<UpdateRelease | null> {
     const extension =
