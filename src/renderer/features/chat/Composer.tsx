@@ -13,6 +13,7 @@ import type { Draft } from './session-state';
 import { cacheDraft, readDraft } from './draft-cache';
 import { RichComposer } from './RichComposer';
 import { mentionReferences } from './mention-references';
+import { setupTarget } from '../../../domain/setup';
 
 export function Composer({ session, disabled = false }: { session: ChatSession; disabled?: boolean }) {
   const { t } = useTranslation();
@@ -61,9 +62,10 @@ export function Composer({ session, disabled = false }: { session: ChatSession; 
   const locked = busy || dirty || sending || picking;
   const [cancelling, setCancelling] = useState(false);
   const logoLabel = t('logo');
+  const installation = !!setupTarget(session.topic);
   const references = useMemo(
-    () => (workspace ? mentionReferences(workspace, session.topic, logoLabel) : []),
-    [workspace, session.topic, logoLabel],
+    () => (workspace && !installation ? mentionReferences(workspace, session.topic, logoLabel) : []),
+    [workspace, installation, session.topic, logoLabel],
   );
   const send = async () => {
     if (!text.trim() || draft.pending || locked || submissionOwner.current || !models.length) return;
@@ -216,7 +218,7 @@ export function Composer({ session, disabled = false }: { session: ChatSession; 
             }}
           >
             <option value="read">{t('readMode')}</option>
-            <option value="edit">{t('editMode')}</option>
+            <option value="edit">{t(installation ? 'installationMode' : 'editMode')}</option>
           </select>
           <div className="spacer" />
           {busy && activity?.sessionId === session.id ? (

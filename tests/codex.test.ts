@@ -5,6 +5,7 @@ import { windowsNativeCandidates } from '../src/infrastructure/codex/binary';
 import { EventReducer } from '../src/infrastructure/codex/events';
 import { executeTurn, sandboxPolicy, turnInput } from '../src/infrastructure/codex/execution';
 import { readHistory } from '../src/infrastructure/codex/history';
+import { threadConfiguration } from '../src/infrastructure/codex/policy';
 import { JsonLineDecoder } from '../src/infrastructure/codex/transport';
 import type { RpcClient, RpcNotification } from '../src/infrastructure/codex/transport';
 
@@ -55,6 +56,27 @@ const model = {
   serviceTiers: [{ id: 'priority', name: 'Fast' }],
   inputModalities: ['text', 'image'],
 };
+
+it('uses host access only for explicit installation edit turns and keeps installation reads sandboxed', async () => {
+  const setup = { ...input, mode: 'edit' as const, purpose: 'host-setup' as const, writableRoots: [] };
+  const client = new FakeClient();
+  expect(await threadConfiguration(client, setup)).toMatchObject({
+    sandbox: 'danger-full-access',
+    approvalPolicy: 'never',
+  });
+  expect(sandboxPolicy(setup)).toEqual({ type: 'dangerFullAccess' });
+  expect(await threadConfiguration(client, { ...setup, mode: 'read' })).toMatchObject({
+    sandbox: 'read-only',
+  });
+  expect(sandboxPolicy({ ...setup, mode: 'read' })).toEqual({ type: 'readOnly', networkAccess: true });
+  expect(await threadConfiguration(client, { ...input, mode: 'edit' })).toMatchObject({
+    sandbox: 'workspace-write',
+  });
+  expect(sandboxPolicy({ ...input, mode: 'edit' })).toMatchObject({
+    type: 'workspaceWrite',
+    writableRoots: ['/workspace'],
+  });
+});
 
 function agentClient(): FakeClient {
   return new FakeClient((method) => {

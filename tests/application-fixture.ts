@@ -20,6 +20,7 @@ export async function applicationFixture(transcription?: TranscriptionPort) {
   const path = await store.projectPath(scope);
   let turns = 0;
   const agent = {
+    refreshConfiguration: vi.fn<NonNullable<AgentPort['refreshConfiguration']>>(() => Promise.resolve()),
     connect: vi.fn<AgentPort['connect']>(() =>
       Promise.resolve({
         connected: true,

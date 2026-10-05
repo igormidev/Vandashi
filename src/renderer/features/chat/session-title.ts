@@ -4,6 +4,7 @@ import type { ChatSession } from '../../../domain/models';
 import type { AppMessageId } from '../../../domain/messages';
 import type { Translation } from '../../locales/resources';
 import { tasteLabelKey } from '../../locales/taste-labels';
+import { setupTarget } from '../../../domain/setup';
 
 const labels: Readonly<Record<string, keyof Translation>> = {
   brand: 'brandAttributes',
@@ -37,8 +38,8 @@ export function sessionTitle(session: Pick<ChatSession, 'topic' | 'title' | 'sco
     const taste = tasteLabelKey(topic.slice('taste:'.length));
     if (taste) return t(taste);
   }
-  if (topic.startsWith('repair:')) {
-    const repair = topic.slice('repair:'.length);
+  if (topic.startsWith('repair:') || setupTarget(topic)) {
+    const repair = topic.slice(topic.indexOf(':') + 1);
     const id = Object.hasOwn(repairs, repair) ? repairs[repair] : undefined;
     if (id) return t(id, { ns: 'messages' });
     if (repair === 'Git' || repair === 'Codex') return repair;

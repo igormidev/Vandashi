@@ -23,6 +23,7 @@ export type RenderProgress = (progress: number, detail: string, label?: AppMessa
 
 /** Vendor-neutral operations; paths are supplied by the authorized workspace service. */
 export interface MediaPort {
+  setupContext?(): string;
   normalizeProject(projectPath: string): Promise<void>;
   seedProject(projectPath: string, ratio: AspectRatio, title: string): Promise<void>;
   startStudio(projectPath: string): Promise<StudioInfo>;

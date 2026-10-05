@@ -1,6 +1,6 @@
 import { Check, CircleAlert, LoaderCircle } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { scopeKey } from '../../../domain/defaults';
 import type { DependencyCheck } from '../../../domain/models';
 import type { AppMessage } from '../../../domain/messages';
@@ -11,6 +11,7 @@ import { formatPercent } from '../../shared/format';
 import { ChatPane } from '../chat/ChatPane';
 import { OwnedRequest } from '../../shared/owned-request';
 import { PrepareTranscriptions } from '../transcription/PrepareTranscriptions';
+import { PendingLabel, Tip } from '../../shared/ui';
 
 interface CheckProgress {
   key: string;
@@ -52,6 +53,16 @@ export function Checks({ video, onReady }: { video: boolean; onReady: () => void
     !loading &&
     validated === requestKey &&
     checks.some((check) => check.id === 'Codex' && check.status === 'ready');
+
+  useEffect(
+    () =>
+      api.onEvent((event) => {
+        // This event follows final persistence, recovery and lease release for every chat purpose.
+        if (event.type === 'chat-settled' && scope && scopeKey(event.scope) === scopeKey(scope))
+          setAttempt((value) => value + 1);
+      }),
+    [api, scope],
+  );
 
   useEffect(
     () =>
@@ -118,26 +129,36 @@ export function Checks({ video, onReady }: { video: boolean; onReady: () => void
     );
   const content = (
     <div className="page">
-      <div className="check-list">
+      <fieldset
+        className={`check-list ${busy && !loading ? 'check-list-disabled' : ''}`}
+        disabled={busy}
+        aria-busy={busy || loading}
+      >
         <h1>{t('checking')}</h1>
         <div className="check-heading">
           <span>
-            {loading
-              ? t('checkingTool', { tool: currentLabel ? messageText(currentLabel) : current })
-              : t('dependencyMissing')}
+            {busy && !loading ? (
+              <PendingLabel label={t('working')} />
+            ) : loading ? (
+              t('checkingTool', { tool: currentLabel ? messageText(currentLabel) : current })
+            ) : (
+              t('dependencyMissing')
+            )}
           </span>
-          <span className="mono">{formatPercent(progress, i18n.language)}</span>
+          {(!busy || loading) && <span className="mono">{formatPercent(progress, i18n.language)}</span>}
         </div>
-        <div
-          className="check-progress"
-          role="progressbar"
-          aria-label={t('checking')}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={Math.round(progress * 100)}
-        >
-          <div style={{ width: `${String(progress * 100)}%` }} />
-        </div>
+        {(!busy || loading) && (
+          <div
+            className="check-progress"
+            role="progressbar"
+            aria-label={t('checking')}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(progress * 100)}
+          >
+            <div style={{ width: `${String(progress * 100)}%` }} />
+          </div>
+        )}
         {checks.map((check) => (
           <div className="check-item" key={check.id}>
             <span className={`check-icon ${check.status !== 'ready' ? 'bad' : ''}`}>
@@ -160,22 +181,29 @@ export function Checks({ video, onReady }: { video: boolean; onReady: () => void
                       {t('installHelp')}
                     </button>
                   )}
-                  {check.repairPrompt && workspace && canRepair && (
-                    <button
-                      className="button small"
-                      type="button"
-                      disabled={busy}
-                      onClick={() => {
-                        setChatTarget({
-                          topic: `repair:${check.id}`,
-                          title: check.label ? messageText(check.label) : check.id,
-                          prompt: check.repairPrompt ?? '',
-                        });
-                        setRepair(true);
-                      }}
-                    >
-                      {t('repairAi')}
-                    </button>
+                  {check.installation && workspace && canRepair && (
+                    <Tip label={t('installationAccessHelp')}>
+                      <button
+                        className="button small"
+                        type="button"
+                        disabled={busy}
+                        onClick={() => {
+                          setChatTarget({
+                            topic: `setup:${check.id}`,
+                            title: check.label ? messageText(check.label) : check.id,
+                            prompt: check.installation ? messageText(check.installation) : '',
+                          });
+                          setRepair(true);
+                        }}
+                      >
+                        <span>
+                          <Trans
+                            i18nKey="installAi"
+                            components={{ ai: <span className="installation-ai" /> }}
+                          />
+                        </span>
+                      </button>
+                    </Tip>
                   )}
                 </div>
               )}
@@ -202,8 +230,8 @@ export function Checks({ video, onReady }: { video: boolean; onReady: () => void
             </button>
           </div>
         )}
-      </div>
+      </fieldset>
     </div>
   );
-  return repair && canRepair ? <Split id="dependencies" left={<ChatPane />} right={content} /> : content;
+  return repair ? <Split id="dependencies" left={<ChatPane />} right={content} /> : content;
 }

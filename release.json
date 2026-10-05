@@ -1,4 +1,4 @@
 {
-  "version": "0.1.9",
-  "notes": ["Add local asset transcription and timing-aware editing"]
+  "version": "0.1.10",
+  "notes": ["Install missing tools through a prepared AI chat, with automatic setup rechecks."]
 }

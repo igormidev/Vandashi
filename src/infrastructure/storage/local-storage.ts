@@ -40,6 +40,7 @@ import { discoverAgentScope } from './agent-scope';
 import { importBrand } from './brand-import';
 import { TranscriptionAssets } from './transcription-assets';
 import { importAssetWithCommit } from './asset-import';
+import { setupWorkspace } from './setup-workspace';
 
 export class LocalStorage implements StoragePort {
   private readonly registry: Registry;
@@ -69,6 +70,7 @@ export class LocalStorage implements StoragePort {
     const state = await this.registry.state();
     return { ...state, brands: [...state.brands].sort((a, b) => b.lastOpened.localeCompare(a.lastOpened)) };
   }
+  setupWorkspace = () => setupWorkspace(this.registry.directory);
   settings(settings: Settings): Promise<void> {
     return this.registry.settings(settings);
   }
@@ -136,9 +138,8 @@ export class LocalStorage implements StoragePort {
       : containedPath((await this.projects.brand(scope.brandId)).path, 'shared_assets');
   }
 
-  async setRenderedPath(scope: Scope, path: string): Promise<void> {
-    await this.writes.run(() => this.projects.setRenderedPath(scope, path));
-  }
+  setRenderedPath: StoragePort['setRenderedPath'] = (scope, path) =>
+    this.writes.run(() => this.projects.setRenderedPath(scope, path));
 
   syncSharedAssets(scope: Scope): Promise<void> {
     return this.writes.run(() => syncProjectAssets(this.registry, this.git, this.assets, scope));

@@ -719,3 +719,29 @@ re-download after invalidating upstream's corrupted in-process cache, exact sour
 tag verification, and platform-neutral installer guidance. Existing landing claims
 and screenshots remain accurate. These results do not assert native installation
 on Windows/Linux or publication before the release job actually succeeds.
+
+## Prerequisite installation chats — October 5, 2026
+
+Source 0.1.10 adds an installation action beside eligible prerequisite guides. Native
+development Electron tests verify that it opens the shared left chat with an editable,
+unsent request, aligns the accent AI text, and disables the complete checklist while
+keeping Stop available. Completion, failure, cancellation and other chat tabs each
+trigger one fresh check; only verified readiness and transcription preparation navigate.
+The AI phase shows a spinner rather than the previous check percentage. Eleven focused
+cases passed, including all eight languages at 1200 × 720 and the narrowest checklist.
+English, German and Japanese captures were inspected. These controlled IPC views are
+verification evidence, not replacements for the landing page's historical screenshots.
+
+Forty-five distinct native regressions have passing current-change evidence across setup,
+Codex readiness retries, chat, attachment/draft/image consumers, both asset contexts,
+clips and development startup/commit dialogs. The clip fixture used a temporary FFmpeg
+7.1 binary extracted from the pinned imageio-ffmpeg 0.6.0 macOS ARM64 wheel after SHA-256
+verification; it did not install or alter the user's host tools.
+
+A separate real `codex-cli 0.160.0` host-setup turn wrote/read a disposable file outside
+its cwd and verified history after awaited shutdown/reconnect. The test archives its
+conversation and removes the temporary directories. Independent execution and landing/
+documentation audits reported no actionable findings. Actual OS package installation,
+browser download, global skill installation, administrator dialogs and other platforms
+remain unverified; see [CODEX.md](CODEX.md). This source change does not publish an update
+or replace the installed Vandashi application.

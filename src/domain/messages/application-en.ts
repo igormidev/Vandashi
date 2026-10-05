@@ -1,5 +1,9 @@
 /** Application guardrails and recovery messages. External provider text stays verbatim. */
 export const applicationMessagesEn = {
+  appInstallDependency:
+    'Install {{name}} for Vandashi on this computer. Inspect the current setup, follow official instructions, and verify that Vandashi can use it. Preserve my projects and existing settings.',
+  appSetupUndoUnavailable:
+    'Host installations cannot be reverted with Git Undo. The installation conversation is preserved.',
   appChooseAudio: 'Choose an audio asset in this workspace.',
   appImportedNoComposition: 'This imported video has no editable composition. Use Packaging or Launch.',
   appFinishedNoRender: 'This finished video is already ready to upload and has no composition to render.',

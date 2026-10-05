@@ -417,5 +417,8 @@
   "audioDialog": "Diálogo",
   "audioMusic": "Música",
   "audioSoundEffect": "Efecto de sonido",
-  "audioCategoryHelp": "Los diálogos se transcriben con marcas de tiempo. La música y los efectos de sonido se clasifican sin transcripción."
+  "audioCategoryHelp": "Los diálogos se transcriben con marcas de tiempo. La música y los efectos de sonido se clasifican sin transcripción.",
+  "installAi": "Pedir a la <ai>IA</ai> que lo instale",
+  "installationMode": "Instalar en este equipo",
+  "installationAccessHelp": "Al enviar en modo de instalación, la IA tendrá acceso para instalar herramientas y habilidades en este equipo. Revisa el mensaje antes de enviarlo."
 }

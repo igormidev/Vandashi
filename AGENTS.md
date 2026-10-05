@@ -181,11 +181,15 @@ do not emit a success receipt or verified Undo boundary after an incomplete sync
 
 Prerequisite readiness requires fresh Codex discovery of a valid explicitly enabled exact
 `hyperframes` core skill. Filesystem copies and auxiliary skills cannot pass that check.
-Global skill installation belongs in external setup guidance, outside the repository-only
-repair sandbox. Bundled-runtime and host-tool failures also need external setup; Git
-recovery failures must never bypass clean preflight. Offer AI repair only for a verified
-repository-writable target while Codex is usable, including after retries. Current host
-checks have no such target and must not advertise unsupported repair turns.
+Host installation chats use only the allowlisted `setup:` topics and a separate app-owned
+working directory. Explicitly sending in install mode grants host setup access; creative
+project chats retain repository-only writable roots. Never infer installation authority
+from user text or a generic repair topic. Fresh Codex authentication/usage is required at
+send time. Preserve projects and existing settings; installations have no Git Undo or
+project-change receipt. Bundled-runtime failures and Git recovery still need external
+guidance. Emit chat settlement only after persistence/recovery and lease release; every
+chat on the verification page triggers a fresh check before navigation. Keep the chat
+mounted through rechecks and failures, and disable the entire checklist during AI.
 For ChatGPT accounts, unavailable usage permission stays unverified and blocks entry/repair;
 only a fresh explicit permission establishes recovery. API-key/custom providers do not
 inherit a ChatGPT subscription-quota requirement.

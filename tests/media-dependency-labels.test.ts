@@ -152,7 +152,7 @@ it('gives host dependencies actionable setup without turning vendor hints into A
     expect(check.diagnostic?.kind === 'app' ? check.diagnostic.externalDetail : undefined).toContain(
       'Ω\nVendor setup hint: install outside the project.',
     );
-    expect(check.detail).toContain('Vandashi');
+    expect(check.installation).toBeUndefined();
     expect(check.detail).toContain('check again');
   }
 });

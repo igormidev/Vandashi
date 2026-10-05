@@ -167,7 +167,10 @@ describe('application operation transactions', () => {
     await writeFile(packaging, original);
     finish({ threadId: 'thread', turnId: 'editing', status: 'completed', error: null, output: '' });
     await app.idle();
-    expect(app.events.at(-1)?.type).toBe('workspace-changed');
+    expect(app.events.at(-1)).toMatchObject({ type: 'chat-settled', scope: app.scope });
+    expect(app.events.filter((event) => event.type === 'workspace-changed').at(-1)).toMatchObject({
+      scope: app.scope,
+    });
     const activities = app.events.filter((event) => event.type === 'activity');
     expect(activities.at(-1)?.activity.sessionId).toBe(app.session.id);
   });

@@ -86,6 +86,7 @@ export interface AgentScopePaths {
 
 /** Persistence contracts contain no Electron or provider-specific dependencies. */
 export interface StoragePort {
+  setupWorkspace(): Promise<string>;
   getState(): Promise<AppState>;
   settings(settings: Settings): Promise<void>;
   createBrand(input: { parentPath: string; name: string }): Promise<Brand>;

@@ -189,6 +189,10 @@ export const en = {
   checking: 'Preparing your workspace',
   checkHelp: 'Checking the tools this workspace needs.',
   repairAi: 'Resolve with AI',
+  installAi: 'Ask <ai>AI</ai> to install for me',
+  installationMode: 'Install on this computer',
+  installationAccessHelp:
+    'Sending in install mode gives AI access to install tools and skills on this computer. Review the message before sending.',
   installHelp: 'Installation guide',
   checkingTool: 'Checking {{tool}}…',
   checkStillMissing: 'Some tools still need attention. Review the checks and try again.',

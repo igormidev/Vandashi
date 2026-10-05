@@ -4,7 +4,7 @@ import { TranscriptionStatus, useTranscriptionProgress } from '../transcription/
 import { useTranslation } from 'react-i18next';
 import type { ChatMessage, Scope } from '../../../domain/models';
 import { scopeKey } from '../../../domain/defaults';
-import { publishingUndoIssue } from '../../../domain/chat-undo-policy';
+import { chatUndoIssue } from '../../../domain/chat-undo-policy';
 import { useApp } from '../../app/store';
 import { diagnosticText, messageText } from '../../app/diagnostics';
 import { Empty, IconButton, Loading, Modal, Tip, PendingLabel } from '../../shared/ui';
@@ -103,7 +103,7 @@ function Conversation({ scope }: { scope: Scope }) {
   const scroll = useRef<HTMLDivElement>(null);
   const follow = useRef(true);
   const session = sessions.find((entry) => entry.id === selected && entry.open);
-  const undoIssue = session ? publishingUndoIssue(session) : null;
+  const undoIssue = session ? chatUndoIssue(session) : null;
   const lastMessage = session?.messages.at(-1);
   useEffect(() => {
     follow.current = true;

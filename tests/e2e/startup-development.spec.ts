@@ -42,9 +42,20 @@ test('development checks retain the original gated result and reload exactly onc
     .toBe(2);
   await startupControl(desktopApp, { release: 'checks' });
   await expect(page.getByRole('textbox', { name: 'Titles', exact: true })).toBeVisible();
+  // The successful check and subsequent transcription preparation each adopt one refresh.
   expect((await startupCalls(desktopApp)).filter(({ method }) => method === 'openWorkspace')).toHaveLength(
-    reads + 1,
+    reads + 2,
   );
+  expect(
+    (await startupCalls(desktopApp)).filter(
+      ({ method, input }) =>
+        method === 'prepareTranscriptions' &&
+        input !== null &&
+        typeof input === 'object' &&
+        'scope' in input &&
+        input.scope !== null,
+    ),
+  ).toHaveLength(1);
 });
 
 test('development main preview, manual Studio, and clip preview each reuse their pending startup', async ({

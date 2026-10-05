@@ -24,7 +24,7 @@ npm run dev
 
 In Windows PowerShell, run `$env:ONNXRUNTIME_NODE_INSTALL='skip'` before `npm ci` instead. This keeps the included CPU inference runtime and skips an unnecessary CUDA download. On first launch, Vandashi installs its private Python/WhisperX tools and downloads the default large-v3-turbo speech model. Initial setup needs internet and several GB of free disk space (the speech model alone is about 1.62 GB). Audio/video metadata includes full-file speech timing; choose another local model in Settings. See [audio/video transcription](docs/TRANSCRIPTION.md).
 
-The pinned Hyperframes CLI, Studio, and player are included in npm dependencies. Its first render also needs FFmpeg, FFprobe, and a supported Chrome runtime. The workspace preparation screen checks these tools and offers the appropriate setup or recovery guide. Install or repair host tools outside Vandashi, then restart it and check again. Existing Codex settings and conversations are preserved.
+The pinned Hyperframes CLI, Studio, and player are included in npm dependencies. Its first render also needs FFmpeg, FFprobe, and a supported Chrome runtime. The workspace preparation screen checks these tools. When Codex is available, choose **Ask AI to install for me** to open a prepared installation chat, review the request and send it in install mode. That mode grants host access for setup. Vandashi checks again automatically after the chat finishes and continues only when all checks pass. Manual installation guides remain available; Codex/login/quota, bundled-app and Git recovery failures require their indicated setup steps. Existing settings and conversations are preserved.
 
 On Linux, Chromium sandbox support is required. Distributions that restrict unprivileged
 user namespaces may need an administrator-approved AppArmor profile for the exact
@@ -41,7 +41,7 @@ the launcher contract and CI checks.
 5. Render the video. Landscape projects can produce independent vertical or square clips.
 6. Review a destination in **Launch suite**, edit the prepared instructions, then send them. Publishing needs browser tools available to Codex and a signed-in destination account. Vandashi does not claim an upload succeeded without a verified result.
 
-Each contextual conversation persists locally. Read-only mode enforces a read-only Codex sandbox. Only one AI operation runs at a time. Undo uses a recoverable file checkpoint and a matching Codex conversation boundary.
+Each contextual conversation persists locally. Read-only mode enforces a read-only Codex sandbox. Only one AI operation runs at a time. Project Undo uses a recoverable file checkpoint and a matching Codex conversation boundary. Host installations cannot be reverted with Git Undo.
 
 ![Shared media with a preview and editable descriptions and tags](docs/screenshots/assets.png)
 

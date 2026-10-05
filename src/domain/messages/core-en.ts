@@ -11,7 +11,7 @@ export const coreMessagesEn = {
   appPublishUndoUnavailable:
     'Publishing may have changed an external platform. Revert is unavailable; verify the release in the browser and update its status here.',
   appHyperframesSkillMissing:
-    'Codex has not discovered an enabled hyperframes core skill. Open the installation guide to install or enable it outside Vandashi, then check again.',
+    'Codex has not discovered an enabled hyperframes core skill. Install or enable it, then check again.',
   appHyperframesSkillUnverified:
     'Could not verify with Codex whether the hyperframes core skill is enabled. Check Codex setup and retry.',
   appUsageUnverified: 'Could not verify your available Codex usage. Check your connection and try again.',

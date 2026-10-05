@@ -38,7 +38,7 @@ export class CodexAgent implements AgentPort {
   private generation = 0;
   private running = false;
   private active: { threadId: string; turnId: string } | null = null;
-  private lastMode: AgentThreadOptions['mode'] | null = null;
+  private lastMode: string | null = null;
   private stopRequested = false;
   constructor(private readonly options: CodexAgentOptions = {}) {}
   async connect(): Promise<AgentStatus> {
@@ -56,7 +56,7 @@ export class CodexAgent implements AgentPort {
     return loadCapabilities(client, cwd);
   }
   async createThread(options: AgentThreadOptions): Promise<string> {
-    const { client } = await this.connectionForMode(options.mode);
+    const { client } = await this.connectionForMode(options);
     const config = await threadConfiguration(client, options);
     const response = threadResponse.parse(
       await client.request('thread/start', {
@@ -64,7 +64,9 @@ export class CodexAgent implements AgentPort {
         historyMode: 'paginated',
         ephemeral: false,
         developerInstructions:
-          'You are the assistant inside Vandashi, a local video studio. Follow the per-message workspace guidance. MANDATORY: before adding or replacing any audio/video asset, read the app-owned transcription README identified in that guidance, run its exact command, and verify the saved category and transcript or explicit music/effects exemption. Never invent metadata evidence. Before editing audio/video or captions, read its saved source timestamps; later edits depend on them. Report media kind and verified preparation status. Do not spawn other agents. Ask questions in your reply when input is needed. Never request unrestricted filesystem access.',
+          options.purpose === 'host-setup'
+            ? 'You are Vandashi’s host installation assistant. Follow the per-message setup guidance and the explicitly submitted user request. Preserve creative projects and unrelated settings. Never collect credentials or bypass OS protections. Do not spawn other agents. Report verified results and any remaining user steps.'
+            : 'You are the assistant inside Vandashi, a local video studio. Follow the per-message workspace guidance. MANDATORY: before adding or replacing any audio/video asset, read the app-owned transcription README identified in that guidance, run its exact command, and verify the saved category and transcript or explicit music/effects exemption. Never invent metadata evidence. Before editing audio/video or captions, read its saved source timestamps; later edits depend on them. Report media kind and verified preparation status. Do not spawn other agents. Ask questions in your reply when input is needed. Never request unrestricted filesystem access.',
       }),
     );
     this.loadedThreads.add(response.thread.id);
@@ -85,7 +87,7 @@ export class CodexAgent implements AgentPort {
     this.running = true;
     this.stopRequested = false;
     try {
-      const { client, codexHome } = await this.connectionForMode(input.mode);
+      const { client, codexHome } = await this.connectionForMode(input);
       if (!this.rawModels.length) await this.models();
       const model = this.rawModels.find((entry) => entry.model === input.selection.model);
       if (!model)
@@ -176,7 +178,14 @@ export class CodexAgent implements AgentPort {
     this.loadedThreads.clear();
     if (connection) void connection.then(({ client }) => client.close()).catch(() => undefined);
   }
-  private async connectionForMode(mode: AgentThreadOptions['mode']): Promise<CodexConnection> {
+  async refreshConfiguration(): Promise<void> {
+    // Setup may change enabled skills/plugins. Await shutdown before a fresh discovery connection.
+    const connection = this.connection;
+    this.dispose();
+    if (connection) await (await connection).client.close();
+  }
+  private async connectionForMode(options: AgentThreadOptions): Promise<CodexConnection> {
+    const mode = `${options.mode}:${options.purpose ?? 'workspace'}`;
     // Rebuild tool capabilities when mode changes; a loaded thread may retain old MCP policy.
     if (this.lastMode && this.lastMode !== mode) this.dispose();
     this.lastMode = mode;

@@ -1,9 +1,18 @@
 import type { ElectronApplication, Page } from '@playwright/test';
 import type { DesktopApi } from '../../src/domain/api';
 import type { Diagnostic } from '../../src/domain/diagnostics';
-import type { AppEvent, SaveInput, Scope, StudioInfo, Workspace } from '../../src/domain/models';
+import type {
+  AppEvent,
+  ChatRequest,
+  DependencyCheck,
+  SaveInput,
+  Scope,
+  StudioInfo,
+  Workspace,
+} from '../../src/domain/models';
 import { chatFixtureData } from './chat-fixture-data';
 import { expect, probeUrl } from './development-fixtures';
+import type { Locale } from '../../src/domain/locales';
 
 type Gated = 'checks' | 'startStudio' | 'suggestCommit';
 export interface StartupCall {
@@ -16,6 +25,8 @@ interface Control {
   diagnostic?: Diagnostic;
   refresh?: boolean;
   studioDirty?: boolean;
+  finishChat?: 'done' | 'error';
+  dependenciesReady?: boolean;
 }
 
 export async function installStartupFixture(
@@ -23,6 +34,8 @@ export async function installStartupFixture(
   url: string,
   holdChecks = false,
   video = true,
+  dependencyChecks?: DependencyCheck[],
+  setupLayout?: { locale: Locale; split: number },
 ) {
   await desktop.evaluate(
     ({ ipcMain, BrowserWindow }, fixture) => {
@@ -34,6 +47,12 @@ export async function installStartupFixture(
       const calls: StartupCall[] = [];
       const pending = new Map<Gated, (action: Control) => void>();
       let active: Gated | null = null;
+      let activeChat: string | null = null;
+      let dependenciesReady = false;
+      if (fixture.setupLayout) {
+        fixture.data.state.settings.locale = fixture.setupLayout.locale;
+        fixture.data.state.settings.splits.dependencies = fixture.setupLayout.split;
+      }
       let studioDirty = false;
       const emit = (event: AppEvent) =>
         BrowserWindow.getAllWindows()[0]?.webContents.send('vandashi:event', event);
@@ -47,6 +66,14 @@ export async function installStartupFixture(
         reply(calls);
       });
       ipcMain.on('vandashi:startup-control', (_event, action: Control) => {
+        if (action.dependenciesReady !== undefined) dependenciesReady = action.dependenciesReady;
+        if (action.finishChat && activeChat) {
+          const id = activeChat;
+          activeChat = null;
+          emit({ type: 'activity', activity: { sessionId: id, phase: action.finishChat, detail: '' } });
+          emit({ type: 'activity', activity: { sessionId: id, phase: 'done', detail: '' } });
+          emit({ type: 'chat-settled', sessionId: id, scope: workspace.scope });
+        }
         if (action.studioDirty !== undefined) studioDirty = action.studioDirty;
         if (action.refresh) {
           workspace = { ...workspace, revision: workspace.revision + '-refreshed' };
@@ -98,6 +125,25 @@ export async function installStartupFixture(
           return { ...session, ...(active ? { historyDeferred: true } : {}) };
         }
         if (method === 'history') return { commits: [], hasMore: false };
+        if (method === 'sendChat') {
+          const request = input as ChatRequest;
+          activeChat = request.sessionId;
+          emit({
+            type: 'activity',
+            activity: { sessionId: request.sessionId, phase: 'working', detail: '' },
+          });
+          return;
+        }
+        if (method === 'cancelChat') {
+          if (activeChat) {
+            const id = activeChat;
+            activeChat = null;
+            emit({ type: 'activity', activity: { sessionId: id, phase: 'done', detail: '' } });
+            emit({ type: 'chat-settled', sessionId: id, scope: workspace.scope });
+          }
+          return;
+        }
+        if (method === 'openExternal') return;
         if (method === 'settings') {
           fixture.data.state.settings = input as Parameters<DesktopApi['settings']>[0];
           return;
@@ -139,7 +185,7 @@ export async function installStartupFixture(
           return workspace.assets.find((asset) => asset.id === saved.assetId);
         }
         if (method === 'checks' || method === 'startStudio' || method === 'suggestCommit') {
-          if (active)
+          if (active || activeChat)
             return {
               __vandashiFailure: 'v1',
               diagnostic: { kind: 'app', message: { id: 'appOperationBusy' } },
@@ -153,7 +199,8 @@ export async function installStartupFixture(
           const ready = [
             { id: 'Ready', status: 'ready' as const, detail: '', repairPrompt: null, helpUrl: null },
           ];
-          if (method === 'checks' && !fixture.holdChecks) return ready;
+          if (method === 'checks' && !fixture.holdChecks)
+            return dependenciesReady ? ready : (fixture.dependencyChecks ?? ready);
           active = method;
           emit({ type: 'activity', activity: { sessionId: method, phase: 'working', detail: '' } });
           if (method === 'checks')
@@ -209,6 +256,8 @@ export async function installStartupFixture(
       }),
       url,
       holdChecks,
+      dependencyChecks,
+      setupLayout,
     },
   );
 }

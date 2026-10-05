@@ -137,7 +137,7 @@ for (const codex of ['unavailable', 'signed-out', 'quota', 'omitted'] as const) 
     await page.getByRole('button', { name: 'Check again', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Resolve with AI', exact: true })).toHaveCount(0);
     await expect(
-      page.getByText(/FFmpeg is unavailable\. Install or repair it outside Vandashi/),
+      page.getByText(/FFmpeg is unavailable\. Install or repair it, then check again/),
     ).toBeVisible();
     await page.getByRole('button', { name: 'Installation guide', exact: true }).click();
     expect((await requests(desktopApp)).filter((call) => call.method === 'openExternal').at(-1)?.input).toBe(

@@ -417,5 +417,8 @@
   "audioDialog": "会話",
   "audioMusic": "音楽",
   "audioSoundEffect": "効果音",
-  "audioCategoryHelp": "会話にはタイムスタンプ付きの文字起こしを作成します。音楽と効果音は分類のみ行います。"
+  "audioCategoryHelp": "会話にはタイムスタンプ付きの文字起こしを作成します。音楽と効果音は分類のみ行います。",
+  "installAi": "<ai>AI</ai>にインストールを依頼",
+  "installationMode": "このコンピューターにインストール",
+  "installationAccessHelp": "インストールモードで送信すると、AIがこのコンピューターにツールやスキルをインストールできるようになります。送信前にメッセージを確認してください。"
 }

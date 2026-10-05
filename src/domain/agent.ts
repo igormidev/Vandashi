@@ -23,6 +23,7 @@ export interface AgentCapabilities {
 export interface AgentThreadOptions {
   cwd: string;
   mode: 'read' | 'edit';
+  purpose?: 'host-setup';
   writableRoots: string[];
   selection: ModelSelection;
 }
@@ -50,6 +51,7 @@ export interface AgentRunResult {
   error: string | null;
 }
 export interface AgentPort {
+  refreshConfiguration?(): Promise<void>;
   connect(): Promise<AgentStatus>;
   models(): Promise<ModelInfo[]>;
   capabilities(cwd: string): Promise<AgentCapabilities>;

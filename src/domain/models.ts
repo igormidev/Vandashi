@@ -156,6 +156,7 @@ export interface DependencyCheck {
   label?: AppMessage;
   recovery?: AppMessage;
   repairPrompt: string | null;
+  installation?: AppMessage;
   helpUrl: string | null;
 }
 export interface ChatMessage {
@@ -223,6 +224,7 @@ export type AppEvent =
     }
   | { type: 'chat'; sessionId: string; message: ChatMessage; delta: boolean }
   | { type: 'activity'; activity: ChatActivity }
+  | { type: 'chat-settled'; scope: Scope; sessionId: string }
   | { type: 'workspace-changed'; scope: Scope }
   | { type: 'notice'; code: string; detail: string; diagnostic?: Diagnostic }
   | {

@@ -417,5 +417,8 @@
   "audioDialog": "Dialog",
   "audioMusic": "Musik",
   "audioSoundEffect": "Soundeffekt",
-  "audioCategoryHelp": "Dialoge werden mit Zeitangaben transkribiert. Musik und Soundeffekte erhalten eine Kategorie ohne Transkript."
+  "audioCategoryHelp": "Dialoge werden mit Zeitangaben transkribiert. Musik und Soundeffekte erhalten eine Kategorie ohne Transkript.",
+  "installAi": "<ai>KI</ai> um Installation bitten",
+  "installationMode": "Auf diesem Computer installieren",
+  "installationAccessHelp": "Beim Senden im Installationsmodus erhält die KI Zugriff, um Werkzeuge und Skills auf diesem Computer zu installieren. Prüfe die Nachricht vor dem Senden."
 }

@@ -982,8 +982,19 @@ svg {
   min-width: 0;
 }
 .check-list {
+  border: 0;
+  padding: 0;
+  min-width: 0;
   max-width: 650px;
   margin: 45px auto;
+}
+.check-list-disabled {
+  opacity: 0.55;
+}
+.installation-ai {
+  color: var(--accent);
+  font: inherit;
+  vertical-align: baseline;
 }
 .check-list h1 {
   font-size: 27px;
@@ -1009,6 +1020,11 @@ svg {
 .check-item h3 {
   margin-bottom: 6px;
 }
+.check-item > div {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 .check-item p {
   font-size: 11px;
   color: var(--muted);
@@ -1016,6 +1032,7 @@ svg {
 }
 .check-item .toolbar {
   margin-top: 12px;
+  flex-wrap: wrap;
 }
 .check-icon {
   color: var(--accent);

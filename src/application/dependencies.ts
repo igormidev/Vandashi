@@ -5,6 +5,8 @@ import type { MediaPort } from '../domain/media';
 import type { AppEvent, DependencyCheck, Scope } from '../domain/models';
 import type { StoragePort } from '../domain/storage';
 import type { Commits } from './commits';
+import { agentReadinessFault } from './agent-readiness';
+import { installationMessage } from '../domain/setup';
 
 export class Dependencies {
   constructor(
@@ -32,15 +34,7 @@ export class Dependencies {
     update('Codex');
     try {
       const status = await this.agent.connect();
-      const fault = !status.connected
-        ? new AppFault({ id: 'codexDisconnected' })
-        : !status.authenticated
-          ? new AppFault({ id: 'appCodexLoginRequired' })
-          : status.usageAllowed === false
-            ? new AppFault({ id: 'appUsageExhausted' })
-            : status.accountType === 'chatgpt' && status.usageAllowed === null
-              ? new AppFault({ id: 'appUsageUnverified' })
-              : null;
+      const fault = agentReadinessFault(status);
       checks.push({
         id: 'Codex',
         status: fault ? 'missing' : 'ready',
@@ -60,6 +54,14 @@ export class Dependencies {
       });
     }
     const codexReady = checks.some((check) => check.id === 'Codex' && check.status === 'ready');
+    const withInstallation = (check: DependencyCheck): DependencyCheck => {
+      const installation =
+        scope && codexReady && check.status !== 'ready' ? installationMessage(check.id) : undefined;
+      // Ignore provider-supplied repair prompts; only app-owned allowlisted host targets qualify.
+      const value = { ...check };
+      delete value.installation;
+      return { ...value, repairPrompt: null, ...(installation ? { installation } : {}) };
+    };
     if (scope) {
       update('Git');
       try {
@@ -92,15 +94,14 @@ export class Dependencies {
       const mediaChecks = await this.media.checks((check) => {
         // Only live Codex discovery can establish core-skill readiness.
         if (check.id === 'skill') return;
-        // This port checks the host runtime, without a verified repository-contained repair target.
-        checks.push({ ...check, repairPrompt: null });
+        checks.push(withInstallation(check));
         update(check.id, false, check.label);
       });
       for (const check of mediaChecks)
         if (check.id !== 'skill' && !checks.some((value) => value.id === check.id))
-          checks.push({ ...check, repairPrompt: null });
+          checks.push(withInstallation(check));
       update('skill', false, { id: 'mediaSkillLabel' });
-      checks.push(await this.skill(scope, codexReady));
+      checks.push(withInstallation(await this.skill(scope, codexReady)));
     }
     update('', true);
     return checks;

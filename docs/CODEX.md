@@ -75,14 +75,43 @@ Model names, reasoning levels, image support, and speed tiers come from paginate
 
 Core Hyperframes readiness requires fresh successful skill discovery with a nonempty name
 and path, explicit `enabled: true`, and the exact name `hyperframes`. Filesystem presence
-and auxiliary skill names are insufficient. Missing core skills route to the official
-external installation guide; unavailable or unverified Codex suppresses AI repair actions.
+and auxiliary skill names are insufficient. Missing core skills offer a dedicated installation chat and the official guide; unavailable
+or unverified Codex suppresses installation actions. Each setup send rechecks account access.
 
 ## Read and edit modes
 
 Read mode uses an OS read-only sandbox and disables discovered MCP servers, installed plugins, app tools, browser use, and computer use. This is necessary because filesystem sandboxing alone does not constrain external MCP side effects. Web search remains available. Switching modes restarts the connection so loaded threads cannot retain prior tool capabilities. Configuration overrides affect the app-server session, never the user's saved configuration.
 
-Edit mode limits writable roots to the repositories approved by the application. Both modes use approval policy `never`, and both disable Codex subagent features. Application helpers must share the same global operation gate as ordinary chat.
+Project edit mode limits writable roots to the repositories approved by the application.
+Allowlisted installation topics use a separate app-owned cwd and an explicit `host-setup`
+purpose. Sending in the composer’s install mode uses `danger-full-access` at thread
+start/resume and `dangerFullAccess` at turn start; setup read mode remains read-only.
+The composer explains host access before submission. This follows the supported
+[Codex sandbox policies](https://learn.chatgpt.com/docs/security). Installation authority
+is never accepted as a renderer sandbox option or inferred from arbitrary message text.
+Mode/purpose transitions restart the connection. Setup completion awaits configuration
+shutdown under the same lease, so the recheck creates a fresh discovery connection.
+Setup history is persisted without
+project receipts or Git Undo. Both purposes disable subagents and use the global lease;
+`chat-settled` is emitted only after final persistence and release.
+
+### Installation chat verification — October 5, 2026
+
+The native development Electron suite verifies the editable, unsent request, aligned primary
+AI emphasis, complete checklist lock, enabled Stop, and navigation only after fresh checks.
+Failure, cancellation and another ordinary chat tab each trigger one recheck while keeping
+the conversation mounted. All eight languages fit the minimum 1200 × 720 window with the
+checklist at its narrowest split. These tests use controlled IPC outcomes; captured English,
+German and Japanese app views were inspected for layout.
+
+The opt-in `tests/codex-setup-live.test.ts` passed against the installed `codex-cli 0.160.0`
+on macOS ARM64. A real host-setup turn wrote and read one explicitly authorized disposable
+file outside its cwd, then verified history after awaited configuration shutdown/reconnect.
+It archives its test conversation and removes the temporary folders. Run it with
+`VANDASHI_CODEX_LIVE=1 npm test -- tests/codex-setup-live.test.ts`.
+This verifies the actual app-server host policy and history boundary. Fresh OS package
+installation, administrator prompts, browser download and global skill installation remain
+separate acceptance; no user installations or creative projects were changed by this smoke test.
 
 Publishing preflight calls the actual paginated MCP tool catalog. A connector name or documentation plugin alone is insufficient: it requires `cua_repl.js` or browser navigation, snapshot, and file-upload methods. Failed catalogs do not count. On this host a fresh app-server thread reported the CUA and Playwright servers connected, and a real `mcpServer/tool/call` for `cua_repl.js` successfully read available surfaces. No external upload was performed. See [PUBLISHING.md](PUBLISHING.md) for the release contract.
 

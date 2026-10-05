@@ -41,7 +41,12 @@ export async function threadConfiguration(
     model: options.selection.model,
     serviceTier: options.selection.fast ? 'priority' : null,
     runtimeWorkspaceRoots: options.writableRoots.length ? options.writableRoots : [options.cwd],
-    sandbox: options.mode === 'read' ? 'read-only' : 'workspace-write',
+    sandbox:
+      options.mode === 'read'
+        ? 'read-only'
+        : options.purpose === 'host-setup'
+          ? 'danger-full-access'
+          : 'workspace-write',
     approvalPolicy: 'never',
     config,
   };

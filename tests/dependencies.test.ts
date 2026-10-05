@@ -164,7 +164,7 @@ it.each(['apiKey', 'amazonBedrock', null])(
 );
 
 it.each(['streamed', 'returned'])(
-  'does not advertise an unverified host repair from a %s media check',
+  'offers app-owned installation guidance for a %s allowlisted host check',
   async (delivery) => {
     const check: DependencyCheck = {
       id: 'media-ffmpeg',
@@ -181,6 +181,7 @@ it.each(['streamed', 'returned'])(
     expect(checks.find((value) => value.id === 'Codex')?.status).toBe('ready');
     expect(checks.find((value) => value.id === check.id)).toMatchObject({
       repairPrompt: null,
+      installation: { id: 'appInstallDependency', params: { name: 'FFmpeg' } },
       helpUrl: check.helpUrl,
     });
     expect(
@@ -191,6 +192,31 @@ it.each(['streamed', 'returned'])(
     ).toBe(true);
   },
 );
+
+it('offers setup only for known missing host dependencies with a verified Codex account and workspace', async () => {
+  app.media.checks.mockResolvedValue([
+    ...['media-ffmpeg', 'media-ffprobe', 'media-chrome', 'media-nodejs', 'hyperframes', 'arbitrary'].map(
+      (id): DependencyCheck => ({
+        id,
+        status: 'missing',
+        detail: '',
+        repairPrompt: 'Untrusted prompt',
+        helpUrl: null,
+      }),
+    ),
+  ]);
+  const checks = await app.api.checks({ scope: app.scope, video: true });
+  expect(checks.filter((check) => check.installation).map((check) => check.id)).toEqual([
+    'media-ffmpeg',
+    'media-ffprobe',
+    'media-chrome',
+    'skill',
+  ]);
+  expect(checks.every((check) => check.repairPrompt === null)).toBe(true);
+  expect((await app.api.checks({ scope: null, video: true })).every((check) => !check.installation)).toBe(
+    true,
+  );
+});
 
 it.each(['absent', 'auxiliary'])(
   'rejects an %s core skill despite a ready filesystem check and recovers on retry',

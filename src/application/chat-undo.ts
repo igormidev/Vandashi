@@ -1,5 +1,5 @@
 import { AppFault } from '../domain/diagnostics';
-import { publishingUndoIssue } from '../domain/chat-undo-policy';
+import { chatUndoIssue } from '../domain/chat-undo-policy';
 import type { AgentPort } from '../domain/agent';
 import type { AppEvent, ChatSession } from '../domain/models';
 import type { GitPort, StoragePort } from '../domain/storage';
@@ -13,7 +13,7 @@ export async function undoChat(
   notify: (event: AppEvent) => void,
 ): Promise<ChatSession> {
   const session = await store.getSession(id);
-  const issue = publishingUndoIssue(session);
+  const issue = chatUndoIssue(session);
   if (issue) throw new AppFault(issue);
   const original = structuredClone(session);
   const checkpoint = session.checkpoints?.at(-1);

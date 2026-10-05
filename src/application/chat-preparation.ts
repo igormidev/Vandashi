@@ -10,6 +10,7 @@ import type { Prepared, ScriptInput } from './chat-types';
 import { prepareAgentScope } from './agent-repositories';
 import { publishScope, publishScopeGuidance, publishTarget, verifyPublishMedia } from './publish-scope';
 import type { Transcriptions } from './transcriptions';
+import { prepareSetupChat } from './setup-chat';
 
 export class ChatPreparation {
   constructor(
@@ -27,6 +28,8 @@ export class ChatPreparation {
     state: { filesTouched: boolean },
     script?: ScriptInput,
   ): Promise<Prepared> {
+    if (session.topic.startsWith('setup:'))
+      return prepareSetupChat(this.store, this.agent, session, request, this.notify, this.media);
     if (request.handoff) {
       if (session.topic !== 'clip' || !session.scope.videoId || !session.scope.clipId)
         throw new AppFault({ id: 'untrustedRequest' });

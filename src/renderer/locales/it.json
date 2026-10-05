@@ -417,5 +417,8 @@
   "audioDialog": "Dialogo",
   "audioMusic": "Musica",
   "audioSoundEffect": "Effetto sonoro",
-  "audioCategoryHelp": "I dialoghi vengono trascritti con indicazioni temporali. Musica ed effetti sonori vengono classificati senza trascrizione."
+  "audioCategoryHelp": "I dialoghi vengono trascritti con indicazioni temporali. Musica ed effetti sonori vengono classificati senza trascrizione.",
+  "installAi": "Chiedi all’<ai>IA</ai> di installarlo",
+  "installationMode": "Installa su questo computer",
+  "installationAccessHelp": "Inviando in modalità installazione, concedi all’IA l’accesso per installare strumenti e competenze su questo computer. Controlla il messaggio prima di inviarlo."
 }

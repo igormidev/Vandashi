@@ -114,15 +114,30 @@ the permanent live region keeps error feedback accessible while a modal remains 
 
 Prerequisite checks require fresh Codex discovery of the exact `hyperframes` core skill
 with valid name/path and explicit enabled status. Filesystem presence cannot prove readiness;
-failed discovery remains unverified. Missing skills link to external installation guidance
-because global setup exceeds the repository-only repair sandbox. The bundled runtime and
-host media tools likewise require external setup; no current check advertises an AI repair
-for an unreachable installation path. Git recovery failures retain their original details
-and route to external recovery without weakening clean preflight. The generic prepared,
-unsent repair composer is reserved for a future verified repository-writable repair target,
-and requires a successful Codex check; failed revalidation hides an existing repair pane.
+failed discovery remains unverified. Missing FFmpeg, FFprobe, rendering Chrome and the core
+skill offer an app-owned installation request only with verified usable Codex and a workspace.
+Other failures retain their guides, including bundled-runtime and Git recovery failures.
 
-Use the installed Codex harness and its app-server protocol. Models and reasoning levels come from the live server. Conversation IDs persist per context. Read mode is enforced by the harness sandbox. A global operation lease spans foreground chat, metadata generation, commit generation, script synchronization, and publishing. Prompts repeat required context each turn. Every edit operation captures Git checkpoints across affected repositories. Completion reconciles commits, including interrupted runs. Undo verifies a recoverable Codex turn and Git checkpoint before touching either, preserving a backup ref.
+Installation chats use allowlisted `setup:` topics and `StoragePort.setupWorkspace`, a
+canonical app-owned directory separate from creative repositories. The application derives
+`AgentThreadOptions.purpose = host-setup` from the stored topic, never from request text or
+renderer-supplied sandbox configuration. The composer identifies install mode and explains
+host access before the user sends the editable request. Edit setup uses Codex full host access;
+read setup retains the OS read-only policy and disabled external integrations. Connections
+restart when purpose or mode changes, so a project turn cannot inherit setup permissions.
+The prompt uses the exact bundled Hyperframes CLI for browser setup. Fresh account readiness
+is checked again at send time. This exception is host setup, not a project repair path.
+
+Setup preserves conversation history through failure/uncertain starts, awaits provider
+configuration shutdown so fresh checks see installed/enabled skills, and uses the same global
+lease through final persistence. It produces no project Git receipt/checkpoint. Git Undo is
+unavailable with a localized explanation because host installation effects are external.
+`chat-settled` follows recovery, persistence and lease release for every chat purpose. Checks
+listens for matching full scopes, runs its owned fresh request, retains the left chat through
+rechecks/failure, and disables the entire right checklist while AI runs. Only verified all-ready
+results followed by workspace adoption/transcription preparation allow navigation.
+
+Use the installed Codex harness and its app-server protocol. Models and reasoning levels come from the live server. Conversation IDs persist per context. Read mode is enforced by the harness sandbox. A global operation lease spans foreground chat, metadata generation, commit generation, script synchronization, and publishing. Prompts repeat required context each turn. Every project edit operation captures Git checkpoints across affected repositories. Completion reconciles commits, including interrupted runs. Undo verifies a recoverable Codex turn and Git checkpoint before touching either, preserving a backup ref.
 
 An AI operation whose writable root contains the parent video also includes all registered
 child repositories in clean preflight, checkpoints, reconciliation, receipts, and Undo. This

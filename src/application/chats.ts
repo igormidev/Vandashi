@@ -163,7 +163,14 @@ export class Chats {
             diagnostic: diagnosticFromError(error),
           });
         })
-        .finally(release);
+        .finally(() => {
+          release();
+          this.notify({
+            type: 'chat-settled',
+            scope: prepared.session.scope,
+            sessionId: prepared.session.id,
+          });
+        });
     });
   }
   private async execute(
@@ -259,6 +266,13 @@ export class Chats {
       if (!lifecycle.started && !uncertainStart) {
         await prepared.rollback();
         await this.store.saveSession(original);
+      } else if (prepared.input.purpose === 'host-setup') {
+        // Host installs have no Git receipt or reversible project checkpoint.
+        await this.agent.refreshConfiguration?.();
+        session.checkpoints = original.checkpoints ?? [];
+        session.updatedAt = new Date().toISOString();
+        await this.store.saveSession(session);
+        finalSaved = true;
       } else {
         const transcriptions = this.transcriptions;
         this.notify({
@@ -309,7 +323,8 @@ export class Chats {
       type: 'activity',
       activity: { sessionId: session.id, phase: failed ? 'error' : 'done', detail: '' },
     });
-    this.notify({ type: 'workspace-changed', scope: session.scope });
+    if (prepared.input.purpose !== 'host-setup')
+      this.notify({ type: 'workspace-changed', scope: session.scope });
     if (!lifecycle.started) rejected(startError ?? new AppFault({ id: 'appConversationStartFailed' }));
   }
   undo(id: string): Promise<ChatSession> {

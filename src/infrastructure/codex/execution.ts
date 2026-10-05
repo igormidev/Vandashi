@@ -5,16 +5,20 @@ import { object, string, turnResponse, turnSchema } from './schemas';
 import type { RpcClient } from './transport';
 import { RpcError } from './transport';
 
-export function sandboxPolicy(input: Pick<AgentRunInput, 'mode' | 'writableRoots'>): Record<string, unknown> {
+export function sandboxPolicy(
+  input: Pick<AgentRunInput, 'mode' | 'writableRoots' | 'purpose'>,
+): Record<string, unknown> {
   return input.mode === 'read'
     ? { type: 'readOnly', networkAccess: true }
-    : {
-        type: 'workspaceWrite',
-        writableRoots: input.writableRoots,
-        networkAccess: true,
-        excludeTmpdirEnvVar: false,
-        excludeSlashTmp: false,
-      };
+    : input.purpose === 'host-setup'
+      ? { type: 'dangerFullAccess' }
+      : {
+          type: 'workspaceWrite',
+          writableRoots: input.writableRoots,
+          networkAccess: true,
+          excludeTmpdirEnvVar: false,
+          excludeSlashTmp: false,
+        };
 }
 export function turnInput(input: AgentRunInput, supportsImages: boolean): Record<string, unknown>[] {
   const attached = input.attachments.length

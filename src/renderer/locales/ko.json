@@ -417,5 +417,8 @@
   "audioDialog": "대화",
   "audioMusic": "음악",
   "audioSoundEffect": "효과음",
-  "audioCategoryHelp": "대화는 타임스탬프와 함께 텍스트로 변환합니다. 음악과 효과음은 유형만 지정합니다."
+  "audioCategoryHelp": "대화는 타임스탬프와 함께 텍스트로 변환합니다. 음악과 효과음은 유형만 지정합니다.",
+  "installAi": "<ai>AI</ai>에게 설치 요청",
+  "installationMode": "이 컴퓨터에 설치",
+  "installationAccessHelp": "설치 모드에서 메시지를 보내면 AI가 이 컴퓨터에 도구와 스킬을 설치할 수 있습니다. 보내기 전에 메시지를 확인하세요."
 }
