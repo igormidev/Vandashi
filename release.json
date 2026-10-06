@@ -1,4 +1,7 @@
 {
-  "version": "0.1.15",
-  "notes": ["Show real installed app icons and neutral platform text in the browser picker."]
+  "version": "0.1.16",
+  "notes": [
+    "Show real installed app icons and neutral platform text in the browser picker.",
+    "Clarify that AI installation uses static checks and builds without full test suites."
+  ]
 }
