@@ -16,6 +16,10 @@ sources are uploaded to a draft; publication happens last. Published versions
 are immutable: fixes need another version. An interrupted draft can resume only
 for the same commit. PRs and manual verification runs do not publish.
 
+Each platform verification job has a 60-minute limit for the complete source,
+native UI, installer and packaged-runtime sequence. A timeout or any failed gate
+prevents publication; extending this budget does not skip verification.
+
 Target keys use Node's platform/architecture names. Installer basenames follow
 Electron Builder: Linux `linux-x64-AppImage` maps to `linux-x86_64.AppImage`,
 while `linux-x64-deb` maps to `linux-amd64.deb`. Discovery validates the entire

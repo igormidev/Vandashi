@@ -10,6 +10,7 @@ import type {
 } from '../../src/domain/models';
 import { defaultSettings, platforms } from '../../src/domain/defaults';
 import type { Diagnostic } from '../../src/domain/diagnostics';
+import type { InstalledBrowser } from '../../src/domain/browsers';
 
 export interface ChatFixtureOptions {
   extraTopics?: { topic: string; title: string }[];
@@ -32,6 +33,7 @@ export interface ChatFixtureOptions {
   staleParent?: boolean;
   chatMediaUrls?: Record<string, string>;
   delayedFirstOpen?: boolean;
+  installedBrowsers?: InstalledBrowser[];
 }
 
 export function chatFixtureData(video: boolean, options: ChatFixtureOptions) {
@@ -165,6 +167,14 @@ export function chatFixtureData(video: boolean, options: ChatFixtureOptions) {
       threadId: null,
       messages: options.publishCheckpoints?.length
         ? [
+            {
+              id: 'publish-earlier-user',
+              role: 'user',
+              text: 'Keep the earlier publication review',
+              turnId: null,
+              files: [],
+              createdAt: '',
+            },
             {
               id: 'publish-user',
               role: 'user',

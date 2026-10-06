@@ -75,7 +75,7 @@ test('returning from failed video validation does not bypass unfinished brand va
   );
   await page.reload();
   await expect(page.getByRole('button', { name: 'Check again', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await page.locator('.crumb').getByRole('button', { name: 'Chat test brand', exact: true }).click();
   await expect(page.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '50');
   await expect(page.getByRole('heading', { name: 'Preparing your workspace', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Videos', exact: true })).toBeDisabled();

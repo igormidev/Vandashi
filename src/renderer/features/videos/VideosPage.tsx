@@ -27,7 +27,9 @@ export function VideosPage({
     videos: VideoSummary[];
     error: Diagnostic | null;
   }>({ request: null, videos: [], error: null });
-  const request = useMemo(() => ({ api, workspace, attempt }), [api, workspace, attempt]);
+  const brandId = workspace?.scope.brandId;
+  const revision = workspace?.revision;
+  const request = useMemo(() => ({ api, brandId, revision, attempt }), [api, brandId, revision, attempt]);
   const listLoading = list.request !== request;
   const opening = useRef<object | null>(null);
   const [selection, setSelection] = useState<{
@@ -43,11 +45,11 @@ export function VideosPage({
   const [ratio, setRatio] = useState<'16:9' | '9:16'>('16:9');
   const [loading, setLoading] = useState(false);
   useEffect(() => {
-    const { api, workspace } = request;
-    if (!workspace) return;
+    const { api, brandId } = request;
+    if (!brandId) return;
     let disposed = false;
     void pending.current
-      .get(request, 'videos', () => api.listVideos(workspace.scope.brandId))
+      .get(request, 'videos', () => api.listVideos(brandId))
       .then((videos) => {
         if (!disposed) setList({ request, videos, error: null });
       })

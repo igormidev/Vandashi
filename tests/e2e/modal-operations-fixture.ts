@@ -26,10 +26,12 @@ export async function installModalOperationsFixture(
       let session: ChatSession = {
         ...initial,
         messages: [
-          { ...message, id: 'earlier', text: 'Earlier retained answer' },
-          { ...message, id: 'latest', text: 'Latest answer to remove' },
+          { ...message, id: 'first-request', role: 'user', text: 'Keep this earlier request' },
+          { ...message, id: 'earlier', role: 'assistant', text: 'Earlier retained answer' },
+          { ...message, id: 'latest-request', role: 'user', text: 'Review the latest request' },
+          { ...message, id: 'latest', role: 'assistant', text: 'Latest answer to remove' },
         ],
-        checkpoints: [{ turnId: 't1', threadId: 'thread-one', heads: {}, messageCount: 1 }],
+        checkpoints: [{ turnId: 't1', threadId: 'thread-one', heads: {}, messageCount: 2 }],
       };
       const requests: ModalStatus['requests'] = [];
       let pending: {
@@ -93,7 +95,7 @@ export async function installModalOperationsFixture(
           return waitForOperation(method, input, () => {
             session = {
               ...session,
-              messages: method === 'undoChat' ? session.messages.slice(0, 1) : [],
+              messages: method === 'undoChat' ? session.messages.slice(0, 2) : [],
               checkpoints: [],
               threadId: method === 'undoChat' ? 'forked-thread' : null,
             };

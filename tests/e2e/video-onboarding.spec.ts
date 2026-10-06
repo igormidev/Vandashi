@@ -9,8 +9,8 @@ async function onboarding(desktop: ElectronApplication, page: Page) {
   await videoListControl(desktop, { list: 'first' });
   await page.getByRole('button', { name: 'New video', exact: true }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
-  await expect.poll(async () => (await videoListObservation(desktop)).pendingLists).toBe(1);
-  await videoListControl(desktop, { list: 'first' });
+  expect((await videoListObservation(desktop)).pendingLists).toBe(0);
+  expect((await videoListObservation(desktop)).lists).toBe(1);
   await page.getByRole('textbox', { name: 'Project name', exact: true }).fill('Saved project');
 }
 

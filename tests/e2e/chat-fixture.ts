@@ -46,7 +46,8 @@ export async function installChatFixture(
       ipcMain.handle('vandashi:invoke', (_event, method: string, args: unknown[]) => {
         calls.push(method);
         const input = args[0];
-        if (method === 'queuedChats' || method === 'installedBrowsers') return [];
+        if (method === 'queuedChats') return [];
+        if (method === 'installedBrowsers') return fixture.options.installedBrowsers ?? [];
         if (method === 'prepareTranscriptions') return { status: 'ready' };
         if (method === 'prepareTranscriptionModel') return undefined;
         if (method === 'getUpdateState') return fixture.updateState;
@@ -307,10 +308,9 @@ export async function installChatFixture(
         }
         if (method === 'history') {
           const request = input as { page: number };
-          const history = fixture.options.history ?? [];
           return {
-            commits: history.slice(request.page * 12, request.page * 12 + 12),
-            hasMore: history.length > (request.page + 1) * 12,
+            commits: (fixture.options.history ?? []).slice(request.page * 12, request.page * 12 + 12),
+            hasMore: (fixture.options.history?.length ?? 0) > (request.page + 1) * 12,
           };
         }
         if (method === 'startStudio') return { url: 'about:blank', previewUrl: 'about:blank' };

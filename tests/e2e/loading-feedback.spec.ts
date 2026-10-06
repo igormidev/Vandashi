@@ -151,6 +151,7 @@ test('opening a brand signals its row, prevents duplicate selection and clears a
 }) => {
   await installChatFixture(desktopApp);
   await page.reload();
+  await expect(page.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue('Chat test brand');
   await page.getByRole('button', { name: 'Vandashi', exact: true }).click();
   await installFeedbackHolds(desktopApp, ['openBrand']);
   const brand = page.locator('.brand-row');

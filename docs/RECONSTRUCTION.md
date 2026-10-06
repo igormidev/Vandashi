@@ -68,5 +68,22 @@ is reused; it is not reconstructed from invented timing. Queued messages are in-
 External picker files need renewed native selection after a new app process; retaining a
 draft path never grants access. Pasted images use independently revalidated owned records.
 
-This source version is not a published installer/update. Platform packaging, signing,
-notarization and release publication remain subject to the existing release contract.
+Installer availability is established by a complete published GitHub Release, rather
+than this source record. Platform packaging, signing, notarization and publication
+remain subject to the existing release contract.
+
+## Native release follow-up
+
+The first release matrix exposed a Windows preview boundary and stale UI fixtures.
+Text/PDF previews now validate the selected and opened regular-file identity before
+reading, then recheck both the descriptor and path after reading; the protection no
+longer depends on `O_NOFOLLOW` support. Video-library requests use brand identity,
+workspace revision and explicit retry, so adopting an unchanged workspace does not
+launch another repairing read. Brand description help remains an accessible description
+separate from its stable field label.
+
+Native regression fixtures now exercise independent Brand saves, individual packaging
+titles, installed-browser selection, history-eligible Undo, explicit audio categories
+and the editable queued-chat composer. Actual Git settlement retains bounded waits on
+slower runners. All three platform jobs retain the complete release gates with a
+60-minute budget.

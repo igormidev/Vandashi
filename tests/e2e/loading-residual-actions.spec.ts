@@ -191,17 +191,21 @@ test('cancelled commit dialog keeps the real busy header visible at minimum widt
   });
   await page.reload();
   await page.getByRole('textbox', { name: 'Name', exact: true }).fill('Keep this draft');
-  await page.getByRole('button', { name: 'Save changes', exact: true }).click();
+  await page
+    .locator('.brand-panel .form-section')
+    .first()
+    .getByRole('button', { name: 'Save changes', exact: true })
+    .click();
   const dialog = page.getByRole('dialog', { name: 'Save a version', exact: true });
   await expect(dialog.locator('.commit-generation svg.spin')).toBeVisible();
   await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
   await expect(dialog).toHaveCount(0);
-  await expect(page.locator('.status')).toHaveAttribute('aria-busy', 'true');
-  await expect(page.locator('.status')).toBeVisible();
-  await expect(page.locator('.status')).toHaveText('Working…');
+  const settings = page.getByRole('button', { name: 'Settings', exact: true });
+  await expect(settings).toHaveAttribute('aria-busy', 'true');
+  await expect(settings).toBeVisible();
+  await expect(settings).toHaveCSS('color', 'rgb(240, 194, 90)');
   await expect(page.getByRole('textbox', { name: 'Name', exact: true })).toBeDisabled();
   await startupControl(desktopApp, { release: 'suggestCommit' });
-  await expect(page.locator('.status')).toHaveAttribute('aria-busy', 'false');
-  await expect(page.locator('.status')).toBeHidden();
+  await expect(settings).toHaveAttribute('aria-busy', 'false');
   await expect(page.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue('Keep this draft');
 });

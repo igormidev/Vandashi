@@ -186,9 +186,7 @@ for (const consumer of ['brand', 'packaging', 'shared-asset', 'video-asset'] as 
     await page.reload();
     await proveDevelopment(page);
     if (consumer === 'brand') {
-      await page
-        .getByRole('textbox', { name: 'What is it about?', exact: true })
-        .fill('Reviewed brand direction.');
+      await page.getByRole('textbox', { name: 'Description', exact: true }).fill('Reviewed brand direction.');
     } else if (consumer === 'packaging') {
       await page.getByRole('textbox', { name: 'Titles', exact: true }).fill('Reviewed video title');
     } else {
@@ -199,7 +197,9 @@ for (const consumer of ['brand', 'packaging', 'shared-asset', 'video-asset'] as 
       await page.locator('.asset-tile').click();
       await page.getByRole('textbox', { name: 'Asset title', exact: true }).fill('Reviewed artwork');
     }
-    await page.getByRole('button', { name: 'Save changes', exact: true }).click();
+    await (consumer === 'brand' ? page.locator('.brand-panel .form-section').first() : page)
+      .getByRole('button', { name: 'Save changes', exact: true })
+      .click();
     const dialog = page.getByRole('dialog', { name: 'Save a version', exact: true });
     await expect
       .poll(
@@ -239,7 +239,11 @@ test('commit generation retains visible feedback with reduced motion and permits
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.reload();
   await page.getByRole('textbox', { name: 'Name', exact: true }).fill('Updated brand');
-  await page.getByRole('button', { name: 'Save changes', exact: true }).click();
+  await page
+    .locator('.brand-panel .form-section')
+    .first()
+    .getByRole('button', { name: 'Save changes', exact: true })
+    .click();
   const dialog = page.getByRole('dialog', { name: 'Save a version', exact: true });
   const status = dialog.getByRole('status');
   await expect(status).toHaveText('Writing a commit message…');
@@ -267,12 +271,21 @@ test('cancelled commit generation cannot resurrect its dialog or discard the man
   await installStartupFixture(desktopApp, rendererUrl, false, false);
   await page.reload();
   await page.getByRole('textbox', { name: 'Name', exact: true }).fill('Keep this draft');
-  await page.getByRole('button', { name: 'Save changes', exact: true }).click();
+  await page
+    .locator('.brand-panel .form-section')
+    .first()
+    .getByRole('button', { name: 'Save changes', exact: true })
+    .click();
   const dialog = page.getByRole('dialog', { name: 'Save a version', exact: true });
   await expectCommitLoading(dialog);
   await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
   await startupControl(desktopApp, { release: 'suggestCommit' });
   await expect(dialog).toHaveCount(0);
   await expect(page.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue('Keep this draft');
-  await expect(page.getByRole('button', { name: 'Save changes', exact: true })).toBeEnabled();
+  await expect(
+    page
+      .locator('.brand-panel .form-section')
+      .first()
+      .getByRole('button', { name: 'Save changes', exact: true }),
+  ).toBeEnabled();
 });

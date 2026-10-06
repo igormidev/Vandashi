@@ -65,7 +65,7 @@ for (const operation of ['undoChat', 'resetChat'] as const) {
     if (operation === 'undoChat') {
       await expect(page.getByText('Earlier retained answer', { exact: true })).toBeVisible();
       await expect(composer).toHaveText('Keep the unsent direction');
-      await expect(page.getByRole('button', { name: 'Revert last change', exact: true })).toBeDisabled();
+      await expect(page.getByRole('button', { name: 'Revert last change', exact: true })).toHaveCount(0);
     } else {
       await expect(page.getByText('Earlier retained answer', { exact: true })).toHaveCount(0);
       await expect(composer).toHaveText('');

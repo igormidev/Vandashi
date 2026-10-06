@@ -17,7 +17,11 @@ test('shows commit-generation diagnostics and still saves a manually reviewed co
   });
   await page.reload();
   await page.getByRole('textbox', { name: 'Name', exact: true }).fill('Manual fallback brand');
-  await page.getByRole('button', { name: 'Save changes', exact: true }).click();
+  await page
+    .locator('.brand-panel .form-section')
+    .first()
+    .getByRole('button', { name: 'Save changes', exact: true })
+    .click();
   const dialog = page.getByRole('dialog', { name: 'Save a version', exact: true });
   await expect(dialog.getByRole('alert')).toContainText('Could not generate a commit message.');
   await expect(dialog.getByRole('alert')).toContainText('Provider quota is temporarily exhausted.');
@@ -56,6 +60,7 @@ test('shows asset-inspection diagnostics and keeps manual metadata import availa
   await page.getByRole('navigation').getByRole('button', { name: 'Shared assets', exact: true }).click();
   await page.getByRole('button', { name: 'Add assets', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Add to library', exact: true });
+  await dialog.getByRole('combobox').selectOption('dialog');
   await expect(dialog.getByRole('alert')).toContainText('Speech model download failed (503).');
   await expect(dialog.getByRole('alert')).toContainText('The model host is temporarily unavailable.');
   await expect(dialog).not.toContainText('VANDASHI_DIAGNOSTIC');

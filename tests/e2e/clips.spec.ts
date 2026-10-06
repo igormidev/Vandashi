@@ -135,7 +135,7 @@ test('trims real media, keeps the initial conversation through packaging edits, 
   await expect(page.getByRole('region', { name: 'Clip packaging', exact: true })).toHaveCount(0);
   await expect(page.getByRole('textbox', { name: 'AI chat', exact: true })).toHaveAttribute(
     'aria-disabled',
-    'true',
+    'false',
   );
   await finishClip(desktopApp);
   await expect(page.getByRole('region', { name: 'Clip packaging', exact: true })).toBeVisible();

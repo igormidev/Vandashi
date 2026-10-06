@@ -152,10 +152,12 @@ export function BrandPage() {
                 </div>
               </div>
               <label className="field">
-                <span>
+                <span id="brand-description-help">
                   {t('description')} <span className="muted">{t('brandDescriptionHelp')}</span>
                 </span>
                 <textarea
+                  aria-label={t('description')}
+                  aria-describedby="brand-description-help"
                   value={config.description}
                   onChange={(event) => {
                     setConfig({ ...config, description: event.target.value });

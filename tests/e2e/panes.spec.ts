@@ -6,7 +6,13 @@ for (const video of [false, true]) {
     desktopApp,
     page,
   }) => {
-    await installChatFixture(desktopApp, video, { references: true });
+    await installChatFixture(desktopApp, video, {
+      references: true,
+      installedBrowsers: [
+        { name: 'Chrome', icon: null },
+        { name: 'Safari', icon: null },
+      ],
+    });
     await desktopApp.evaluate(({ BrowserWindow }) => {
       BrowserWindow.getAllWindows()[0]?.setContentSize(1200, 700);
     });
@@ -21,10 +27,16 @@ for (const video of [false, true]) {
       .poll(() => panel.evaluate((element) => element.scrollWidth - element.clientWidth))
       .toBeLessThanOrEqual(1);
     if (!video) {
-      const browser = page.getByRole('textbox', { name: 'YouTube Browser', exact: true });
-      await browser.fill('Arc');
-      await expect(browser).toHaveValue('Arc');
-      await page.getByRole('button', { name: 'Discard changes', exact: true }).click();
+      const browser = page.getByRole('button', { name: 'Where is YouTube logged in?', exact: true });
+      await browser.click();
+      await page.getByRole('dialog').getByRole('button', { name: 'Safari', exact: true }).click();
+      await expect(browser).toContainText('Safari');
+      await page
+        .locator('.brand-panel .form-section')
+        .first()
+        .getByRole('button', { name: 'Discard changes', exact: true })
+        .click();
+      await expect(browser).toContainText('Chrome');
     }
     await divider.focus();
     for (let index = 0; index < 25; index++) await divider.press('ArrowLeft');

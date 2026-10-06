@@ -9,21 +9,46 @@ test('restores brand drafts after cancel and accepts a reviewed manual commit wh
 }) => {
   await installChatFixture(desktopApp, false, { references: true, commitFails: true });
   await page.reload();
-  await page.getByRole('textbox', { name: 'Name', exact: true }).fill('Quiet Stories');
+  const name = page.getByRole('textbox', { name: 'Name', exact: true });
+  await name.fill('Quiet Stories');
+  const attributesSave = page
+    .locator('.brand-panel .form-section')
+    .first()
+    .getByRole('button', { name: 'Save changes', exact: true });
+  await attributesSave.click();
+  let dialog = page.getByRole('dialog', { name: 'Save a version', exact: true });
+  await expect(dialog.getByRole('textbox', { name: 'Commit title', exact: true })).toHaveValue('');
+  await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(name).toHaveValue('Quiet Stories');
+  await attributesSave.click();
+  dialog = page.getByRole('dialog', { name: 'Save a version', exact: true });
+  await dialog.getByRole('textbox', { name: 'Commit title', exact: true }).fill('Rename the brand');
+  await dialog
+    .getByRole('textbox', { name: 'What changed', exact: true })
+    .fill('Use the reviewed brand name.');
+  await dialog.getByRole('button', { name: 'Save changes', exact: true }).click();
+  await expect(dialog).toBeHidden();
   const guide = page.getByRole('textbox', { name: 'Visual identity', exact: true });
   await guide.fill('Keep the opening calm.\nUse one accent color.');
-  await page.getByRole('button', { name: 'Increase text size', exact: true }).click();
+  await page
+    .locator('.brand-panel .editor-toolbar')
+    .getByRole('button', { name: 'Increase text size', exact: true })
+    .click();
   await expect(guide).toHaveCSS('font-size', '13px');
   await expect(page.getByRole('button', { name: 'Videos', exact: true })).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Send message', exact: true })).toBeDisabled();
-  await page.getByRole('button', { name: 'Save changes', exact: true }).click();
-  let dialog = page.getByRole('dialog', { name: 'Save a version', exact: true });
+  const directionSave = page
+    .locator('.brand-panel .form-section')
+    .nth(1)
+    .getByRole('button', { name: 'Save changes', exact: true });
+  await directionSave.click();
+  dialog = page.getByRole('dialog', { name: 'Save a version', exact: true });
   await expect(dialog.getByRole('textbox', { name: 'Commit title', exact: true })).toBeEnabled();
   await expect(dialog.getByRole('textbox', { name: 'Commit title', exact: true })).toHaveValue('');
   await expect(dialog.getByRole('button', { name: 'Save changes', exact: true })).toBeDisabled();
   await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
   await expect(guide).toHaveValue('Keep the opening calm.\nUse one accent color.');
-  await page.getByRole('button', { name: 'Save changes', exact: true }).click();
+  await directionSave.click();
   dialog = page.getByRole('dialog', { name: 'Save a version', exact: true });
   await dialog.getByRole('textbox', { name: 'Commit title', exact: true }).fill('Refine visual identity');
   await dialog
@@ -31,14 +56,13 @@ test('restores brand drafts after cancel and accepts a reviewed manual commit wh
     .fill('Use a calm opening and a single accent color.');
   await dialog.getByRole('button', { name: 'Save changes', exact: true }).click();
   await expect(dialog).not.toBeVisible();
-  await expect(page.getByRole('button', { name: 'Save changes', exact: true })).toBeDisabled();
+  await expect(directionSave).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Videos', exact: true })).toBeEnabled();
   await expect(guide).toHaveValue('Keep the opening calm.\nUse one accent color.');
   expect(await chatRequests(desktopApp)).toContainEqual(
     expect.objectContaining({
       method: 'saveWorkspace',
       input: expect.objectContaining({
-        brandConfig: expect.objectContaining({ name: 'Quiet Stories' }),
         documents: [expect.objectContaining({ content: 'Keep the opening calm.\nUse one accent color.' })],
       }),
     }),
@@ -62,15 +86,20 @@ test('retains separate long and short packaging drafts through commit confirmati
     .hover();
   await expect(page.getByRole('tooltip').locator('strong')).toHaveText('main thumbnail');
   await page.keyboard.press('Escape');
-  await page.getByRole('textbox', { name: 'Titles', exact: true }).fill('A hidden city\nThe city beneath us');
+  await page.getByRole('textbox', { name: 'Titles', exact: true }).fill('A hidden city');
+  await page.getByRole('button', { name: 'Add title', exact: true }).click();
+  await page.getByRole('textbox', { name: 'Titles', exact: true }).nth(1).fill('The city beneath us');
   await page.getByRole('button', { name: 'Short form', exact: true }).click();
   await expect(page.getByRole('textbox', { name: 'Titles', exact: true })).toHaveValue('Short title');
   await page
     .getByRole('textbox', { name: 'Description', exact: true })
     .fill('A glimpse beneath the surface.');
   await page.getByRole('button', { name: 'Long form', exact: true }).click();
-  await expect(page.getByRole('textbox', { name: 'Titles', exact: true })).toHaveValue(
-    'A hidden city\nThe city beneath us',
+  await expect(page.getByRole('textbox', { name: 'Titles', exact: true }).nth(0)).toHaveValue(
+    'A hidden city',
+  );
+  await expect(page.getByRole('textbox', { name: 'Titles', exact: true }).nth(1)).toHaveValue(
+    'The city beneath us',
   );
   await expect(page.getByRole('button', { name: 'Creation workspace', exact: true })).toBeDisabled();
   await page.getByRole('button', { name: 'Save changes', exact: true }).click();

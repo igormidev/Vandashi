@@ -1,8 +1,7 @@
 {
-  "version": "0.1.11",
+  "version": "0.1.12",
   "notes": [
-    "Restore recovered Brand, asset and chat editing workflows.",
-    "Add editing presets, local file previews and queued follow-up messages.",
-    "Preserve legacy libraries and verify pasted-image ownership."
+    "Restore brand controls, chat attachments, asset tools, and editing presets.",
+    "Improve file preview protection and workspace loading."
   ]
 }

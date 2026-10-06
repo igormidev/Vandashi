@@ -63,6 +63,7 @@ test('imports an MP3 through native grants and plays and seeks its embedded copy
         description: 'A synthetic six-second tone for playback verification.',
         tags: ['audio', 'verification'],
         kind: 'audio',
+        audioCategory: 'sound-effect',
       },
     });
   }, brand.id);

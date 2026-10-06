@@ -49,17 +49,23 @@ describe('explicit chat queue', () => {
     expect(f.runs).toHaveLength(1);
     expect(await f.api.queuedChats(f.session.id)).toHaveLength(2);
     f.runs[0]?.finish();
-    await vi.waitFor(() => {
-      expect(f.runs).toHaveLength(2);
-    });
+    await vi.waitFor(
+      () => {
+        expect(f.runs).toHaveLength(2);
+      },
+      { timeout: 30_000 },
+    );
     expect(f.runs[1]?.prompt).toContain('Second');
     expect(
       (await f.store.getSession(f.session.id)).messages.filter((message) => message.text === 'First'),
     ).toHaveLength(1);
     f.runs[1]?.finish();
-    await vi.waitFor(() => {
-      expect(f.runs).toHaveLength(3);
-    });
+    await vi.waitFor(
+      () => {
+        expect(f.runs).toHaveLength(3);
+      },
+      { timeout: 30_000 },
+    );
     expect(f.runs[2]?.prompt).toContain('Third');
     f.runs[2]?.finish();
     await f.idle();
@@ -70,9 +76,12 @@ describe('explicit chat queue', () => {
     await f.api.sendChat({ ...f.request, text: 'First' });
     await f.api.queueChat({ ...f.request, clientMessageId: crypto.randomUUID(), text: 'Review this after' });
     f.runs[0]?.finish('failed');
-    await vi.waitFor(async () => {
-      expect((await f.api.queuedChats(f.session.id))[0]?.failed).toBe(true);
-    });
+    await vi.waitFor(
+      async () => {
+        expect((await f.api.queuedChats(f.session.id))[0]?.failed).toBe(true);
+      },
+      { timeout: 30_000 },
+    );
     expect(f.runs).toHaveLength(1);
     const entry = (await f.api.queuedChats(f.session.id))[0];
     if (!entry) throw new Error('Missing retained draft');

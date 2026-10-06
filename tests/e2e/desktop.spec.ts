@@ -141,7 +141,14 @@ test('native picker grants authorize real imports and media stays confined to th
     if (!sourcePath) throw new Error('Missing audio selection');
     const asset = await window.vandashi.importAsset({
       scope,
-      draft: { sourcePath, title: 'Audio', description: '', tags: [], kind: 'audio' },
+      draft: {
+        sourcePath,
+        title: 'Audio',
+        description: '',
+        tags: [],
+        kind: 'audio',
+        audioCategory: 'sound-effect',
+      },
     });
     return window.vandashi.assetWaveform({ scope, assetId: asset.id });
   }, scope);
