@@ -38,5 +38,6 @@
   "platforms": "macOS、Windows、Linux向けに開発。",
   "license": "ソースコードのMITライセンス",
   "notices": "サードパーティーの権利表記",
-  "status": "検証状況"
+  "status": "検証状況",
+  "screenshotDate": "2026年9月23日 · 以前のインターフェース"
 }

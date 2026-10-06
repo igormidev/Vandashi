@@ -293,5 +293,7 @@
   "appTranscriptionChoiceStale": "O áudio mudou após a revisão. Escolha o tipo novamente.",
   "appTranscriptionInvalid": "Os metadados de transcrição são inválidos. Tente gerá-los novamente.",
   "appInstallDependency": "Instale {{name}} para o Vandashi neste computador. Verifique a configuração atual, siga as instruções oficiais e confirme que o Vandashi consegue usar essa dependência. Preserve meus projetos e configurações existentes.",
-  "appSetupUndoUnavailable": "Instalações no computador não podem ser revertidas com o Desfazer do Git. A conversa de instalação será preservada."
+  "appSetupUndoUnavailable": "Instalações no computador não podem ser revertidas com o Desfazer do Git. A conversa de instalação será preservada.",
+  "desktopPreviewInvalid": "Não foi possível visualizar esta imagem ou documento. Escolha um arquivo válido.",
+  "appPresetConversationMissing": "O preset desta conversa não existe mais. Escolha outro preset."
 }

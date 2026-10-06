@@ -7,6 +7,9 @@ export class OperationGate {
   get busy(): boolean {
     return this.owner !== null;
   }
+  owns(owner: string): boolean {
+    return this.owner === owner;
+  }
   get readingWorkspace(): boolean {
     return this.owner === 'workspace-read';
   }

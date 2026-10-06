@@ -17,7 +17,7 @@ function sameLocation(actual: string, expected: string): boolean {
 }
 
 /** Only the app's current top-level document may write; reads and embedded content stay denied. */
-export function rendererMayWriteClipboard(
+function rendererMayUsePermission(
   requestingContents: unknown,
   permission: string,
   details: PermissionFrame,
@@ -25,7 +25,7 @@ export function rendererMayWriteClipboard(
   rendererUrl: string,
 ): boolean {
   if (
-    permission !== 'clipboard-sanitized-write' ||
+    !['clipboard-sanitized-write', 'fullscreen'].includes(permission) ||
     requestingContents !== renderer ||
     details.isMainFrame !== true ||
     !details.requestingUrl
@@ -41,15 +41,30 @@ export function rendererMayWriteClipboard(
   }
 }
 
+/** Clipboard API keeps its narrow write-only contract. */
+export function rendererMayWriteClipboard(
+  requestingContents: unknown,
+  permission: string,
+  details: PermissionFrame,
+  renderer: RendererContents,
+  rendererUrl: string,
+): boolean {
+  return (
+    permission === 'clipboard-sanitized-write' &&
+    rendererMayUsePermission(requestingContents, permission, details, renderer, rendererUrl)
+  );
+}
 export function installRendererPermissions(
   session: Pick<Session, 'setPermissionCheckHandler' | 'setPermissionRequestHandler'>,
   renderer: RendererContents,
   rendererUrl: string,
 ): void {
+  const allowed = (contents: unknown, permission: string, details: PermissionFrame) =>
+    rendererMayUsePermission(contents, permission, details, renderer, rendererUrl);
   session.setPermissionCheckHandler((contents, permission, _origin, details) =>
-    rendererMayWriteClipboard(contents, permission, details, renderer, rendererUrl),
+    allowed(contents, permission, details),
   );
   session.setPermissionRequestHandler((contents, permission, callback, details) => {
-    callback(rendererMayWriteClipboard(contents, permission, details, renderer, rendererUrl));
+    callback(allowed(contents, permission, details));
   });
 }

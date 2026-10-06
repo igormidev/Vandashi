@@ -1,3 +1,4 @@
+import type { PresetSave } from './presets';
 import type {
   AppState,
   AspectRatio,
@@ -86,7 +87,11 @@ export interface AgentScopePaths {
 
 /** Persistence contracts contain no Electron or provider-specific dependencies. */
 export interface StoragePort {
+  preparePresetLibrary?(scope: Scope): Promise<void>;
+  ensurePresets?(scope: Scope): Promise<Workspace>;
+  savePreset?(input: PresetSave): Promise<Workspace>;
   setupWorkspace(): Promise<string>;
+  assetGenerationStage?(scope: Scope): Promise<{ path: string; discard: () => Promise<void> }>;
   getState(): Promise<AppState>;
   settings(settings: Settings): Promise<void>;
   createBrand(input: { parentPath: string; name: string }): Promise<Brand>;

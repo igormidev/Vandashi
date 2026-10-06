@@ -1,13 +1,26 @@
-import { ImagePlus, Minus, Plus, RotateCcw } from 'lucide-react';
+import { ImagePlus, Minus, Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { platforms } from '../../../domain/defaults';
 import { useApp } from '../../app/store';
 import { AiButton, IconButton } from '../../shared/ui';
 import { PlatformIcon } from '../../shared/PlatformIcon';
 import { CommitDialog } from '../history/CommitDialog';
 import { TasteIcon } from './TasteIcon';
 import { tasteLabelKey } from '../../locales/taste-labels';
+import type { InstalledBrowser } from '../../../domain/browsers';
+import { BrowserPicker } from './BrowserPicker';
+import { SectionActions } from './SectionActions';
+import type { Platform } from '../../../domain/models';
+const brandPlatforms: Platform[] = [
+  'youtube',
+  'tiktok',
+  'instagram',
+  'x',
+  'facebook',
+  'threads',
+  'odysee',
+  'rumble',
+];
 
 export function BrandPage() {
   const { t } = useTranslation();
@@ -17,10 +30,26 @@ export function BrandPage() {
   const [logo, setLogo] = useState<{ path: string; revision: string; url: string } | null>(null);
   const [active, setActive] = useState(0);
   const [fontSize, setFontSize] = useState(12);
-  const [confirm, setConfirm] = useState(false);
-  const dirty =
-    JSON.stringify(config) !== JSON.stringify(workspace?.brand.config) ||
-    JSON.stringify(documents) !== JSON.stringify(workspace?.documents ?? []);
+  const [confirm, setConfirm] = useState<'attributes' | 'direction' | null>(null);
+  const [showAll, setShowAll] = useState(false);
+  const [browsers, setBrowsers] = useState<InstalledBrowser[] | null>(null);
+  useEffect(() => {
+    let current = true;
+    void api.installedBrowsers().then(
+      (result) => {
+        if (current) setBrowsers(result);
+      },
+      () => {
+        if (current) setBrowsers(null);
+      },
+    );
+    return () => {
+      current = false;
+    };
+  }, [api, workspace?.brand.id]);
+  const attributesDirty = JSON.stringify(config) !== JSON.stringify(workspace?.brand.config);
+  const directionDirty = JSON.stringify(documents) !== JSON.stringify(workspace?.documents ?? []);
+  const dirty = attributesDirty || directionDirty;
   useEffect(() => {
     setDirty(dirty);
     return () => {
@@ -68,7 +97,7 @@ export function BrandPage() {
   return (
     <>
       <div className="panel-scroll brand-panel">
-        <fieldset disabled={busy}>
+        <fieldset disabled={busy || directionDirty}>
           <section className="form-section">
             <div className="section-title">
               <h2>{t('brandAttributes')}</h2>
@@ -76,6 +105,17 @@ export function BrandPage() {
                 disabled={dirty || busy}
                 onClick={() => {
                   ask('brand', t('brandAttributes'));
+                }}
+              />
+              <SectionActions
+                dirty={attributesDirty}
+                disabled={busy || directionDirty}
+                invalid={config.name.trim().length < 3}
+                onReset={() => {
+                  setConfig(workspace.brand.config);
+                }}
+                onSave={() => {
+                  setConfirm('attributes');
                 }}
               />
             </div>
@@ -112,7 +152,9 @@ export function BrandPage() {
                 </div>
               </div>
               <label className="field">
-                <span>{t('theme')}</span>
+                <span>
+                  {t('description')} <span className="muted">{t('brandDescriptionHelp')}</span>
+                </span>
                 <textarea
                   value={config.description}
                   onChange={(event) => {
@@ -123,60 +165,80 @@ export function BrandPage() {
               </label>
               <div className="field">
                 <span>{t('platforms')}</span>
-                <div className="platform-fields">
-                  {platforms
-                    .filter((platform) => platform !== 'youtubeShorts')
-                    .map((platform) => (
-                      <div className="platform-field" key={platform}>
-                        <PlatformIcon platform={platform} />
-                        <input
-                          type="url"
-                          aria-label={`${t(platform)} ${t('channelUrl')}`}
-                          placeholder={t(platform)}
-                          value={config.platforms[platform]?.url ?? ''}
-                          onChange={(event) => {
-                            setConfig({
-                              ...config,
-                              platforms: {
-                                ...config.platforms,
-                                [platform]: {
-                                  url: event.target.value,
-                                  browser: config.platforms[platform]?.browser ?? '',
-                                },
+                <p className="muted platform-help">{t('brandPlatformsHelp')}</p>
+                <div className={`platform-fields ${showAll ? 'expanded' : 'collapsed'}`}>
+                  {brandPlatforms.slice(0, showAll ? brandPlatforms.length : 4).map((platform, index) => (
+                    <div
+                      className="platform-field"
+                      key={platform}
+                      inert={!showAll && index === 3}
+                      aria-hidden={!showAll && index === 3}
+                    >
+                      <PlatformIcon platform={platform} />
+                      <input
+                        type="url"
+                        aria-label={`${t(platform)} ${t('channelUrl')}`}
+                        placeholder={t(platform)}
+                        value={config.platforms[platform]?.url ?? ''}
+                        onChange={(event) => {
+                          setConfig({
+                            ...config,
+                            platforms: {
+                              ...config.platforms,
+                              [platform]: {
+                                url: event.target.value,
+                                browser: config.platforms[platform]?.browser ?? '',
                               },
-                            });
-                          }}
-                        />
-                        <input
-                          aria-label={`${t(platform)} ${t('browser')}`}
-                          placeholder={t('browser')}
-                          value={config.platforms[platform]?.browser ?? ''}
-                          onChange={(event) => {
-                            setConfig({
-                              ...config,
-                              platforms: {
-                                ...config.platforms,
-                                [platform]: {
-                                  url: config.platforms[platform]?.url ?? '',
-                                  browser: event.target.value,
-                                },
+                            },
+                          });
+                        }}
+                      />
+                      <BrowserPicker
+                        platform={platform}
+                        browsers={browsers}
+                        value={config.platforms[platform]?.browser ?? ''}
+                        onChange={(browser) => {
+                          setConfig({
+                            ...config,
+                            platforms: {
+                              ...config.platforms,
+                              [platform]: {
+                                url: config.platforms[platform]?.url ?? '',
+                                browser,
                               },
-                            });
-                          }}
-                        />
-                      </div>
-                    ))}
+                            },
+                          });
+                        }}
+                      />
+                    </div>
+                  ))}
                 </div>
+                <button
+                  className="button compact platform-expand"
+                  type="button"
+                  aria-expanded={showAll}
+                  onClick={() => {
+                    setShowAll(!showAll);
+                  }}
+                >
+                  {t(showAll ? 'less' : 'showAllPlatforms')}
+                </button>
               </div>
             </div>
           </section>
+        </fieldset>
+        <fieldset disabled={busy || attributesDirty}>
           <section className="form-section">
             <div className="section-title">
               <h2>{t('creativeDirection')}</h2>
-              <AiButton
-                disabled={dirty || busy}
-                onClick={() => {
-                  if (selected) ask(`taste:${selected.name}`, label);
+              <SectionActions
+                dirty={directionDirty}
+                disabled={busy || attributesDirty}
+                onReset={() => {
+                  setDocuments(workspace.documents);
+                }}
+                onSave={() => {
+                  setConfirm('direction');
                 }}
               />
             </div>
@@ -199,6 +261,12 @@ export function BrandPage() {
               <>
                 <div className="editor-toolbar">
                   <span className="mono">{selected.name}</span>
+                  <AiButton
+                    disabled={dirty || busy}
+                    onClick={() => {
+                      ask(`taste:${selected.name}`, label);
+                    }}
+                  />
                   <IconButton
                     label={t('smallerText')}
                     onClick={() => {
@@ -242,28 +310,6 @@ export function BrandPage() {
           </section>
         </fieldset>
       </div>
-      <div className="savebar">
-        <IconButton
-          label={t('discard')}
-          disabled={!dirty || busy}
-          onClick={() => {
-            setConfig(workspace.brand.config);
-            setDocuments(workspace.documents);
-          }}
-        >
-          <RotateCcw size={15} />
-        </IconButton>
-        <button
-          className="button primary"
-          type="button"
-          disabled={!dirty || busy || config.name.trim().length < 3}
-          onClick={() => {
-            setConfirm(true);
-          }}
-        >
-          {t('save')}
-        </button>
-      </div>
       {confirm && (
         <CommitDialog
           summary={JSON.stringify({
@@ -276,14 +322,17 @@ export function BrandPage() {
             after: { config, documents: changedDocuments },
           })}
           onClose={() => {
-            setConfirm(false);
+            setConfirm(null);
           }}
           onSave={async (commit) => {
             const result = await api.saveWorkspace({
               scope: workspace.scope,
               revision: workspace.revision,
-              brandConfig: config,
-              documents: changedDocuments.map(({ path, content }) => ({ path, content })),
+              brandConfig: confirm === 'attributes' ? config : null,
+              documents: (confirm === 'direction' ? changedDocuments : []).map(({ path, content }) => ({
+                path,
+                content,
+              })),
               packaging: null,
               commit,
             });
@@ -291,7 +340,7 @@ export function BrandPage() {
             setDocuments(result.documents);
             setDirty(false);
             setWorkspace(result);
-            setConfirm(false);
+            setConfirm(null);
           }}
         />
       )}

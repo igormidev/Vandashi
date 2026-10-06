@@ -10,6 +10,8 @@ Vandashi keeps your brand guides, scripts, assets, packaging, and version histor
 
 ![A real Vandashi workspace: the script beside its editable video and version history](docs/screenshots/creation.png)
 
+September 23, 2026 · earlier interface (revision `6795514`).
+
 ## Run from source
 
 Install Node.js 24, Git, and [Codex CLI](https://developers.openai.com/codex/cli/), then sign in with `codex login`.
@@ -45,12 +47,15 @@ Each contextual conversation persists locally. Read-only mode enforces a read-on
 
 ![Shared media with a preview and editable descriptions and tags](docs/screenshots/assets.png)
 
+September 23, 2026 · earlier interface (revision `6795514`).
+
 ## Local files
 
 ```text
 Your brand/
   brand_identity/       # Git repository: channel details and creative guides
   shared_assets/        # Git repository: reusable media and metadata
+  edition_presets/     # Git repository: named editing presets and HOW_TO_USE.md
   videos/
     your-video/         # Independent Git repository
       script.md

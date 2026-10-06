@@ -1,10 +1,11 @@
-import { Clapperboard, File, FileText, Image, Layers, Music, Settings2, Video } from 'lucide-react';
+import { Clapperboard, Folder, File, FileText, Image, Layers, Music, Settings2, Video } from 'lucide-react';
 import type { MentionReference } from './mention-references';
 import { TasteIcon } from '../brands/TasteIcon';
 
 export function ReferenceIcon({ reference }: { reference: MentionReference }) {
   if (reference.kind === 'taste') return <TasteIcon file={reference.name} />;
   const Icon = {
+    preset: Folder,
     script: FileText,
     config: Settings2,
     logo: Image,

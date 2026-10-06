@@ -195,9 +195,16 @@ export class ManualMutation {
       }
     try {
       // Receipts identify intended bytes before installation, which itself can still fail.
-      return await input.mutate((path, hash) => {
+      return await input.mutate((path, hash, installed) => {
         const known = versions.get(path);
         if (!known) throw new AppFault({ id: 'storageWorkspaceConflict' });
+        if (installed === false) {
+          const original = recovery.backups.find((backup) => backup.path === path)?.hash ?? null;
+          versions.set(path, new Set([original]));
+          for (const checkpoint of recovery.checkpoints.values())
+            if (Object.hasOwn(checkpoint.files, path)) checkpoint.files[path] = original;
+          return;
+        }
         known.add(hash);
         for (const checkpoint of recovery.checkpoints.values())
           if (Object.hasOwn(checkpoint.files, path)) checkpoint.files[path] = hash;

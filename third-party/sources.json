@@ -352,6 +352,116 @@
           "sha256": "6d7c9e9d7d12c8d3753bdb24417b84819ba4d6c2f025c37948113d86dc81eef9"
         }
       ]
+    },
+    "@napi-rs/canvas-android-arm64@1.0.10": {
+      "reason": "Native canvas package omits its root MIT license; exact upstream v1.0.10 license matches the installed parent package bytes.",
+      "files": [
+        {
+          "file": "third-party/napi-canvas-LICENSE.txt",
+          "source": "https://raw.githubusercontent.com/Brooooooklyn/canvas/v1.0.10/LICENSE",
+          "sha256": "8802fecf9da4367bc23bcf20b21cc143785fc6c92b152f3fa7fbe6ce08d344d6"
+        }
+      ]
+    },
+    "@napi-rs/canvas-darwin-arm64@1.0.10": {
+      "reason": "Native canvas package omits its root MIT license; exact upstream v1.0.10 license matches the installed parent package bytes.",
+      "files": [
+        {
+          "file": "third-party/napi-canvas-LICENSE.txt",
+          "source": "https://raw.githubusercontent.com/Brooooooklyn/canvas/v1.0.10/LICENSE",
+          "sha256": "8802fecf9da4367bc23bcf20b21cc143785fc6c92b152f3fa7fbe6ce08d344d6"
+        }
+      ]
+    },
+    "@napi-rs/canvas-darwin-x64@1.0.10": {
+      "reason": "Native canvas package omits its root MIT license; exact upstream v1.0.10 license matches the installed parent package bytes.",
+      "files": [
+        {
+          "file": "third-party/napi-canvas-LICENSE.txt",
+          "source": "https://raw.githubusercontent.com/Brooooooklyn/canvas/v1.0.10/LICENSE",
+          "sha256": "8802fecf9da4367bc23bcf20b21cc143785fc6c92b152f3fa7fbe6ce08d344d6"
+        }
+      ]
+    },
+    "@napi-rs/canvas-linux-arm-gnueabihf@1.0.10": {
+      "reason": "Native canvas package omits its root MIT license; exact upstream v1.0.10 license matches the installed parent package bytes.",
+      "files": [
+        {
+          "file": "third-party/napi-canvas-LICENSE.txt",
+          "source": "https://raw.githubusercontent.com/Brooooooklyn/canvas/v1.0.10/LICENSE",
+          "sha256": "8802fecf9da4367bc23bcf20b21cc143785fc6c92b152f3fa7fbe6ce08d344d6"
+        }
+      ]
+    },
+    "@napi-rs/canvas-linux-arm64-gnu@1.0.10": {
+      "reason": "Native canvas package omits its root MIT license; exact upstream v1.0.10 license matches the installed parent package bytes.",
+      "files": [
+        {
+          "file": "third-party/napi-canvas-LICENSE.txt",
+          "source": "https://raw.githubusercontent.com/Brooooooklyn/canvas/v1.0.10/LICENSE",
+          "sha256": "8802fecf9da4367bc23bcf20b21cc143785fc6c92b152f3fa7fbe6ce08d344d6"
+        }
+      ]
+    },
+    "@napi-rs/canvas-linux-arm64-musl@1.0.10": {
+      "reason": "Native canvas package omits its root MIT license; exact upstream v1.0.10 license matches the installed parent package bytes.",
+      "files": [
+        {
+          "file": "third-party/napi-canvas-LICENSE.txt",
+          "source": "https://raw.githubusercontent.com/Brooooooklyn/canvas/v1.0.10/LICENSE",
+          "sha256": "8802fecf9da4367bc23bcf20b21cc143785fc6c92b152f3fa7fbe6ce08d344d6"
+        }
+      ]
+    },
+    "@napi-rs/canvas-linux-riscv64-gnu@1.0.10": {
+      "reason": "Native canvas package omits its root MIT license; exact upstream v1.0.10 license matches the installed parent package bytes.",
+      "files": [
+        {
+          "file": "third-party/napi-canvas-LICENSE.txt",
+          "source": "https://raw.githubusercontent.com/Brooooooklyn/canvas/v1.0.10/LICENSE",
+          "sha256": "8802fecf9da4367bc23bcf20b21cc143785fc6c92b152f3fa7fbe6ce08d344d6"
+        }
+      ]
+    },
+    "@napi-rs/canvas-linux-x64-gnu@1.0.10": {
+      "reason": "Native canvas package omits its root MIT license; exact upstream v1.0.10 license matches the installed parent package bytes.",
+      "files": [
+        {
+          "file": "third-party/napi-canvas-LICENSE.txt",
+          "source": "https://raw.githubusercontent.com/Brooooooklyn/canvas/v1.0.10/LICENSE",
+          "sha256": "8802fecf9da4367bc23bcf20b21cc143785fc6c92b152f3fa7fbe6ce08d344d6"
+        }
+      ]
+    },
+    "@napi-rs/canvas-linux-x64-musl@1.0.10": {
+      "reason": "Native canvas package omits its root MIT license; exact upstream v1.0.10 license matches the installed parent package bytes.",
+      "files": [
+        {
+          "file": "third-party/napi-canvas-LICENSE.txt",
+          "source": "https://raw.githubusercontent.com/Brooooooklyn/canvas/v1.0.10/LICENSE",
+          "sha256": "8802fecf9da4367bc23bcf20b21cc143785fc6c92b152f3fa7fbe6ce08d344d6"
+        }
+      ]
+    },
+    "@napi-rs/canvas-win32-arm64-msvc@1.0.10": {
+      "reason": "Native canvas package omits its root MIT license; exact upstream v1.0.10 license matches the installed parent package bytes.",
+      "files": [
+        {
+          "file": "third-party/napi-canvas-LICENSE.txt",
+          "source": "https://raw.githubusercontent.com/Brooooooklyn/canvas/v1.0.10/LICENSE",
+          "sha256": "8802fecf9da4367bc23bcf20b21cc143785fc6c92b152f3fa7fbe6ce08d344d6"
+        }
+      ]
+    },
+    "@napi-rs/canvas-win32-x64-msvc@1.0.10": {
+      "reason": "Native canvas package omits its root MIT license; exact upstream v1.0.10 license matches the installed parent package bytes.",
+      "files": [
+        {
+          "file": "third-party/napi-canvas-LICENSE.txt",
+          "source": "https://raw.githubusercontent.com/Brooooooklyn/canvas/v1.0.10/LICENSE",
+          "sha256": "8802fecf9da4367bc23bcf20b21cc143785fc6c92b152f3fa7fbe6ce08d344d6"
+        }
+      ]
     }
   }
 }

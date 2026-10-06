@@ -51,6 +51,7 @@ export function useSessions(scope: Scope) {
   }, []);
   const generation = useRef(0);
   const pending = useRef(new Map<string, ChatSession['messages']>());
+  const optimistic = useRef(new Map<string, ChatSession['messages']>());
   const refresh = useCallback(
     async (authoritative = false) => {
       if (!authoritative) hydrationAttempts.current.clear();
@@ -60,7 +61,16 @@ export function useSessions(scope: Scope) {
         if (ticket !== generation.current) return;
         setSessions((current) => {
           const updated = result.map((session) => {
-            if (authoritative) return session;
+            if (authoritative)
+              return {
+                ...session,
+                messages: [
+                  ...session.messages,
+                  ...(optimistic.current.get(session.id) ?? []).filter(
+                    (message) => !session.messages.some((entry) => entry.id === message.id),
+                  ),
+                ],
+              };
             const existing = current.find((entry) => entry.id === session.id);
             return mergeSession(session, {
               ...(existing ?? session),
@@ -206,7 +216,32 @@ export function useSessions(scope: Scope) {
   useEffect(
     () =>
       api.onEvent((event) => {
+        if (event.type === 'chat-pending') {
+          const current = (optimistic.current.get(event.sessionId) ?? []).filter(
+            (message) => message.id !== event.id,
+          );
+          if (event.message) current.push(event.message);
+          optimistic.current.set(event.sessionId, current);
+          setSessions((sessions) =>
+            sessions.map((session) =>
+              session.id === event.sessionId
+                ? {
+                    ...session,
+                    messages: event.message
+                      ? [...session.messages.filter((message) => message.id !== event.id), event.message]
+                      : session.messages.filter((message) => message.id !== event.id || !message.pending),
+                  }
+                : session,
+            ),
+          );
+        }
         if (event.type === 'chat') {
+          optimistic.current.set(
+            event.sessionId,
+            (optimistic.current.get(event.sessionId) ?? []).filter(
+              (message) => message.id !== event.message.id,
+            ),
+          );
           pending.current.set(
             event.sessionId,
             applyMessage(pending.current.get(event.sessionId) ?? [], event),

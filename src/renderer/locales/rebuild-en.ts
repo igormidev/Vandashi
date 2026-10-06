@@ -1,0 +1,23 @@
+export const rebuildEn = {
+  browserForPlatform: 'Where is {{platform}} logged in?',
+  browserMissing: '{{browser}} is no longer installed.',
+  noBrowsers: 'No installed browsers found.',
+  brandDescriptionHelp: '(what is this channel/brand about?)',
+  brandPlatformsHelp:
+    'Add your channels and the browsers where you are signed in. These are used when preparing uploads.',
+  showAllPlatforms: 'Show all',
+  threads: 'Threads',
+  pdfPage: 'Page {{page}} of {{pages}}',
+  queued: 'Queued',
+  queueHeld: 'Waiting for review',
+  queueRestore: 'Restore draft',
+  queueMessage: 'Queue message',
+  sendingMessage: 'Sending…',
+  editingPresets: 'Editing presets',
+  presetGuide: 'Preset guide',
+  addTitle: 'Add title',
+  addTag: 'Add tag',
+  createdAt: 'Created',
+  modifiedAt: 'Modified',
+  assetAgo: '{{duration}} ago',
+} as const;

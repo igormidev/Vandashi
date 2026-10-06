@@ -1,4 +1,4 @@
-import { ArrowLeft, Check, ChevronRight, Folder, Images, Plus, RefreshCw, Search, X } from 'lucide-react';
+import { Check, ChevronRight, Folder, Images, Plus, RefreshCw, Search, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Asset, AssetKind } from '../../../domain/models';
@@ -8,6 +8,8 @@ import { AiButton, Empty, IconButton, Modal, PendingLabel } from '../../shared/u
 import { ChatPane } from '../chat/ChatPane';
 import { AssetImport } from './AssetImport';
 import { AssetInspector } from './AssetInspector';
+import { InspectorSplit } from './InspectorSplit';
+import { AssetBreadcrumbs } from './AssetBreadcrumbs';
 import { AssetPreview, AssetTypeIcon } from './AssetPreview';
 import { filterAssets, indexAssets } from './asset-index';
 import { useAssetRefresh } from './use-asset-refresh';
@@ -48,7 +50,7 @@ export function AssetsPage() {
     if (unique.length > 0) setImports(unique);
   };
   const library = (
-    <div className="asset-workspace">
+    <InspectorSplit>
       <section
         className={`asset-library ${dragging ? 'dragging' : ''}`}
         aria-label={t('assetLibrary')}
@@ -167,30 +169,7 @@ export function AssetsPage() {
           </select>
         </div>
         <div className="asset-breadcrumb">
-          <IconButton
-            label={t('assetFolderUp')}
-            disabled={!folder || !!query || !!tag}
-            onClick={() => {
-              setFolder(folder.slice(0, Math.max(0, folder.lastIndexOf('/'))));
-            }}
-          >
-            <ArrowLeft size={13} />
-          </IconButton>
-          <button
-            type="button"
-            disabled={!folder}
-            onClick={() => {
-              setFolder('');
-            }}
-          >
-            {t('assetLibrary')}
-          </button>
-          {folder && !query && !tag && (
-            <>
-              <ChevronRight size={11} />
-              <span>{folder}</span>
-            </>
-          )}
+          <AssetBreadcrumbs folder={folder} disabled={!!query || !!tag} onChange={setFolder} />
           <span className="asset-result-count">{t('assetCount', { count: visible.assets.length })}</span>
         </div>
         <div className="asset-library-scroll">
@@ -270,7 +249,7 @@ export function AssetsPage() {
           />
         </aside>
       )}
-    </div>
+    </InspectorSplit>
   );
   return (
     <>

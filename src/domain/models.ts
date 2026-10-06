@@ -13,7 +13,7 @@ import type {
 export type AspectRatio = '16:9' | '9:16' | '1:1';
 export type AssetKind = 'image' | 'video' | 'audio' | 'other';
 export type Platform =
-  'youtube' | 'youtubeShorts' | 'odysee' | 'rumble' | 'tiktok' | 'instagram' | 'facebook' | 'x';
+  'youtube' | 'youtubeShorts' | 'odysee' | 'rumble' | 'tiktok' | 'instagram' | 'facebook' | 'x' | 'threads';
 export type LaunchStatus = 'not_started' | 'uploading' | 'uploaded' | 'failed';
 export interface Scope {
   brandId: string;
@@ -69,6 +69,8 @@ export interface WorkspaceDocument {
   kind: 'taste' | 'script' | 'config';
 }
 export interface Asset {
+  createdAt?: string;
+  modifiedAt?: string;
   analysis?: AssetAnalysis;
   id: string;
   path: string;
@@ -109,6 +111,7 @@ export interface Chapter {
   title: string;
 }
 export interface Workspace {
+  presets?: EditingPreset[];
   scope: Scope;
   brand: Brand;
   video: VideoSummary | null;
@@ -160,6 +163,9 @@ export interface DependencyCheck {
   helpUrl: string | null;
 }
 export interface ChatMessage {
+  /** Renderer-only optimistic state. Never persisted or treated as provider evidence. */
+  pending?: 'sending' | 'queued';
+  attachments?: string[];
   id: string;
   role: 'user' | 'assistant' | 'reasoning' | 'tool' | 'error';
   text: string;
@@ -191,12 +197,18 @@ export interface ChatCheckpoint {
   messageCount: number;
 }
 export interface ChatRequest {
+  clientMessageId?: string;
   sessionId: string;
   text: string;
   mode: 'read' | 'edit';
   selection: ModelSelection;
   attachments: string[];
   handoff?: ClipHandoff;
+}
+export interface QueuedChat {
+  id: string;
+  request: ChatRequest;
+  failed: boolean;
 }
 export interface ClipHandoff {
   message: {
@@ -211,6 +223,8 @@ export interface ChatActivity {
   detail: string;
 }
 export type AppEvent =
+  | { type: 'chat-pending'; sessionId: string; id: string; message: ChatMessage | null }
+  | { type: 'chat-queue'; sessionId: string; entries: QueuedChat[] }
   | { type: 'transcription'; active: boolean; progress: TranscriptionProgress }
   | { type: 'update'; state: UpdateState }
   | {
@@ -258,5 +272,30 @@ export interface SaveInput {
   documents: { path: string; content: string }[];
   brandConfig: BrandConfig | null;
   packaging: Packaging | null;
+  commit: { title: string; body: string };
+}
+
+export interface PresetFile {
+  name: string;
+  relativePath: string;
+  path: string;
+  kind: 'file' | 'directory';
+  /** Cache identity only; native containment and exact media authorization still govern reads. */
+  revision?: string;
+}
+export interface EditingPreset {
+  id: string;
+  name: string;
+  path: string;
+  guidePath: string;
+  content: string;
+  revision: string;
+  files: PresetFile[];
+}
+export interface PresetSave {
+  scope: Scope;
+  presetId: string;
+  revision: string;
+  content: string;
   commit: { title: string; body: string };
 }

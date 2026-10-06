@@ -1,3 +1,4 @@
+import { PresetsPage } from '../features/presets/PresetsPage';
 import { useUpdates } from '../features/updates/use-updates';
 import { UpdateControls } from '../features/updates/UpdateControls';
 import { ChevronRight, LoaderCircle, Settings2, X } from 'lucide-react';
@@ -115,7 +116,8 @@ export function App() {
         setChecking(true);
         return;
       }
-      const leavingVideo = ['brand', 'videos', 'sharedAssets'].includes(next) && !!workspace?.video;
+      const leavingVideo =
+        ['brand', 'videos', 'sharedAssets', 'editingPresets'].includes(next) && !!workspace?.video;
       let target = workspace;
       if (next === 'home') target = null;
       else if (leavingVideo) target = await api.openBrand(workspace.scope.brandId);
@@ -169,6 +171,8 @@ export function App() {
         return <Home onOpen={open} />;
       case 'brand':
         return <Split id="brand" left={<ChatPane />} right={<BrandPage key={revisionKey} />} />;
+      case 'editingPresets':
+        return <PresetsPage />;
       case 'videos':
         return <VideosPage onOpen={open} />;
       case 'sharedAssets':
@@ -205,9 +209,9 @@ export function App() {
           }}
         >
           {navigationStatus?.destination === 'home' ? (
-            <LoaderCircle className="spin" size={24} aria-hidden="true" />
+            <LoaderCircle className="spin" size={20} aria-hidden="true" />
           ) : (
-            <Logo size={24} />
+            <Logo size={20} />
           )}
           <span>{t('appName')}</span>
         </button>
@@ -237,13 +241,25 @@ export function App() {
           </div>
         )}
         <div className="titlebar-end">
+          {page !== 'home' && (
+            <WorkspaceNavigation
+              workspace={workspace}
+              parentVideo={parentVideo}
+              page={page}
+              busy={busy}
+              dirty={dirty}
+              checking={checking}
+              destination={navigationStatus?.destination ?? null}
+              onNavigate={(destination) => {
+                void run(() => navigate(destination));
+              }}
+            />
+          )}
           <UpdateControls updates={updates} blocked={busy || dirty || page === 'manual' || settings} />
-          <div className="status" aria-busy={busy}>
-            <span className={`status-dot ${busy ? 'busy' : ''}`} />
-            {t(busy ? 'statusBusy' : 'statusReady')}
-          </div>
           <IconButton
             label={t('settings')}
+            className={`icon-button settings-control ${busy ? 'settings-busy' : ''}`}
+            aria-busy={busy}
             disabled={busy || dirty}
             onClick={() => {
               setSettings(true);
@@ -253,23 +269,7 @@ export function App() {
           </IconButton>
         </div>
       </header>
-      <div className="app-body">
-        {page !== 'home' && (
-          <WorkspaceNavigation
-            workspace={workspace}
-            parentVideo={parentVideo}
-            page={page}
-            busy={busy}
-            dirty={dirty}
-            checking={checking}
-            destination={navigationStatus?.destination ?? null}
-            onNavigate={(destination) => {
-              void run(() => navigate(destination));
-            }}
-          />
-        )}
-        {renderPage()}
-      </div>
+      <div className="app-body">{renderPage()}</div>
       {settings && (
         <Settings
           updates={updates}

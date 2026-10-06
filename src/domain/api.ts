@@ -1,3 +1,4 @@
+import type { PresetSave } from './presets';
 import type {
   AppEvent,
   AppState,
@@ -23,6 +24,9 @@ import type {
   Workspace,
 } from './models';
 import type { UpdateState } from './updates';
+import type { InstalledBrowser } from './browsers';
+import type { FilePreview } from './file-preview';
+import type { QueuedChat } from './chat-queue';
 import type { Diagnostic } from './diagnostics';
 import type {
   AudioCategory,
@@ -40,6 +44,11 @@ export interface CreatedClip {
 export type OpenedChat = ChatSession & { historyDeferred?: true };
 
 export interface DesktopApi {
+  ensurePresets(scope: Scope): Promise<Workspace>;
+  savePreset(input: PresetSave): Promise<Workspace>;
+  installedBrowsers(): Promise<InstalledBrowser[]>;
+  storePastedImage(base64: string): Promise<string>;
+  filePreview(path: string): Promise<FilePreview>;
   prepareTranscriptions(input: {
     scope: Scope | null;
     categories?: AssetCategoryChoice[];
@@ -70,6 +79,9 @@ export interface DesktopApi {
   closeChat(id: string): Promise<void>;
   resetChat(id: string): Promise<ChatSession>;
   sendChat(request: ChatRequest): Promise<void>;
+  queueChat(request: ChatRequest): Promise<void>;
+  queuedChats(sessionId: string): Promise<QueuedChat[]>;
+  removeQueuedChat(input: { sessionId: string; id: string }): Promise<void>;
   cancelChat(): Promise<void>;
   undoChat(id: string): Promise<ChatSession>;
   importAsset(input: { scope: Scope; draft: AssetDraft }): Promise<Asset>;

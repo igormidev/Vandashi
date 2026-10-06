@@ -99,6 +99,7 @@ const fileChangeSchema = z.object({
 });
 const messageSchema = z
   .object({
+    attachments: z.array(z.string()).max(50).optional(),
     id: z.string(),
     role: z.enum(['user', 'assistant', 'reasoning', 'tool', 'error']),
     text: z.string(),
@@ -110,12 +111,13 @@ const messageSchema = z
     diagnostic: z.custom<Diagnostic>((value) => parseDiagnostic(value) !== null).optional(),
     generatedImages: z.array(z.string()).max(20).optional(),
   })
-  .transform(({ appMessage, userText, diagnostic, generatedImages, ...message }) => ({
+  .transform(({ appMessage, userText, diagnostic, generatedImages, attachments, ...message }) => ({
     ...message,
     ...(appMessage === undefined ? {} : { appMessage }),
     ...(userText === undefined ? {} : { userText }),
     ...(diagnostic === undefined ? {} : { diagnostic }),
     ...(generatedImages === undefined ? {} : { generatedImages }),
+    ...(attachments === undefined ? {} : { attachments }),
   }));
 const checkpointSchema = z
   .object({

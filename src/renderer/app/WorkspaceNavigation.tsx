@@ -1,4 +1,4 @@
-import { ArrowLeft, LoaderCircle } from 'lucide-react';
+import { LoaderCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { VideoSummary, Workspace } from '../../domain/models';
 import { PendingLabel } from '../shared/ui';
@@ -27,23 +27,6 @@ export function WorkspaceNavigation({
   const video = workspace?.scope.clipId ? parentVideo : workspace?.video;
   return (
     <nav className="nav" aria-label={t('studio')}>
-      {workspace?.video && (
-        <button
-          type="button"
-          aria-label={t('back')}
-          disabled={busy || dirty}
-          aria-busy={destination === 'videos'}
-          onClick={() => {
-            onNavigate('videos');
-          }}
-        >
-          {destination === 'videos' ? (
-            <LoaderCircle className="spin" size={15} aria-hidden="true" />
-          ) : (
-            <ArrowLeft size={15} />
-          )}
-        </button>
-      )}
       {(workspace?.video ? videoTabs : brandTabs)
         .filter((tab) => tab.id !== 'clips' || workspace?.video?.ratio === '16:9' || workspace?.scope.clipId)
         .map(({ id, icon: Icon }) => (

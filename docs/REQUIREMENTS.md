@@ -1,6 +1,6 @@
 # Vandashi acceptance checklist
 
-Source of truth: [`genesis_prompt.md`](../genesis_prompt.md), read in full again on 2026-09-23. Source references below use `genesis_prompt.md:Lx–Ly`. Re-read the relevant source section before each implementation or review. This checklist records the entire requested product; milestones sequence work and do not remove scope.
+Source of truth: [`genesis_prompt.md`](../genesis_prompt.md), read in full again on 2026-09-23. Source references below use `genesis_prompt.md:Lx–Ly`. Re-read the relevant source section before each implementation or review. This checklist records the entire requested product; milestones sequence work and do not remove scope. The user-approved recovered prompt additions and their verification are recorded in [`RECONSTRUCTION.md`](RECONSTRUCTION.md).
 
 Unchecked means **not yet verified**, including work that may already exist. Check an item only with a corresponding implementation and current test or manual verification evidence. Record evidence in the verification log; do not equate scaffolding, a disabled button, or a mock adapter with a working integration. Ambiguities and chosen interpretations live in [`DECISIONS.md`](DECISIONS.md).
 

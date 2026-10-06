@@ -106,3 +106,12 @@ download/install-on-quit policy. Vandashi's implementation is independently auth
 The distribution additionally includes electron-updater 6.8.9 (MIT,
 [Electron Builder](https://github.com/electron-userland/electron-builder)); its original
 license and transitive dependency notices are collected by the notice generator.
+
+## PDF previews
+
+`pdfjs-dist` 6.4.299 uses Apache-2.0. Its optional Node canvas dependency,
+`@napi-rs/canvas` 1.0.10, declares MIT; native platform archives omit the root
+license. The exact upstream v1.0.10 license matches the parent package byte for byte
+and is retained in `third-party/napi-canvas-LICENSE.txt` with versioned source records.
+PDF previews run in Chromium with the bundled PDF.js worker. Native optional canvas
+binaries are not evidence of a completed cross-platform installer audit.

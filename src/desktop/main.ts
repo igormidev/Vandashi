@@ -1,4 +1,7 @@
 import { Updates } from '../application/updates';
+import { discoverBrowsers } from '../infrastructure/browsers';
+import { readFilePreview } from '../infrastructure/file-preview';
+import { storePastedImage } from './attachments';
 import { DesktopUpdates } from './updates';
 import {
   app,
@@ -37,6 +40,7 @@ import { DesktopStudioHost } from './studio-host';
 import { STUDIO_BRIDGE_FLUSH, STUDIO_BRIDGE_INSTALL } from '../infrastructure/media/studio-bridge';
 import { AppFault, failureEnvelope } from '../domain/diagnostics';
 import { installRendererPermissions } from './renderer-permissions';
+import { ownedPastedImage } from '../infrastructure/pasted-images';
 import { loadInitialRenderer } from './renderer-load';
 
 protocol.registerSchemesAsPrivileged([
@@ -79,23 +83,30 @@ async function createWindow(): Promise<void> {
   if (process.platform === 'darwin') app.dock?.setIcon(nativeImage.createFromPath(iconPath));
   let nativeLocale = defaultLocale;
   const mediaUrl = (path: string) => `vandashi-media://local/file?path=${encodeURIComponent(path)}`;
-  const store = new LocalStorage(app.getPath('userData'), git, mediaUrl, ({ path, backupPath }) => {
-    if (mainWindow && !mainWindow.isDestroyed())
-      mainWindow.webContents.send('vandashi:event', {
-        type: 'notice',
-        code: 'workspace-recovered',
-        detail: desktopMessages.recovery(basename(path), backupPath),
-        diagnostic: {
-          kind: 'app',
-          message: backupPath
-            ? { id: 'recoveredDocument', params: { name: basename(path), path: backupPath } }
-            : { id: 'restoredDocument', params: { name: basename(path) } },
-        },
-      });
-  });
+  const store = new LocalStorage(
+    app.getPath('userData'),
+    git,
+    mediaUrl,
+    ({ path, backupPath }) => {
+      if (mainWindow && !mainWindow.isDestroyed())
+        mainWindow.webContents.send('vandashi:event', {
+          type: 'notice',
+          code: 'workspace-recovered',
+          detail: desktopMessages.recovery(basename(path), backupPath),
+          diagnostic: {
+            kind: 'app',
+            message: backupPath
+              ? { id: 'recoveredDocument', params: { name: basename(path), path: backupPath } }
+              : { id: 'restoredDocument', params: { name: basename(path) } },
+          },
+        });
+    },
+    (path) => shell.trashItem(path),
+  );
   const permissions = new PathPermissions(
     (value) => store.allowedPath(value),
     (value) => agent.generatedImage(value),
+    (value) => ownedPastedImage(value, join(userData, 'attachments')),
   );
   nativeLocale = await store.getState().then(
     (state) => state.settings.locale,
@@ -119,6 +130,7 @@ async function createWindow(): Promise<void> {
     title: 'Vandashi',
     icon: iconPath,
     titleBarStyle: 'hiddenInset',
+    ...(process.platform === 'darwin' ? { trafficLightPosition: { x: 16, y: 17 } } : {}),
     webPreferences: {
       preload: join(import.meta.dirname, '../preload/preload.cjs'),
       sandbox: true,
@@ -142,6 +154,17 @@ async function createWindow(): Promise<void> {
     agent,
     media,
     {
+      validateAttachments: (paths) => Promise.all(paths.map((path) => permissions.file(path))),
+      storePastedImage: (base64) => storePastedImage(base64, join(userData, 'attachments')),
+      filePreview: async (path) => {
+        const canonical = await permissions.file(path);
+        const result = await readFilePreview(canonical, mediaUrl(canonical));
+        if ((await permissions.file(path)) !== canonical)
+          throw new AppFault({ id: 'desktopSelectedLocationChanged' });
+        return result;
+      },
+      installedBrowsers: () =>
+        discoverBrowsers(async (path) => (await app.getFileIcon(path, { size: 'normal' })).toDataURL()),
       prepareStudio: (url) => studioHost.prepareStudio(url),
       flushStudio: (url) => studioHost.flushStudio(url),
       chooseDirectory: async () => {
@@ -170,7 +193,7 @@ async function createWindow(): Promise<void> {
           : Promise.all(result.filePaths.slice(0, 200).map((path) => permissions.grantFile(path)));
       },
       revealPath: async (path) => {
-        shell.showItemInFolder(await store.allowedPath(path));
+        shell.showItemInFolder(await permissions.file(path));
       },
       openExternal: async (value) => {
         await shell.openExternal(externalUrl(value));

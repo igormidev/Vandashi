@@ -31,6 +31,7 @@ export const platforms = [
   'instagram',
   'facebook',
   'x',
+  'threads',
 ] as const;
 export const tasteFiles = [
   'TITLE_LONG_FORM_VIDEOS_TASTE.md',

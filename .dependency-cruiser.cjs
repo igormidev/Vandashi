@@ -7,6 +7,7 @@ const browserPackages = [
   'i18next',
   'lucide-react',
   'simple-icons',
+  'pdfjs-dist',
   'diff',
   '@radix-ui/react-dialog',
   '@radix-ui/react-tooltip',

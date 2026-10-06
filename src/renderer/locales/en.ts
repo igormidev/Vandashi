@@ -244,7 +244,7 @@ export const en = {
   moveLeft: 'Move earlier',
   moveRight: 'Move later',
   mainThumbnail: 'Main',
-  titlesHint: 'One title per line',
+  titlesHint: 'Up to the first three titles are used when the destination supports testing.',
   tagsHint: 'Separate tags with commas',
   studioStarting: 'Opening Hyperframes Studio…',
   studioLeave: 'Save your studio edits?',

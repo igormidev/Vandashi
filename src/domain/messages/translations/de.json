@@ -293,5 +293,7 @@
   "appTranscriptionChoiceStale": "Die Audiodatei wurde nach der Prüfung geändert. Wähle ihren Typ erneut.",
   "appTranscriptionInvalid": "Die Transkriptionsmetadaten sind ungültig. Versuche erneut, sie zu erstellen.",
   "appInstallDependency": "Installiere {{name}} für Vandashi auf diesem Computer. Prüfe die aktuelle Einrichtung, folge der offiziellen Anleitung und stelle sicher, dass Vandashi es verwenden kann. Erhalte meine Projekte und bestehenden Einstellungen.",
-  "appSetupUndoUnavailable": "Installationen auf dem Computer lassen sich nicht mit Git rückgängig machen. Die Installationsunterhaltung bleibt erhalten."
+  "appSetupUndoUnavailable": "Installationen auf dem Computer lassen sich nicht mit Git rückgängig machen. Die Installationsunterhaltung bleibt erhalten.",
+  "desktopPreviewInvalid": "Dieses Bild oder Dokument kann nicht angezeigt werden. Wähle eine gültige Datei.",
+  "appPresetConversationMissing": "Die Voreinstellung für diesen Chat existiert nicht mehr. Wähle eine andere Voreinstellung."
 }

@@ -1,3 +1,4 @@
+import { renderSystemPrompt } from '../domain/system-prompts/templates';
 import { relative, isAbsolute } from 'node:path';
 import { StudioRecovery } from './studio-recovery';
 import { AppFault } from '../domain/diagnostics';
@@ -90,17 +91,12 @@ export class Studio {
             writableRoots: [cwd],
             selection: settings.scriptSync,
             attachments: [],
-            prompt: `Synchronize this video's human-readable specification with the user's approved manual Studio edits. Work carefully: script.md is what future AI creation turns read to rebuild or modify the video. Leaving outdated instructions there would undo the user's design choices in a later turn. The current rendered composition and its manual overrides are the source of truth; the script must describe them, not impose its older directions on the video.
-
-Read script.md first to preserve its language, scene identifiers, headings, narrative intent, and unaffected details. Inspect the pending Git diff and the actual relevant source: index.html, referenced scene/composition files, and any .hyperframes/studio-manual-edits.json or .hyperframes/studio-motion.json. Use git show HEAD:path when you need the before-state. A list of changed files alone is not enough. Follow the affected timeline and media references to understand timing and the visual result. Read relevant brand/video guide files when necessary, but do not edit them.
-
-MANDATORY: read adjacent .vandashi.json analysis for referenced audio/video. Describe speech timing from transcription segments/words, converting source timestamps to the composition timeline after trims and speed changes. Music and effects may explicitly omit transcription. Never invent word timing or imply that captions match speech without evidence. ${this.transcriptions?.guidePath ? `The app-owned asset preparation guide is ${JSON.stringify(this.transcriptions.guidePath)}; this script-only task must not add assets or run its mutating command.` : ''}
-
-Update ONLY script.md. Describe the meaningful changes at the affected scenes: displayed words, typography, colors, sizes, layout and crop, element layering, entrance/exit motion, transitions, scene duration and timing, audio clips/levels/fades, and asset substitutions as supported by the actual change. Keep the existing narration and untouched scene directions. Retain usable exact timestamps when present. Every referenced image, video, audio or sound effect must use the application's mention syntax @[asset name](<absolute filesystem path>), resolved from the real project/video_assets and shared asset files; the angle brackets preserve paths containing spaces. Do not invent files or references. If a document is initially blank, write a concise scene-by-scene account of the actual composition, rather than inventing a new story.
-
-Pure serialization, editor IDs, cache changes and harmless metadata do not need script prose. If no meaningful description changes, leave the script unchanged. Do not edit, revert, regenerate or render the video, install anything, commit, or modify another file. Vandashi will create the user-approved commit after you finish. Before completing, compare the updated affected script sections against the source and ensure they no longer contradict the user's edits. Briefly report what you synchronized, or why no script change was necessary.
-
-Pending changes (inspect the full files yourself if this excerpt is truncated): ${JSON.stringify(diff).slice(0, 40000)}`,
+            prompt: renderSystemPrompt('studio-5', {
+              transcriptionGuidance: this.transcriptions?.guidePath
+                ? `The app-owned asset preparation guide is ${JSON.stringify(this.transcriptions.guidePath)}; this script-only task must not add assets or run its mutating command.`
+                : '',
+              diff: JSON.stringify(diff).slice(0, 40000),
+            }),
           },
           () => undefined,
         );

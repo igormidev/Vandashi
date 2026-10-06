@@ -1,5 +1,6 @@
 /** Desktop permission and request-validation diagnostics. */
 export const desktopMessagesEn = {
+  desktopPreviewInvalid: 'This image or document cannot be previewed. Choose a valid file.',
   updateChanged: 'The update changed or another update action is running. Review the update again.',
   updateInvalid: 'The update could not be verified. Check again or retry the download.',
   updateCheckFailed: 'Could not check GitHub for updates. Try again when you are online.',

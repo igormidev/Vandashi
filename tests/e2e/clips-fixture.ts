@@ -6,6 +6,7 @@ import type { DesktopApi } from '../../src/domain/api';
 import type { AppEvent, ChatSession, SaveInput, Scope, Workspace } from '../../src/domain/models';
 import { appMessagesEn } from '../../src/domain/messages';
 import { chatFixtureData } from './chat-fixture-data';
+import { createEncodedFixture } from './full-hd-fixture';
 
 export async function installClipsFixture(
   desktop: ElectronApplication,
@@ -24,6 +25,14 @@ export async function installClipsFixture(
     ['square', 'crop=ih:ih,scale=180:180'],
     ['portrait', 'crop=ih*9/16:ih,scale=90:160'],
   ] as const) {
+    if (process.platform === 'darwin') {
+      await createEncodedFixture(
+        mediaPaths[name],
+        name === 'square' ? 180 : 90,
+        name === 'square' ? 180 : 160,
+      );
+      continue;
+    }
     await execute('ffmpeg', [
       '-v',
       'error',
@@ -106,6 +115,12 @@ export async function installClipsFixture(
       ipcMain.handle('vandashi:invoke', (_event, method: string, args: unknown[]) => {
         const input = args[0];
         requests.push({ method, input });
+        if (method === 'queuedChats') return [];
+        if (method === 'installedBrowsers')
+          return [
+            { name: 'Chrome', icon: null },
+            { name: 'Safari', icon: null },
+          ];
         if (method === 'prepareTranscriptions') return { status: 'ready' };
         if (method === 'prepareTranscriptionModel') return undefined;
         if (method === 'getUpdateState')

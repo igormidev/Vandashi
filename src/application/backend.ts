@@ -18,11 +18,16 @@ import { ClipCreation } from './clip-creation';
 import { Transcriptions } from './transcriptions';
 import type { TranscriptionPort } from '../domain/transcription';
 import { assetKind } from '../domain/asset-kind';
+import { ChatQueue } from './chat-queue';
 
 export type HostMethods = Pick<
   DesktopApi,
   'chooseDirectory' | 'chooseFiles' | 'openExternal' | 'revealPath' | 'copyImage' | 'mediaUrl'
 > & {
+  installedBrowsers?: DesktopApi['installedBrowsers'];
+  storePastedImage?: DesktopApi['storePastedImage'];
+  filePreview?: DesktopApi['filePreview'];
+  validateAttachments?: (paths: string[]) => Promise<string[]>;
   prepareStudio?: (url: string) => Promise<void>;
   flushStudio?: (url: string) => Promise<void>;
 };
@@ -106,7 +111,22 @@ export function createBackend(
   const transcriptions = transcriptionRuntime
     ? new Transcriptions(store, git, transcriptionRuntime, notify)
     : undefined;
-  const chats = new Chats(store, git, agent, commits, gate, dispatch, media, transcriptions);
+  const chats = new Chats(
+    store,
+    git,
+    agent,
+    commits,
+    gate,
+    dispatch,
+    media,
+    transcriptions,
+    host.validateAttachments,
+    (success) => {
+      if (!success) queue.pause();
+      queue.settle();
+    },
+  );
+  const queue = new ChatQueue(store, gate, (request) => chats.start(request), notify);
   const clips = new ClipCreation(store, media, chats, gate, remember, dispatch);
   const studio = new Studio(
     store,
@@ -129,6 +149,10 @@ export function createBackend(
     return updates;
   };
   return {
+    installedBrowsers: host.installedBrowsers ?? (() => Promise.resolve([])),
+    storePastedImage:
+      host.storePastedImage ?? (() => Promise.reject(new AppFault({ id: 'desktopPreviewInvalid' }))),
+    filePreview: host.filePreview ?? (() => Promise.resolve({ kind: 'other' })),
     prepareTranscriptions: (input) =>
       gate.run('asset-transcription', async () => {
         if (!transcriptions) throw new AppFault({ id: 'appTranscriptionUnavailable' });
@@ -182,6 +206,19 @@ export function createBackend(
     importFinishedVideo: (input) =>
       mutation(async () => remember(await importFinishedVideo(input, store, media, transcriptions))),
     openWorkspace: (scope) => readWorkspace(scope),
+    ensurePresets: (scope) =>
+      mutation(async () => {
+        const paths = await store.discoverAgentScope(scope);
+        for (const repository of paths.repositories)
+          if ((await git.status(repository)).dirty) throw new AppFault({ id: 'appSaveBeforeAi' });
+        if (!store.ensurePresets) throw new AppFault({ id: 'storageUnregisteredPath' });
+        return remember(await store.ensurePresets(scope));
+      }),
+    savePreset: (input) =>
+      mutation(async () => {
+        if (!store.savePreset) throw new AppFault({ id: 'storageUnregisteredPath' });
+        return remember(await store.savePreset(input));
+      }),
     saveWorkspace: (input) => mutation(async () => remember(await store.saveWorkspace(input))),
     suggestCommit: (input) => gate.run('commit-message', () => commits.suggest(input.scope, input.summary)),
     history: async ({ scope, page }) => git.history(await store.projectPath(scope), page),
@@ -206,7 +243,13 @@ export function createBackend(
     closeChat: (id) => chats.close(id),
     resetChat: (id) => chats.reset(id),
     sendChat: (request) => chats.start(request),
-    cancelChat: () => agent.stop(),
+    queueChat: (request) => queue.enqueue(request),
+    queuedChats: (id) => Promise.resolve(queue.list(id)),
+    removeQueuedChat: (input) => queue.remove(input),
+    cancelChat: () => {
+      queue.pause();
+      return agent.stop();
+    },
     undoChat: (id) => chats.undo(id),
     describeAsset: (input) => automation.describeAsset(input),
     cancelAssetInspection: (requestId) => automation.cancelAssetInspection(requestId),

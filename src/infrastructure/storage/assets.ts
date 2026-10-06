@@ -80,6 +80,8 @@ export class AssetStore {
       hash: metadata.contentHash === hash ? metadata.hash : hash,
       revision: hashText(JSON.stringify([hash, sidecarHash])),
       size: info.size,
+      ...(info.birthtimeMs > 0 ? { createdAt: info.birthtime.toISOString() } : {}),
+      modifiedAt: info.mtime.toISOString(),
       kind: assetKind(path),
       shared: shared || relativePath.startsWith('_shared/'),
       mediaUrl: this.mediaUrl(path),

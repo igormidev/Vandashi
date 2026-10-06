@@ -1,3 +1,4 @@
+import { renderSystemPrompt } from '../../domain/system-prompts/templates';
 import { AppFault } from '../../domain/diagnostics';
 import type { AssetInspectionLease, AssetInspectionProgress } from '../../domain/asset-inspection';
 import { AssetInspector } from './asset-inspection';
@@ -42,11 +43,9 @@ export class HyperframesMediaAdapter implements MediaPort {
     this.inspector = new AssetInspector(this.runtime, options);
   }
   setupContext(): string {
-    return (
-      '\n\nVandashi bundled Hyperframes CLI (argument array): ' +
-      JSON.stringify([this.runtime.nodePath, this.runtime.cliPath]) +
-      '\nRun it with ELECTRON_RUN_AS_NODE=1 and HYPERFRAMES_NO_UPDATE_CHECK=1. Use this exact CLI for browser ensure/doctor; do not install another Hyperframes version.'
-    );
+    return renderSystemPrompt('hyperframes-8', {
+      command: JSON.stringify([this.runtime.nodePath, this.runtime.cliPath]),
+    });
   }
 
   async normalizeProject(projectPath: string): Promise<void> {

@@ -1,6 +1,7 @@
 import type { Workspace } from '../../../domain/models';
 
 export type ReferenceKind =
+  | 'preset'
   | 'taste'
   | 'script'
   | 'config'
@@ -27,6 +28,11 @@ export function mentionReferences(
   const clip = workspace.clips.find((entry) => entry.id === publishedClipId);
   const video = clip ?? workspace.video;
   const references: MentionReference[] = [
+    ...(workspace.presets ?? []).map((preset) => ({
+      name: preset.name,
+      path: preset.path,
+      kind: 'preset' as const,
+    })),
     { name: 'brand_config.yml', path: `${identity}/brand_config.yml`, kind: 'config' },
     ...workspace.documents
       .filter((entry) => !clip || entry.kind !== 'script')

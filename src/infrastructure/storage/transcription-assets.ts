@@ -1,3 +1,5 @@
+import { presetRepository, presetFiles } from './presets';
+import { assetKind } from '../../domain/asset-kind';
 import { lstat, readFile, realpath } from 'node:fs/promises';
 import { join, relative, resolve } from 'node:path';
 import { parse } from 'yaml';
@@ -13,6 +15,7 @@ import { videoRecordSchema, type VideoRecord } from './schemas';
 export interface TranscriptionAssetRoot {
   path: string;
   shared: boolean;
+  preset?: boolean;
 }
 
 export class TranscriptionAssets {
@@ -26,7 +29,13 @@ export class TranscriptionAssets {
     const roots = await transcriptionAssetRoots(this.registry, this.git, selection);
     const result: Asset[] = [];
     for (const root of roots) {
-      const found = await this.assets.list(root.path, root.shared);
+      const found = root.preset
+        ? await Promise.all(
+            (await presetFiles(root.path))
+              .filter((file) => file.kind === 'file' && ['audio', 'video'].includes(assetKind(file.path)))
+              .map((file) => this.assets.get(root.path, file.path, false)),
+          )
+        : await this.assets.list(root.path, root.shared);
       result.push(
         ...found.filter(
           (asset) => (asset.kind === 'audio' || asset.kind === 'video') && (root.shared || !asset.shared),
@@ -54,7 +63,8 @@ export async function transcriptionRootForAsset(
     const root = await realpath(brand.path);
     const parts = relative(root, assetPath).split(/[\\/]/u);
     let repository: string | null = null;
-    if (parts[0] === 'shared_assets' && parts.length > 1) repository = join(root, 'shared_assets');
+    if (parts[0] === 'edition_presets' && parts.length > 1) repository = join(root, 'edition_presets');
+    else if (parts[0] === 'shared_assets' && parts.length > 1) repository = join(root, 'shared_assets');
     else if (parts[0] === 'videos' && parts[2] === 'video_assets' && parts.length > 3)
       repository = join(root, 'videos', parts[1] ?? '');
     else if (parts[0] === 'videos' && parts[2] === 'clips' && parts[4] === 'video_assets' && parts.length > 5)
@@ -128,12 +138,21 @@ export async function transcriptionAssetRoots(
     const root = await realpath(brand.path);
     if (!requested) {
       roots.push({ path: await directory(root, 'shared_assets'), shared: true });
+      const presets = await presetRepository(root, brand.id, git);
+      if (presets) roots.push({ path: presets, shared: false, preset: true });
       continue;
     }
     for (const path of [...requested]) {
       if (!isWithin(root, path)) continue;
       const safe = await directory(root, path);
       const parts = relative(root, safe).split(/[\\/]/u);
+      if (parts.length === 1 && parts[0] === 'edition_presets') {
+        if ((await presetRepository(root, brand.id, git)) !== safe)
+          throw new AppFault({ id: 'storageUnregisteredPath' });
+        roots.push({ path: safe, shared: false, preset: true });
+        requested.delete(path);
+        continue;
+      }
       if (parts.length === 1 && parts[0] === 'brand_identity') {
         requested.delete(path);
         continue;

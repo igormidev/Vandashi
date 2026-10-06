@@ -16,8 +16,18 @@ interface Props {
   label?: string;
   onChange: (text: string) => void;
   onSend?: () => void;
+  onPasteFiles?: (files: File[]) => void;
 }
-export function RichComposer({ value, references, disabled, placeholder, label, onChange, onSend }: Props) {
+export function RichComposer({
+  value,
+  references,
+  disabled,
+  placeholder,
+  label,
+  onChange,
+  onSend,
+  onPasteFiles,
+}: Props) {
   const { t } = useTranslation();
   const id = useId();
   const [menu, setMenu] = useState<MentionMenu | null>(null);
@@ -77,6 +87,12 @@ export function RichComposer({ value, references, disabled, placeholder, label, 
         ),
       // Paste text through the same parser as restored drafts; arbitrary HTML never supplies chip attributes.
       handlePaste: (view, event) => {
+        if (disabled) return true;
+        const files = Array.from(event.clipboardData?.files ?? []);
+        if (files.length && onPasteFiles) {
+          onPasteFiles(files);
+          return true;
+        }
         const text = event.clipboardData?.getData('text/plain');
         if (!text) return false;
         const parsed = view.state.schema.nodeFromJSON(promptDocument(text, references));

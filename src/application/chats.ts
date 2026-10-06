@@ -1,3 +1,5 @@
+import { launchChat } from './chat-launch';
+import { publishPending } from './chat-pending';
 import { AppFault, diagnosticFromError } from '../domain/diagnostics';
 import { undoChat } from './chat-undo';
 import { openChatSession } from './chat-history';
@@ -26,6 +28,8 @@ export class Chats {
     private readonly emit: (event: AppEvent) => void,
     media?: MediaPort,
     private readonly transcriptions?: Transcriptions,
+    private readonly validateAttachments?: (paths: string[]) => Promise<string[]>,
+    private readonly settled?: (success: boolean) => void,
   ) {
     this.preparation = new ChatPreparation(
       store,
@@ -87,8 +91,27 @@ export class Chats {
   async start(request: ChatRequest): Promise<void> {
     if (!request.text.trim()) throw new AppFault({ id: 'appMessageEmpty' });
     const release = this.gate.acquire(request.sessionId);
-    return this.startWithLease(() => this.store.getSession(request.sessionId), request, release);
+    publishPending(
+      (event) => {
+        this.notify(event);
+      },
+      request,
+      'sending',
+    );
+    return this.startWithLease(() => this.store.getSession(request.sessionId), request, release).catch(
+      (error: unknown) => {
+        publishPending(
+          (event) => {
+            this.notify(event);
+          },
+          request,
+          null,
+        );
+        throw error;
+      },
+    );
   }
+
   /** The creator transfers its existing lease; accepted execution owns it through final recovery. */
   startOwned(
     input: { scope: Scope; topic: string; title: string },
@@ -107,6 +130,13 @@ export class Chats {
     try {
       if (!request.text.trim()) throw new AppFault({ id: 'appMessageEmpty' });
       const session = await loadSession();
+      if (
+        request.clientMessageId &&
+        session.messages.some((message) => message.id === request.clientMessageId)
+      )
+        throw new AppFault({ id: 'untrustedRequest' });
+      if (this.validateAttachments)
+        request = { ...request, attachments: await this.validateAttachments(request.attachments) };
       scope = session.scope;
       const prepared = await this.preparation.prepare(
         session,
@@ -150,34 +180,21 @@ export class Chats {
     }
   }
   private launch(prepared: Prepared, release: () => void): Promise<void> {
-    return new Promise((resolve, reject) => {
-      // The caller receives success only once Codex has accepted a turn. The lease outlives that response.
-      void this.execute(prepared, resolve, reject)
-        .catch((error: unknown) => {
-          this.notify({ type: 'workspace-changed', scope: prepared.session.scope });
-          reject(error instanceof Error ? error : new Error(String(error)));
-          this.notify({
-            type: 'notice',
-            code: 'save-failed',
-            detail: String(error),
-            diagnostic: diagnosticFromError(error),
-          });
-        })
-        .finally(() => {
-          release();
-          this.notify({
-            type: 'chat-settled',
-            scope: prepared.session.scope,
-            sessionId: prepared.session.id,
-          });
-        });
-    });
+    return launchChat(
+      prepared,
+      (accepted, rejected) => this.execute(prepared, accepted, rejected),
+      release,
+      (event) => {
+        this.notify(event);
+      },
+      this.settled,
+    );
   }
   private async execute(
     prepared: Prepared,
     accepted: () => void,
     rejected: (error: unknown) => void,
-  ): Promise<void> {
+  ): Promise<boolean> {
     const { session, original, heads } = prepared;
     const lifecycle = { started: false };
     let failed = false;
@@ -288,6 +305,7 @@ export class Chats {
             ? () => transcriptions.reconcileRepositories(Object.keys(heads))
             : undefined,
         );
+        if (!failed) await prepared.discardGenerationStage?.();
         const latest = lifecycle.started ? session.checkpoints?.at(-1) : undefined;
         if (latest) latest.postHeads = await repositoryHeads(this.git, Object.keys(heads));
         const receipt =
@@ -326,6 +344,7 @@ export class Chats {
     if (prepared.input.purpose !== 'host-setup')
       this.notify({ type: 'workspace-changed', scope: session.scope });
     if (!lifecycle.started) rejected(startError ?? new AppFault({ id: 'appConversationStartFailed' }));
+    return !failed;
   }
   undo(id: string): Promise<ChatSession> {
     return this.gate.run('undo', () =>

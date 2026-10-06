@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import type { Asset, AssetKind } from '../../../domain/models';
 import { useApp } from '../../app/store';
 import { PendingLabel } from '../../shared/ui';
+import { FileViewerDialog } from '../../shared/FileViewer';
 
 export function AssetTypeIcon({ kind, size = 20 }: { kind: AssetKind; size?: number }) {
   if (kind === 'image') return <Image size={size} />;
@@ -61,6 +62,43 @@ function AudioWaveform({ asset }: { asset: Asset }) {
 export function AssetPreview({ asset, compact = false }: { asset: Asset; compact?: boolean }) {
   const { t } = useTranslation();
   const [failed, setFailed] = useState(false);
+  const [open, setOpen] = useState(false);
+  if (!compact && (asset.kind === 'image' || asset.kind === 'other'))
+    return (
+      <>
+        <button
+          type="button"
+          className="asset-preview-open"
+          aria-label={t('preview')}
+          onClick={() => {
+            setOpen(true);
+          }}
+        >
+          {asset.kind === 'image' && !failed ? (
+            <img
+              src={asset.mediaUrl}
+              alt={asset.title}
+              onError={() => {
+                setFailed(true);
+              }}
+            />
+          ) : (
+            <>
+              <File size={32} />
+              <span>{t('preview')}</span>
+            </>
+          )}
+        </button>
+        {open && (
+          <FileViewerDialog
+            path={asset.path}
+            onClose={() => {
+              setOpen(false);
+            }}
+          />
+        )}
+      </>
+    );
   if (failed)
     return (
       <div className="asset-no-preview">

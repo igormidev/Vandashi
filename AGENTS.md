@@ -217,3 +217,25 @@ Codex receives read-only prepared caches, never expanded global writable roots.
 New transcription model/runtime downloads must stay pinned and verified. Do not
 substitute an unpinned torch.hub load. Keep word alignment limits truthful and retain
 full ASR text when an alignment model cannot align individual words.
+
+Editing presets are a third brand-owned repository at `edition_presets`. Discover it
+read-only before hydration and capture it in AI reconciliation and Undo. Each named
+preset owns `HOW_TO_USE.md`; mentions use the folder's natural name. Never broaden a
+missing preset-specific chat to the library. Recognize only the exact clean empty legacy
+initial library without a marker; exclusively identify it under owned preparation,
+preserving history. Unknown, dirty, symlinked or conflicting folders remain rejected.
+Preset initialization cleanup must compare its captured directory device/inode.
+
+Asset creation uses an exact app-owned generation stage outside asset libraries. Add
+only that stage to creative writable roots, retain it on failure, and send it to native
+Trash only after verification and commits. Compare canonical path/device/inode before
+cleanup. Keep app-owned prompt sources in `src/domain/system-prompts`; interpolate
+named fields once and never interpret user content as a second template.
+
+Queued creative messages remain bound to their session and complete request snapshot.
+Reserve the next global lease only after persistence, recovery and settlement. Failed
+or canceled work holds the queue for review; host setup and external publishing cannot
+queue. Restoring a held draft shares the synchronous composer owner through removal
+and adoption. Cached attachment paths restore selection only, never filesystem access.
+Owned pasted images retain exact native byte/hash records and are revalidated after
+restart; never grant an attachment directory. PDF/text reads have explicit byte caps.

@@ -1,76 +1,21 @@
-import { LoaderCircle, MessageSquare, RotateCcw, Sparkles, Undo2, X } from 'lucide-react';
+import { LoaderCircle, MessageSquare, Minus, Plus, RotateCcw, Sparkles, Undo2, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { TranscriptionStatus, useTranscriptionProgress } from '../transcription/TranscriptionStatus';
 import { useTranslation } from 'react-i18next';
-import type { ChatMessage, Scope } from '../../../domain/models';
+import type { Scope } from '../../../domain/models';
 import { scopeKey } from '../../../domain/defaults';
 import { chatUndoIssue } from '../../../domain/chat-undo-policy';
 import { useApp } from '../../app/store';
-import { diagnosticText, messageText } from '../../app/diagnostics';
+import { messageText } from '../../app/diagnostics';
 import { Empty, IconButton, Loading, Modal, Tip, PendingLabel } from '../../shared/ui';
-import { clearDraft } from './draft-cache';
+import { clearDraft, readChatFontSize, cacheChatFontSize } from './draft-cache';
+import type { CSSProperties } from 'react';
 import { Composer } from './Composer';
 import { useSessions } from './use-sessions';
-import { DiffFiles } from '../history/DiffFiles';
-import { ChatMarkdown } from './ChatMarkdown';
-import { ChatImage } from './ChatImage';
 import { sessionTitle } from './session-title';
 import '../../styles/chat.css';
+import { Message } from './ChatMessage';
 
-function Message({
-  message,
-  root,
-  mediaGeneration,
-}: {
-  message: ChatMessage;
-  root: string;
-  mediaGeneration: number;
-}) {
-  const { t } = useTranslation();
-  if (message.appMessage)
-    return (
-      <article className={`message ${message.role === 'user' ? 'user' : 'receipt'}`}>
-        <p>{messageText(message.appMessage)}</p>
-        {message.userText && (
-          <div className="message-body">
-            <ChatMarkdown text={message.userText} root={root} mediaGeneration={mediaGeneration} />
-          </div>
-        )}
-        {message.files.length > 0 && <DiffFiles files={message.files} />}
-      </article>
-    );
-  if (message.diagnostic)
-    return (
-      <article className={`message ${message.role}`}>
-        <p>{diagnosticText(message.diagnostic)}</p>
-        {message.files.length > 0 && <DiffFiles files={message.files} />}
-      </article>
-    );
-  if (message.role === 'reasoning' || message.role === 'tool')
-    return (
-      <div>
-        <details className="reasoning">
-          <summary>
-            <Sparkles size={12} />
-            {t(message.role === 'reasoning' ? 'thinking' : 'toolActivity')}
-          </summary>
-          <pre>{message.text}</pre>
-          {message.files.length > 0 && <DiffFiles files={message.files} />}
-        </details>
-        {message.generatedImages?.map((path) => (
-          <ChatImage key={path} path={path} mediaGeneration={mediaGeneration} />
-        ))}
-      </div>
-    );
-  return (
-    <article className={`message ${message.role}`}>
-      <div className="message-body">
-        <ChatMarkdown text={message.text} root={root} mediaGeneration={mediaGeneration} />
-      </div>
-      {message.files.length > 0 && <DiffFiles files={message.files} />}
-    </article>
-  );
-}
 export function ChatPane() {
   const { workspace } = useApp();
   const brandId = workspace?.scope.brandId;
@@ -99,6 +44,12 @@ function Conversation({ scope }: { scope: Scope }) {
   } = useSessions(scope);
   const [confirm, setConfirm] = useState<'reset' | 'undo' | null>(null);
   const [confirming, setConfirming] = useState(false);
+  const [fontSize, setFontSize] = useState(readChatFontSize);
+  const resizeText = (delta: number) => {
+    const next = Math.max(10, Math.min(22, fontSize + delta));
+    setFontSize(next);
+    cacheChatFontSize(next);
+  };
   const [resetVersion, setResetVersion] = useState<Record<string, number>>({});
   const scroll = useRef<HTMLDivElement>(null);
   const follow = useRef(true);
@@ -113,7 +64,11 @@ function Conversation({ scope }: { scope: Scope }) {
     if (follow.current && scroll.current) scroll.current.scrollTop = scroll.current.scrollHeight;
   }, [lastMessage?.text, lastMessage?.id, activity?.phase]);
   return (
-    <section className="chat-pane" aria-label={t('chat')}>
+    <section
+      className="chat-pane"
+      aria-label={t('chat')}
+      style={{ '--chat-font-size': `${String(fontSize)}px` } as CSSProperties}
+    >
       <div className="chat-tabs">
         {sessions
           .filter((entry) => entry.open)
@@ -162,23 +117,47 @@ function Conversation({ scope }: { scope: Scope }) {
               <Sparkles size={13} />
               {sessionTitle(session, t)}
             </span>
-            {undoIssue ? (
-              <Tip label={messageText(undoIssue)}>
-                <button className="icon-button" type="button" aria-label={t('undoTurn')} aria-disabled="true">
+            <IconButton
+              label={t('smallerText')}
+              disabled={fontSize <= 10}
+              onClick={() => {
+                resizeText(-1);
+              }}
+            >
+              <Minus size={13} />
+            </IconButton>
+            <IconButton
+              label={t('biggerText')}
+              disabled={fontSize >= 22}
+              onClick={() => {
+                resizeText(1);
+              }}
+            >
+              <Plus size={13} />
+            </IconButton>
+            {session.messages.filter((message) => message.role === 'user').length > 1 &&
+              (undoIssue ? (
+                <Tip label={messageText(undoIssue)}>
+                  <button
+                    className="icon-button"
+                    type="button"
+                    aria-label={t('undoTurn')}
+                    aria-disabled="true"
+                  >
+                    <Undo2 size={14} />
+                  </button>
+                </Tip>
+              ) : (
+                <IconButton
+                  label={t('undoTurn')}
+                  disabled={busy || dirty || opening || !session.checkpoints?.length}
+                  onClick={() => {
+                    setConfirm('undo');
+                  }}
+                >
                   <Undo2 size={14} />
-                </button>
-              </Tip>
-            ) : (
-              <IconButton
-                label={t('undoTurn')}
-                disabled={busy || dirty || opening || !session.checkpoints?.length}
-                onClick={() => {
-                  setConfirm('undo');
-                }}
-              >
-                <Undo2 size={14} />
-              </IconButton>
-            )}
+                </IconButton>
+              ))}
             <IconButton
               label={t('newConversation')}
               disabled={busy || dirty || opening}

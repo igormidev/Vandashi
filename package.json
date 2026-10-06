@@ -1,6 +1,6 @@
 {
   "name": "vandashi",
-  "version": "0.1.10",
+  "version": "0.1.11",
   "description": "A local-first, AI-driven video studio powered by Codex and Hyperframes.",
   "private": true,
   "type": "module",
@@ -58,6 +58,7 @@
     "i18next": "^25.6.0",
     "lucide-react": "^0.468.0",
     "node-id3": "^0.2.9",
+    "pdfjs-dist": "6.4.299",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-i18next": "^16.2.0",

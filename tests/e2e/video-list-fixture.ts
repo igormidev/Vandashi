@@ -99,6 +99,12 @@ export async function installVideoListFixture(
       });
       ipcMain.removeHandler('vandashi:invoke');
       ipcMain.handle('vandashi:invoke', (_event, method: string, args: unknown[]) => {
+        if (method === 'queuedChats') return [];
+        if (method === 'installedBrowsers')
+          return [
+            { name: 'Chrome', icon: null },
+            { name: 'Safari', icon: null },
+          ];
         if (method === 'prepareTranscriptions') return { status: 'ready' };
         if (method === 'prepareTranscriptionModel') return undefined;
         if (method === 'getUpdateState')

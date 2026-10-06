@@ -8,6 +8,7 @@ import { setupTarget } from '../../../domain/setup';
 
 const labels: Readonly<Record<string, keyof Translation>> = {
   brand: 'brandAttributes',
+  presets: 'editingPresets',
   creation: 'creation',
   thumbnails: 'thumbnail',
   'packaging:theme': 'theme',

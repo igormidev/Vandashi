@@ -1,4 +1,8 @@
 {
-  "version": "0.1.10",
-  "notes": ["Install missing tools through a prepared AI chat, with automatic setup rechecks."]
+  "version": "0.1.11",
+  "notes": [
+    "Restore recovered Brand, asset and chat editing workflows.",
+    "Add editing presets, local file previews and queued follow-up messages.",
+    "Preserve legacy libraries and verify pasted-image ownership."
+  ]
 }

@@ -17,6 +17,7 @@ export async function applicationFixture(transcription?: TranscriptionPort) {
   const brand = await store.createBrand({ parentPath: root, name: 'Application Test' });
   const workspace = await store.createVideo({ brandId: brand.id, name: 'Video', ratio: '16:9' });
   const scope = workspace.scope;
+  await store.preparePresetLibrary(scope);
   const path = await store.projectPath(scope);
   let turns = 0;
   const agent = {

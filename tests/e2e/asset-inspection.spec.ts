@@ -24,6 +24,12 @@ test('reviews a multi-file queue with scoped inspection notes and imports only c
       });
       ipcMain.removeHandler('vandashi:invoke');
       ipcMain.handle('vandashi:invoke', (_event, method: string, args: unknown[]) => {
+        if (method === 'queuedChats') return [];
+        if (method === 'installedBrowsers')
+          return [
+            { name: 'Chrome', icon: null },
+            { name: 'Safari', icon: null },
+          ];
         if (method === 'prepareTranscriptions') return { status: 'ready' };
         if (method === 'prepareTranscriptionModel') return undefined;
         if (method === 'getState') return fixture.state;
@@ -150,6 +156,12 @@ test('cancels a first-use inspection and keeps the dialog locked until cleanup c
       });
       ipcMain.removeHandler('vandashi:invoke');
       ipcMain.handle('vandashi:invoke', (_event, method: string, args: unknown[]) => {
+        if (method === 'queuedChats') return [];
+        if (method === 'installedBrowsers')
+          return [
+            { name: 'Chrome', icon: null },
+            { name: 'Safari', icon: null },
+          ];
         if (method === 'prepareTranscriptions') return { status: 'ready' };
         if (method === 'prepareTranscriptionModel') return undefined;
         if (method === 'getState') return fixture.state;

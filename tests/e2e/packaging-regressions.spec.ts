@@ -41,14 +41,22 @@ test('preserves multiword tag typing, dirty locks, format drafts, and uncropped 
   await installPackagingRegressionFixture(desktopApp);
   await page.reload();
   const tags = page.getByRole('textbox', { name: 'Tags', exact: true });
-  await tags.pressSequentially('hidden city, blue hour');
-  await expect(tags).toHaveValue('hidden city, blue hour');
+  const addTag = page.getByRole('button', { name: 'Add tag', exact: true });
+  await addTag.click();
+  await expect(page.getByRole('button', { name: 'Save changes', exact: true })).toBeDisabled();
+  await tags.first().pressSequentially('hidden city');
+  await addTag.click();
+  await tags.last().pressSequentially('blue hour');
+  await expect(tags.first()).toHaveValue('hidden city');
+  await expect(tags.last()).toHaveValue('blue hour');
   await expect(page.getByRole('button', { name: 'Creation workspace', exact: true })).toBeDisabled();
   await page.getByRole('button', { name: 'Short form', exact: true }).click();
-  await expect(tags).toHaveValue('');
+  await expect(tags).toHaveCount(0);
+  await addTag.click();
   await tags.pressSequentially('quiet streets');
   await page.getByRole('button', { name: 'Long form', exact: true }).click();
-  await expect(tags).toHaveValue('hidden city, blue hour');
+  await expect(tags.first()).toHaveValue('hidden city');
+  await expect(tags.last()).toHaveValue('blue hour');
   const thumbnail = page.locator('.thumbnail img');
   await expect(thumbnail).toHaveCSS('object-fit', 'contain');
   await expect

@@ -12,6 +12,9 @@ export const localizationRule = ['error', options];
 // These are exact protocol/DOM/path identifiers in their owning files, never a blanket
 // exemption for string literals, templates, labels, or an entire renderer module.
 const machineWords = [
+  ['src/renderer/shared/PlatformIcon.tsx', ['currentColor']],
+  ['src/renderer/features/presets/PresetsPage.tsx', ['presets', 'preset:', 'HOW_TO_USE.md']],
+  ['src/renderer/shared/TripleSplit.tsx', ['presetLeft', 'presetCenter']],
   ['src/renderer/main.tsx', ['root']],
   ['landing/src/main.tsx', ['root']],
   ['src/renderer/app/receipt-toasts.ts', ['receipt:']],
@@ -47,21 +50,48 @@ const machineWords = [
   ['src/renderer/features/chat/use-sessions.ts', ['done', 'error']],
   [
     'src/renderer/app/App.tsx',
-    ['brand', 'videos', 'sharedAssets', 'packaging', 'creation', 'manual', 'assets', 'clips', 'launch'],
+    [
+      'brand',
+      'videos',
+      'sharedAssets',
+      'editingPresets',
+      'packaging',
+      'creation',
+      'manual',
+      'assets',
+      'clips',
+      'launch',
+    ],
   ],
   [
     'src/renderer/app/navigation-tabs.ts',
-    ['brand', 'videos', 'sharedAssets', 'packaging', 'creation', 'manual', 'assets', 'clips', 'launch'],
+    [
+      'brand',
+      'videos',
+      'sharedAssets',
+      'editingPresets',
+      'packaging',
+      'creation',
+      'manual',
+      'assets',
+      'clips',
+      'launch',
+    ],
   ],
   ['src/renderer/app/WorkspaceNavigation.tsx', ['videos', 'creation', 'manual', 'clips', 'launch']],
   // This invariant is a developer programming error; operational failures use typed AppFaults.
   ['src/renderer/app/store.tsx', ['AppProvider missing', 'done', 'error']],
+  [
+    'src/renderer/features/assets/AssetDates.tsx',
+    ['day', 'hour', 'minute', 'second', 'long', 'short', 'unit', 'auto'],
+  ],
   ['src/renderer/features/assets/AssetInspector.tsx', ['byte', 'kilobyte', 'megabyte', 'gigabyte', 'asset:']],
   ['src/renderer/features/assets/AssetsPage.tsx', ['assets']],
   ['src/renderer/features/brands/BrandPage.tsx', ['/brand_identity/', 'brand', 'taste:', 'revision']],
   ['src/renderer/features/brands/TasteIcon.tsx', ['.md', 'currentColor']],
   ['src/renderer/features/chat/ChatPane.tsx', ['/brand_identity']],
-  ['src/renderer/features/chat/Composer.tsx', ['read', 'edit', 'currentColor']],
+  ['src/renderer/features/chat/use-attachments.ts', ['image/']],
+  ['src/renderer/features/chat/Composer.tsx', ['read', 'edit', 'currentColor', 'done', 'error']],
   ['src/renderer/features/chat/ModelPicker.tsx', ['currentColor', 'none']],
   [
     'src/renderer/features/chat/RichComposer.tsx',
@@ -76,7 +106,10 @@ const machineWords = [
       'aria-activedescendant',
     ],
   ],
-  ['src/renderer/features/chat/draft-cache.ts', ['vandashi.draft.', 'vandashi.selectedChat.']],
+  [
+    'src/renderer/features/chat/draft-cache.ts',
+    ['vandashi.draft.', 'vandashi.selectedChat.', 'vandashi.chatFontSize'],
+  ],
   ['src/renderer/features/chat/mention-document.ts', ['doc', 'text', 'fileMention', 'other', 'paragraph']],
   [
     'src/renderer/features/chat/mention-extension.tsx',

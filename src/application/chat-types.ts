@@ -16,5 +16,6 @@ export interface Prepared {
   scope: Scope;
   sharedScopes: Scope[];
   heads: Record<string, string>;
+  discardGenerationStage?: () => Promise<void>;
   rollback: () => Promise<void>;
 }

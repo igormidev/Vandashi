@@ -7,6 +7,7 @@ import {
   siInstagram,
   siFacebook,
   siX,
+  siThreads,
 } from 'simple-icons';
 import type { Platform } from '../../domain/models';
 const icons = {
@@ -18,16 +19,18 @@ const icons = {
   instagram: siInstagram,
   facebook: siFacebook,
   x: siX,
+  threads: siThreads,
 };
+export function platformColor(platform: Platform): string {
+  return platform === 'tiktok' || platform === 'x' || platform === 'threads'
+    ? 'currentColor'
+    : `#${icons[platform].hex}`;
+}
 export function PlatformIcon({ platform }: { platform: Platform }) {
   const icon = icons[platform];
   return (
     <span className="platform-icon">
-      <svg
-        viewBox="0 0 24 24"
-        aria-hidden="true"
-        fill={platform === 'tiktok' || platform === 'x' ? 'currentColor' : `#${icon.hex}`}
-      >
+      <svg viewBox="0 0 24 24" aria-hidden="true" fill={platformColor(platform)}>
         <path d={icon.path} />
       </svg>
     </span>

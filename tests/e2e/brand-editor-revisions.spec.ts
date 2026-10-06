@@ -84,7 +84,10 @@ test('a normalized same-revision brand save adopts its result and later edits re
 }) => {
   const original = await openBrand(desktopApp, page, userData);
   const name = page.getByRole('textbox', { name: 'Name', exact: true });
-  const save = page.locator('.savebar').getByRole('button', { name: 'Save changes', exact: true });
+  const save = page
+    .locator('.section-actions')
+    .first()
+    .getByRole('button', { name: 'Save changes', exact: true });
   const videos = page.getByRole('navigation').getByRole('button', { name: 'Videos', exact: true });
   await name.fill('  Logo studio  ');
   await page.getByRole('button', { name: 'Choose file', exact: true }).click();
@@ -101,7 +104,9 @@ test('a normalized same-revision brand save adopts its result and later edits re
   ).toBe(original.revision);
   await expect(name).toHaveValue('Logo studio');
   await expect(save).toBeDisabled();
-  await expect(page.getByRole('button', { name: 'Discard changes', exact: true })).toBeDisabled();
+  await expect(
+    page.locator('.section-actions').first().getByRole('button', { name: 'Discard changes', exact: true }),
+  ).toBeDisabled();
   await expect(videos).toBeEnabled();
   await name.fill('Later manual edit');
   await expect(save).toBeEnabled();
@@ -151,7 +156,11 @@ test('all taste guides save through the strict desktop API and survive a rendere
     edits.set(original.path, content);
     await page.locator('.brand-panel .markdown-editor').fill(content);
   }
-  await page.locator('.savebar').getByRole('button', { name: 'Save changes', exact: true }).click();
+  await page
+    .locator('.section-actions')
+    .last()
+    .getByRole('button', { name: 'Save changes', exact: true })
+    .click();
   const dialog = page.getByRole('dialog', { name: 'Save a version', exact: true });
   await dialog
     .getByRole('textbox', { name: 'Commit title', exact: true })
@@ -163,7 +172,7 @@ test('all taste guides save through the strict desktop API and survive a rendere
   // This commits thirteen real files; Windows CI Git latency can exceed the default five seconds.
   await expect(dialog).not.toBeVisible({ timeout: 20_000 });
   await expect(
-    page.locator('.savebar').getByRole('button', { name: 'Save changes', exact: true }),
+    page.locator('.section-actions').last().getByRole('button', { name: 'Save changes', exact: true }),
   ).toBeDisabled();
   for (const [path, content] of edits) expect(await readFile(path, 'utf8')).toBe(content);
   const git = new LocalGit();

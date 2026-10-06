@@ -2,14 +2,32 @@ import { seedDraft, type Draft } from './session-state';
 import { parseClipHandoff } from '../../../domain/clip-handoff';
 import type { ClipHandoff } from '../../../domain/models';
 
+export function readChatFontSize(): number {
+  try {
+    const stored = Number(localStorage.getItem('vandashi.chatFontSize'));
+    return Number.isInteger(stored) && stored >= 10 && stored <= 22 ? stored : 12;
+  } catch {
+    return 12;
+  }
+}
+export function cacheChatFontSize(size: number): void {
+  try {
+    localStorage.setItem('vandashi.chatFontSize', String(size));
+  } catch {
+    /* Keep the active size when storage is full. */
+  }
+}
+
 interface SavedDraft {
   draft: Draft;
   mode: 'read' | 'edit';
+  attachments: string[];
 }
 export function readDraft(id: string, seed: string | null, handoff?: ClipHandoff): SavedDraft {
   const fallback: SavedDraft = {
     draft: { text: seed ?? '', seed, pending: null, ...(handoff ? { handoff } : {}) },
     mode: 'edit',
+    attachments: [],
   };
   try {
     const stored = localStorage.getItem(`vandashi.draft.${id}`);
@@ -38,12 +56,28 @@ export function readDraft(id: string, seed: string | null, handoff?: ClipHandoff
         handoff,
       ),
       mode: 'mode' in value && value.mode === 'read' ? 'read' : 'edit',
+      // This restores selection only. Every preview and send still needs native authorization.
+      attachments:
+        'attachments' in value && Array.isArray(value.attachments)
+          ? [
+              ...new Set(
+                value.attachments.filter(
+                  (path: unknown): path is string => typeof path === 'string' && path.length < 4096,
+                ),
+              ),
+            ].slice(0, 50)
+          : [],
     };
   } catch {
     return fallback;
   }
 }
-export function cacheDraft(id: string, draft: Draft, mode: 'read' | 'edit'): void {
+export function cacheDraft(
+  id: string,
+  draft: Draft,
+  mode: 'read' | 'edit',
+  attachments: string[] = [],
+): void {
   try {
     localStorage.setItem(
       `vandashi.draft.${id}`,
@@ -52,6 +86,7 @@ export function cacheDraft(id: string, draft: Draft, mode: 'read' | 'edit'): voi
         seed: draft.seed,
         pending: draft.pending,
         mode,
+        attachments,
         ...(draft.handoff ? { handoff: draft.handoff } : {}),
       }),
     );

@@ -1,3 +1,8 @@
+import { installManagedSkills } from './managed-skills';
+import {
+  setupDeveloperInstructions,
+  workspaceDeveloperInstructions,
+} from '../../domain/system-prompts/provider';
 import type {
   AgentCapabilities,
   AgentEvent,
@@ -64,9 +69,7 @@ export class CodexAgent implements AgentPort {
         historyMode: 'paginated',
         ephemeral: false,
         developerInstructions:
-          options.purpose === 'host-setup'
-            ? 'You are Vandashi’s host installation assistant. Follow the per-message setup guidance and the explicitly submitted user request. Preserve creative projects and unrelated settings. Never collect credentials or bypass OS protections. Do not spawn other agents. Report verified results and any remaining user steps.'
-            : 'You are the assistant inside Vandashi, a local video studio. Follow the per-message workspace guidance. MANDATORY: before adding or replacing any audio/video asset, read the app-owned transcription README identified in that guidance, run its exact command, and verify the saved category and transcript or explicit music/effects exemption. Never invent metadata evidence. Before editing audio/video or captions, read its saved source timestamps; later edits depend on them. Report media kind and verified preparation status. Do not spawn other agents. Ask questions in your reply when input is needed. Never request unrestricted filesystem access.',
+          options.purpose === 'host-setup' ? setupDeveloperInstructions : workspaceDeveloperInstructions,
       }),
     );
     this.loadedThreads.add(response.thread.id);
@@ -217,6 +220,7 @@ export class CodexAgent implements AgentPort {
         }
       });
       const codexHome = string(initialized['codexHome']);
+      if (codexHome) await installManagedSkills(codexHome);
       return { client, version: string(initialized['userAgent']), ...(codexHome ? { codexHome } : {}) };
     } catch (error) {
       await client.close();

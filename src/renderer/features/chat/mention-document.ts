@@ -3,6 +3,7 @@ import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import type { MentionReference, ReferenceKind } from './mention-references';
 
 const kinds: ReferenceKind[] = [
+  'preset',
   'taste',
   'script',
   'config',
@@ -28,6 +29,20 @@ export function referenceText(reference: MentionReference): string {
 }
 const unescape = (text: string) => text.replace(/\\([\\\])>])/g, '$1');
 
+const mentionTokens = /@\[((?:\\.|[^\]\\])*)\]\((?:<((?:\\.|[^>\\])*)>|((?:\\.|[^)\\])*))\)/g;
+
+export function mentionedPaths(text: string): string[] {
+  return [...text.matchAll(mentionTokens)].map((match) => unescape(match[2] ?? match[3] ?? ''));
+}
+
+export function removeMention(text: string, path: string): string {
+  return text.replace(
+    mentionTokens,
+    (token: string, _label: string, angle: string | undefined, plain: string | undefined) =>
+      unescape(angle ?? plain ?? '') === path ? '' : token,
+  );
+}
+
 /** Keep the stored draft text portable, but restore references as atomic editor nodes. */
 export function promptDocument(text: string, references: MentionReference[]): JSONContent {
   return {
@@ -35,8 +50,8 @@ export function promptDocument(text: string, references: MentionReference[]): JS
     content: text.split('\n').map((line) => {
       const content: JSONContent[] = [];
       let cursor = 0;
-      const tokens = /@\[((?:\\.|[^\]\\])*)\]\((?:<((?:\\.|[^>\\])*)>|((?:\\.|[^)\\])*))\)/g;
-      for (const match of line.matchAll(tokens)) {
+
+      for (const match of line.matchAll(mentionTokens)) {
         if (match.index > cursor) content.push({ type: 'text', text: line.slice(cursor, match.index) });
         const path = unescape(match[2] ?? match[3] ?? '');
         const known = references.find((entry) => entry.path === path);

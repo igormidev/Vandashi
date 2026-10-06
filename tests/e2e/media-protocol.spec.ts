@@ -1,7 +1,6 @@
-import { execFile } from 'node:child_process';
+import { createFullHdFixture } from './full-hd-fixture';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { promisify } from 'node:util';
 import { test, expect } from './fixtures';
 
 test('the real media protocol decodes, seeks, and plays a selected full HD export', async ({
@@ -10,27 +9,7 @@ test('the real media protocol decodes, seeks, and plays a selected full HD expor
   userData,
 }) => {
   const path = join(userData, 'Full HD export.mp4');
-  await promisify(execFile)('ffmpeg', [
-    '-v',
-    'error',
-    '-f',
-    'lavfi',
-    '-i',
-    'testsrc2=size=1920x1080:rate=30',
-    '-t',
-    '6',
-    '-c:v',
-    'libx264',
-    '-preset',
-    'veryfast',
-    '-profile:v',
-    'high',
-    '-level:v',
-    '5.0',
-    '-pix_fmt',
-    'yuv420p',
-    path,
-  ]);
+  await createFullHdFixture(path);
   const bytes = await readFile(path);
   const rawUrl = `vandashi-media://local/file?path=${encodeURIComponent(path)}`;
   expect(await desktopApp.evaluate(async ({ net }, url) => (await net.fetch(url)).status, rawUrl)).toBe(403);
@@ -72,6 +51,37 @@ test('the real media protocol decodes, seeks, and plays a selected full HD expor
   await video.evaluate((element: HTMLVideoElement) => {
     element.pause();
   });
+  await page.evaluate(() => {
+    const button = document.createElement('button');
+    button.id = 'fullscreen-test';
+    Object.assign(button.style, { position: 'fixed', top: '12px', left: '12px', zIndex: '9999' });
+    button.textContent = 'Fullscreen';
+    button.onclick = () => {
+      void document.querySelector('video')?.requestFullscreen();
+    };
+    document.body.append(button);
+  });
+  await desktopApp.evaluate(({ BrowserWindow }) => {
+    const state = globalThis as typeof globalThis & { __nativeFullscreen?: boolean };
+    state.__nativeFullscreen = false;
+    BrowserWindow.getAllWindows()[0]?.once('enter-full-screen', () => {
+      state.__nativeFullscreen = true;
+    });
+  });
+  await page.locator('#fullscreen-test').click();
+  await expect.poll(() => page.evaluate(() => document.fullscreenElement?.id)).toBe('protocol-video');
+  if (process.platform === 'darwin')
+    await expect
+      .poll(() =>
+        desktopApp.evaluate(
+          () => (globalThis as typeof globalThis & { __nativeFullscreen?: boolean }).__nativeFullscreen,
+        ),
+      )
+      .toBe(true);
+  await page.evaluate(() => {
+    void document.exitFullscreen();
+  });
+  await expect.poll(() => page.evaluate(() => document.fullscreenElement)).toBe(null);
   const partial = await desktopApp.evaluate(async ({ net }, url) => {
     const response = await net.fetch(url, { headers: { Range: 'bytes=50-149' } });
     return {

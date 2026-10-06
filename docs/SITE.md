@@ -31,7 +31,7 @@ official-source installation, direct sign-in, and existing-project safeguards.
 
 ## Languages
 
-`landing/src/locales` contains 40 keyed strings per language: English, Japanese,
+`landing/src/locales` contains 41 keyed strings per language: English, Japanese,
 French, Spanish, German, Korean, Brazilian Portuguese, and Italian. These catalogs
 are separate from the desktop catalogs because their content and consumers differ.
 Japanese/Korean and French/Spanish/Italian were authored in focused contexts using
@@ -61,7 +61,12 @@ Their filenames end in `.png`, but the capture provider returned JPEG-encoded by
 The WebP equivalents in `landing/src/assets` are lossless encodings made with
 `cwebp -lossless`. They preserve all pixels and dimensions. The icon derives from
 `build/icon.svg`. App screenshots remain English; captions and descriptions are
-translated. Recheck them after structural or visible app changes.
+translated. The October reconstruction changes the app bar, Brand section controls,
+asset inspector, and adds Editing presets. These captures therefore carry a visible
+translated “September 23, 2026 · earlier interface” label beside each image and in
+its enlargement dialog; README identifies their revision too. Preserve the genuine
+captures until replacement images from an identified real app revision are available.
+Recheck them after structural or visible app changes.
 
 ## Verification and deployment
 

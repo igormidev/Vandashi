@@ -69,7 +69,7 @@ describe('prepared request decisions across conversation navigation', () => {
     expect(reselected).toEqual(pending);
     cacheDraft('publish', reselected, 'read');
     for (const target of [null, 'New review'])
-      expect(readDraft('publish', target)).toEqual({ draft: pending, mode: 'read' });
+      expect(readDraft('publish', target)).toEqual({ draft: pending, mode: 'read', attachments: [] });
   });
 
   it('retains the custom draft while replacing an unresolved choice with the latest review', () => {
@@ -101,6 +101,19 @@ describe('prepared request decisions across conversation navigation', () => {
     expect(readDraft('publish', 'New')).toEqual({
       draft: { text: 'Legacy draft', seed: 'New', pending: 'New' },
       mode: 'read',
+      attachments: [],
     });
+  });
+
+  it('retains exact file selections without turning cached paths into native grants', () => {
+    const paths = ['/tmp/reference.png', '/tmp/brief.pdf'];
+    const draft = { text: 'Keep these exact references', seed: null, pending: null };
+    cacheDraft('attachments', draft, 'edit', paths);
+    expect(readDraft('attachments', null).attachments).toEqual(paths);
+    entries.set(
+      'vandashi.draft.attachments',
+      JSON.stringify({ ...draft, attachments: [paths[0], paths[0], 42] }),
+    );
+    expect(readDraft('attachments', null).attachments).toEqual([paths[0]]);
   });
 });

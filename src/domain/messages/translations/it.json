@@ -293,5 +293,7 @@
   "appTranscriptionChoiceStale": "Il file audio è cambiato dopo la revisione. Scegli di nuovo il tipo.",
   "appTranscriptionInvalid": "I metadati di trascrizione non sono validi. Riprova a generarli.",
   "appInstallDependency": "Installa {{name}} per Vandashi su questo computer. Controlla la configurazione attuale, segui le istruzioni ufficiali e verifica che Vandashi possa usarlo. Conserva i miei progetti e le impostazioni esistenti.",
-  "appSetupUndoUnavailable": "Le installazioni sul computer non possono essere annullate con Git. La conversazione di installazione viene conservata."
+  "appSetupUndoUnavailable": "Le installazioni sul computer non possono essere annullate con Git. La conversazione di installazione viene conservata.",
+  "desktopPreviewInvalid": "Impossibile visualizzare questa immagine o questo documento. Scegli un file valido.",
+  "appPresetConversationMissing": "Il preset di questa conversazione non esiste più. Scegline un altro."
 }

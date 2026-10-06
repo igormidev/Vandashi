@@ -7,7 +7,10 @@ import { AiButton, IconButton, InfoTip, PendingLabel } from '../../shared/ui';
 import { PendingIconButton } from '../../shared/PendingIconButton';
 import { CommitDialog } from '../history/CommitDialog';
 import { AssetPreview } from './AssetPreview';
-import { parseAssetTags } from './asset-index';
+import { TagChips } from '../../shared/TagChips';
+import { AssetDates } from './AssetDates';
+import { referenceText } from '../chat/mention-document';
+import { attachmentReference } from '../chat/use-attachments';
 
 function formatSize(bytes: number, locale: string): string {
   const units = ['byte', 'kilobyte', 'megabyte', 'gigabyte'];
@@ -33,7 +36,7 @@ export function AssetInspector({
   const { api, workspace, setDirty, setChatTarget, run, reload, setToast } = useApp();
   const [title, setTitle] = useState(asset.title);
   const [description, setDescription] = useState(asset.description);
-  const [tags, setTags] = useState(asset.tags.join(', '));
+  const [tags, setTags] = useState(asset.tags);
   const [expectedRevision, setExpectedRevision] = useState(asset.revision);
   const [saving, setSaving] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -42,15 +45,14 @@ export function AssetInspector({
   const changed =
     title !== asset.title ||
     description !== asset.description ||
-    JSON.stringify(parseAssetTags(tags)) !== JSON.stringify(asset.tags);
-  const update = (field: 'title' | 'description' | 'tags', value: string): void => {
+    JSON.stringify(tags) !== JSON.stringify(asset.tags);
+  const update = (field: 'title' | 'description', value: string): void => {
     if (field === 'title') setTitle(value);
     if (field === 'description') setDescription(value);
-    if (field === 'tags') setTags(value);
     setDirty(
       (field === 'title' ? value : title) !== asset.title ||
         (field === 'description' ? value : description) !== asset.description ||
-        JSON.stringify(parseAssetTags(field === 'tags' ? value : tags)) !== JSON.stringify(asset.tags),
+        JSON.stringify(tags) !== JSON.stringify(asset.tags),
     );
   };
   const save = async (commit: { title: string; body: string }): Promise<void> => {
@@ -63,7 +65,7 @@ export function AssetInspector({
         expectedRevision,
         title: title.trim(),
         description: description.trim(),
-        tags: parseAssetTags(tags),
+        tags: tags.map((tag) => tag.trim()).filter(Boolean),
         commit,
       });
       setDirty(false);
@@ -138,18 +140,35 @@ export function AssetInspector({
               }}
             />
           </label>
-          <label className="field">
+          <div className="field">
             <span>{t('tags')}</span>
-            <input
+            <TagChips
               value={tags}
-              placeholder={t('assetTags')}
-              onChange={(event) => {
-                update('tags', event.target.value);
+              disabled={writeLocked || saving}
+              onChange={(value) => {
+                setTags(value);
+                setDirty(
+                  title !== asset.title ||
+                    description !== asset.description ||
+                    JSON.stringify(value) !== JSON.stringify(asset.tags),
+                );
               }}
             />
-          </label>
+          </div>
         </fieldset>
-        <div className="asset-path mono">{asset.relativePath}</div>
+        <AssetDates createdAt={asset.createdAt} modifiedAt={asset.modifiedAt} />
+        <div className="asset-path mono">
+          <span>{asset.relativePath}</span>
+          <PendingIconButton
+            label={t('copy')}
+            action={async () => {
+              await navigator.clipboard.writeText(referenceText(attachmentReference(asset.path)));
+              setToast({ kind: 'interface', key: 'copied' });
+            }}
+          >
+            <Copy size={13} />
+          </PendingIconButton>
+        </div>
       </div>
       <div className="asset-inspector-footer">
         <IconButton label={t('deleteAsset')} disabled={writeLocked || changed || saving} onClick={onDelete}>
@@ -161,7 +180,7 @@ export function AssetInspector({
           onClick={() => {
             setTitle(asset.title);
             setDescription(asset.description);
-            setTags(asset.tags.join(', '));
+            setTags(asset.tags);
             setExpectedRevision(asset.revision);
             setDirty(false);
           }}
@@ -171,7 +190,7 @@ export function AssetInspector({
         <button
           className="button primary small"
           type="button"
-          disabled={!changed || !title.trim() || writeLocked || saving}
+          disabled={!changed || !title.trim() || tags.some((tag) => !tag.trim()) || writeLocked || saving}
           aria-busy={saving}
           onClick={() => {
             setConfirming(true);
@@ -185,7 +204,11 @@ export function AssetInspector({
           summary={JSON.stringify({
             asset: asset.relativePath,
             before: { title: asset.title, description: asset.description, tags: asset.tags },
-            after: { title: title.trim(), description: description.trim(), tags: parseAssetTags(tags) },
+            after: {
+              title: title.trim(),
+              description: description.trim(),
+              tags: tags.map((tag) => tag.trim()).filter(Boolean),
+            },
           })}
           onSave={save}
           onClose={() => {

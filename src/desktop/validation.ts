@@ -1,3 +1,4 @@
+import { interactionValidators } from './interaction-validation';
 import { updateValidators } from './update-validation';
 import { transcriptionValidators } from './transcription-validation';
 import { AppFault } from '../domain/diagnostics';
@@ -6,7 +7,6 @@ import { z } from 'zod';
 import type { ApiMethod } from '../domain/api';
 import { desktopUrl } from './request-errors';
 import { supportedLocales } from '../domain/locales';
-import { clipHandoffSchema } from './clip-handoff-schema';
 import { audioCategories, transcriptionModels } from '../domain/transcription';
 
 const text = z.string().max(2_000_000);
@@ -30,6 +30,7 @@ const platform = z.enum([
   'instagram',
   'facebook',
   'x',
+  'threads',
 ]);
 const texts = z.array(text).max(500);
 const packaging = z
@@ -66,6 +67,7 @@ const draft = z
 const commit = { title: z.string().trim().min(1).max(200), body: z.string().trim().min(1).max(10000) };
 const noArgs = z.tuple([]);
 export const validators: Readonly<Record<ApiMethod, z.ZodType>> = Object.freeze({
+  ...interactionValidators(scope, selection, id, path, text),
   ...transcriptionValidators(scope),
   ...updateValidators,
   getState: noArgs,
@@ -112,18 +114,6 @@ export const validators: Readonly<Record<ApiMethod, z.ZodType>> = Object.freeze(
   openChat: z.tuple([z.object({ scope, topic: id, title: id }).strict()]),
   closeChat: z.tuple([id]),
   resetChat: z.tuple([id]),
-  sendChat: z.tuple([
-    z
-      .object({
-        sessionId: id,
-        text: text.min(1),
-        mode: z.enum(['read', 'edit']),
-        selection,
-        attachments: z.array(path).max(50),
-        handoff: clipHandoffSchema.optional(),
-      })
-      .strict(),
-  ]),
   cancelChat: noArgs,
   undoChat: z.tuple([id]),
   describeAsset: z.tuple([

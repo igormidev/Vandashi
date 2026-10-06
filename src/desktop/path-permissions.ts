@@ -10,6 +10,7 @@ export class PathPermissions {
   constructor(
     private readonly workspacePath: (value: string) => Promise<string>,
     private readonly providerImage?: (value: string) => Promise<string | null>,
+    private readonly ownedImage?: (value: string) => Promise<string | null>,
   ) {}
 
   async grantDirectory(value: string): Promise<string> {
@@ -45,6 +46,8 @@ export class PathPermissions {
         throw new AppFault({ id: 'desktopSelectedLocationChanged' });
       return canonical;
     }
+    const owned = await this.ownedImage?.(value);
+    if (owned) return owned;
     const artifact = await this.providerImage?.(value);
     if (artifact) return artifact;
     const workspace = await this.workspacePath(value);
@@ -65,7 +68,7 @@ export class PathPermissions {
       const canonical = await realpath(input.parentPath);
       if (!this.directories.has(canonical)) throw new AppFault({ id: 'desktopBrandPickerRequired' });
       input.parentPath = canonical;
-    } else if (method === 'sendChat') {
+    } else if (method === 'sendChat' || method === 'queueChat') {
       const input = args[0] as Parameters<DesktopApi['sendChat']>[0];
       input.attachments = await Promise.all(input.attachments.map((attachment) => this.file(attachment)));
     } else if (method === 'describeAsset') {

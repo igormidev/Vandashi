@@ -52,6 +52,7 @@ it.each(['completed', 'interrupted', 'legacy'] as const)(
   'preserves %s publishing effects and prevents generic undo before Git or provider mutation',
   async (outcome) => {
     const { app, clip, scope, prepared, request } = fixture;
+    const prepareStage = vi.spyOn(app.store, 'assetGenerationStage');
     const ledger = join(app.path, 'launch.yml');
     const prior = (await app.store.openWorkspace(app.scope)).launches;
     app.agent.run.mockImplementationOnce(async (input, emit) => {
@@ -88,6 +89,7 @@ it.each(['completed', 'interrupted', 'legacy'] as const)(
     });
     await app.api.sendChat(request);
     await app.idle();
+    expect(prepareStage).not.toHaveBeenCalled();
     const saved = await app.store.getSession(prepared.session.id);
     expect(saved.scope).toEqual(app.scope);
     expect((await app.store.sessions(app.scope)).some((session) => session.id === saved.id)).toBe(true);

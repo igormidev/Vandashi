@@ -1,3 +1,4 @@
+import { presetRepository } from './presets';
 import { AppFault } from '../../domain/diagnostics';
 import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, readdir, realpath } from 'node:fs/promises';
@@ -127,6 +128,8 @@ export class ProjectStore {
       await containedPath(brand.path, 'brand_identity'),
       await containedPath(brand.path, 'shared_assets'),
     ];
+    const presetRoot = await presetRepository(brand.path, brand.id, this.git);
+    if (presetRoot) paths.push(presetRoot);
     const parent = await this.video({ ...scope, clipId: null });
     if (parent) paths.push(parent.path);
     if (scope.clipId !== null) {

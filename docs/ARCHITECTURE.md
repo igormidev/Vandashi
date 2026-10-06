@@ -24,6 +24,54 @@ Vandashi is an Electron desktop application. There is no hosted backend. The ren
 
 ## Persistence
 
+The recovered September 28–October 2 requests are recorded in
+[`RECONSTRUCTION.md`](RECONSTRUCTION.md). The implementation was sequenced by
+dependency, with one final source commit requested by the user.
+
+Brands now also own an independent `edition_presets` repository, identified by
+`.vandashi-presets.json`. Initialization prepares Git privately and publishes complete
+files exclusively, with the marker last. Cleanup compares the exact staging directory
+device/inode. The exact clean empty legacy initial repository can be discovered without
+writes and receives its marker through an owned manual mutation during preparation.
+Unrelated folders are never adopted. Named preset folders contain `HOW_TO_USE.md` and
+relative supporting files. Workspace snapshots include guide bytes and supporting file
+cache identities; empty library initialization leaves the prior editor revision intact.
+Preset guides use the existing revision-guarded manual save transaction. Every creative
+AI scope, reconciliation, Undo and full-file transcription scope includes this repository.
+
+System guidance and managed skill sources live in `src/domain/system-prompts`.
+Single-pass named templates keep user content literal. The isolated Codex home contains
+three hash-owned managed skills. Startup updates only known installed/pending hashes;
+unknown folders, symlinks and local edits are preserved and reported. Creative generation
+receives one exact private `.vandashi-recovery/generation-*` writable root outside media
+libraries. Successful verified edits move that owned directory to native Trash after
+reconciliation; interrupted/failed edits preserve it. It is never a Git Undo root.
+Read-only and publishing turns do not create or receive a generation stage.
+
+Chat submission reserves its owner synchronously and emits a transient message with a
+stable client UUID before preflight. Persisted accepted messages replace that transient
+entry without duplication. The bounded in-memory queue holds full request snapshots for
+the current creative session; it excludes setup/publishing. Settlement releases the old
+lease only after persistence/recovery, then starts the next preflight. Failure/cancellation
+holds remaining entries for review. Restore locks text, mode, attachment picking and
+sending through queue removal and exact draft adoption. Queues do not survive process exit.
+
+Native browser discovery inspects app registrations and returns display names and native
+icons only. It never executes discovered binaries. File viewers use narrow host-authorized
+media URLs or capped PDF/plain-text payloads. HTML stays inert. PDF.js uses a bundled worker;
+no remote viewer receives local documents. Paste events provide image bytes without any
+clipboard-read permission. Normalized native images retain exact owned records and hashes;
+fresh launches revalidate those artifacts without authorizing their whole directory.
+External picker grants remain session-bound; cached draft paths are selection, not access.
+
+Brand sections save independently and lock their sibling during edits. Shared tag inputs
+preserve arrays and reject an unfinished blank item. Title entries remain ordered arrays;
+publishing considers the first three nonblank entries subject to the verified platform
+capability. Resizable asset inspectors and preset panes store their proportions in settings.
+The native app bar now contains workspace tabs; Settings carries the indeterminate busy
+indicator. Clipboard reads and embedded fullscreen requests remain denied; exact app
+document fullscreen is permitted while Chromium's OS sandbox stays enabled.
+
 An application registry in the OS user-data directory stores selected brand, brand folders, settings, chat-to-Codex-thread mappings, and layout preferences. Each brand owns `brand_identity/` as a Git repository; each video and each clip is an independent Git repository. Markdown and validated YAML are authoritative. Shared assets have their own tracked metadata and are synchronized into the selected video's asset tree without overwriting local assets. Media binaries remain local. Writes use atomic replacement and revision guards where manual editing could race with external edits.
 
 Manual asset updates/deletions and Brand/Packaging/document saves use `ManualMutation` behind the

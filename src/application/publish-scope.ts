@@ -1,3 +1,4 @@
+import { renderSystemPrompt } from '../domain/system-prompts/templates';
 import { AppFault } from '../domain/diagnostics';
 import { platforms } from '../domain/defaults';
 import { horizontalPlatforms } from '../domain/launch';
@@ -61,5 +62,10 @@ export async function verifyPublishMedia(context: PublishScope, media: MediaPort
 }
 
 export function publishScopeGuidance(context: PublishScope, repositories: string[]): string {
-  return `[VANDASHI_PUBLICATION_SCOPE]\nThe operation's selected project is ${JSON.stringify(context.target.video?.path)}. Its current rendered file is ${JSON.stringify(context.target.video?.renderedPath)}. The canonical launch ledger remains ${JSON.stringify(`${context.workspace.video?.path ?? ''}/launch.yml`)} in the parent video. Use only this selected media; if the user's prepared request names an older or different file, pause for a fresh review instead of uploading that file. All participating repositories, including the selected clip, are ${JSON.stringify(repositories)}. Preserve unrelated releases and commit pending changes in each affected repository.\n[/VANDASHI_PUBLICATION_SCOPE]\n`;
+  return renderSystemPrompt('publish-scope-6', {
+    projectPath: JSON.stringify(context.target.video?.path),
+    renderedPath: JSON.stringify(context.target.video?.renderedPath),
+    launchPath: JSON.stringify(`${context.workspace.video?.path ?? ''}/launch.yml`),
+    repositories: JSON.stringify(repositories),
+  });
 }

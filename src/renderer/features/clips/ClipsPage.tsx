@@ -104,6 +104,7 @@ export function ClipsPage() {
           <span className="spacer" />
           {workspace.video?.origin !== 'imported' && (
             <IconButton
+              className="icon-button ai-action"
               label={t('clipReturnEditor')}
               disabled={busy || dirty}
               onClick={() => {
@@ -324,6 +325,7 @@ function ClipRow({
         <span className="badge">{clip.ratio}</span>
       </button>
       <IconButton
+        className="icon-button ai-action"
         label={t(clip.origin === 'imported' ? 'clipImportedPackaging' : 'clipEditor')}
         disabled={disabled}
         onClick={onOpen}

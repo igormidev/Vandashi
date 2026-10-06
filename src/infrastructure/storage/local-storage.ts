@@ -1,3 +1,6 @@
+import { workspaceSnapshot } from './workspace-snapshot';
+import { PresetPersistence } from './preset-persistence';
+import { generationStage } from './generation-stage';
 import { AppFault } from '../../domain/diagnostics';
 import { basename } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -26,7 +29,7 @@ import type {
 } from '../../domain/storage';
 import { AssetStore, assetKind } from './assets';
 import { assetReferences } from './asset-references';
-import { atomicWrite, containedPath, hashText, isWithin, SerialQueue } from './files';
+import { atomicWrite, containedPath, isWithin, SerialQueue } from './files';
 import { ProjectStore } from './projects';
 import { Registry } from './registry';
 import { launchesSchema, launchSchema } from './schemas';
@@ -34,7 +37,6 @@ import { readYaml, writeYaml } from './yaml-files';
 import { parseStorage } from './validation';
 import { ManualMutation } from './manual-mutation';
 import { saveWorkspaceFiles } from './save-workspace';
-import { brandImageRevision } from './brand-image';
 import { syncProjectAssets } from './sync-project-assets';
 import { discoverAgentScope } from './agent-scope';
 import { importBrand } from './brand-import';
@@ -48,6 +50,9 @@ export class LocalStorage implements StoragePort {
   private readonly projects: ProjectStore;
   private readonly writes = new SerialQueue();
   private readonly manual: ManualMutation;
+  readonly ensurePresets: (scope: Scope) => Promise<Workspace>;
+  readonly preparePresetLibrary: (scope: Scope) => Promise<void>;
+  readonly savePreset: NonNullable<StoragePort['savePreset']>;
   readonly transcriptionAssets: StoragePort['transcriptionAssets'];
   readonly saveAssetAnalysis: StoragePort['saveAssetAnalysis'];
 
@@ -56,11 +61,18 @@ export class LocalStorage implements StoragePort {
     private readonly git: GitPort,
     mediaUrl: (path: string) => string = (path) => pathToFileURL(path).href,
     private readonly onRecovery?: RecoveryListener,
+    private readonly trashStage?: (path: string) => Promise<void>,
   ) {
     this.registry = new Registry(userData);
     this.assets = new AssetStore(mediaUrl);
     this.projects = new ProjectStore(this.registry, git, this.assets, onRecovery);
     this.manual = new ManualMutation(git);
+    const presets = new PresetPersistence(this.registry, git, this.manual, this.writes, (scope) =>
+      this.openWorkspace(scope),
+    );
+    this.ensurePresets = presets.ensure;
+    this.preparePresetLibrary = presets.prepare;
+    this.savePreset = presets.save;
     const transcription = new TranscriptionAssets(this.registry, git, this.assets, this.writes);
     this.transcriptionAssets = (selection) => transcription.list(selection);
     this.saveAssetAnalysis = (input) => transcription.save(input);
@@ -69,6 +81,10 @@ export class LocalStorage implements StoragePort {
   async getState(): Promise<AppState> {
     const state = await this.registry.state();
     return { ...state, brands: [...state.brands].sort((a, b) => b.lastOpened.localeCompare(a.lastOpened)) };
+  }
+  async assetGenerationStage(scope: Scope) {
+    const root = await this.projectPath(scope);
+    return generationStage(root, this.trashStage);
   }
   setupWorkspace = () => setupWorkspace(this.registry.directory);
   settings(settings: Settings): Promise<void> {
@@ -150,49 +166,17 @@ export class LocalStorage implements StoragePort {
     return this.projects.repositories(scope);
   }
 
-  async openWorkspace(scope: Scope): Promise<Workspace> {
-    const brand = await this.projects.brand(scope.brandId);
-    if ((await this.registry.state()).brands.find((entry) => entry.id === brand.id)?.name !== brand.name)
-      await this.registry.update((state) => ({
-        ...state,
-        brands: state.brands.map((entry) => (entry.id === brand.id ? { ...entry, name: brand.name } : entry)),
-      }));
-    const video = await this.projects.video(scope);
-    const directory = await this.assetDirectory(scope);
-    if (video) await this.assets.syncShared(await containedPath(brand.path, 'shared_assets'), directory);
-    const documents = await this.projects.documents(brand, video);
-    const assets = await this.assets.list(directory, video === null);
-    const launches = video
-      ? await readYaml(video.path, 'launch.yml', launchesSchema, this.git, this.onRecovery)
-      : [];
-    const parent = scope.clipId === null ? video : await this.projects.video({ ...scope, clipId: null });
-    const clips = parent ? await this.projects.clips(parent) : [];
-    const statuses = await Promise.all(
-      (await this.repositories(scope)).map(async (repository) => this.git.status(repository)),
-    );
-    const revision = hashText(
-      JSON.stringify({
-        config: brand.config,
-        image: await brandImageRevision(
-          await containedPath(brand.path, 'brand_identity'),
-          brand.config.image,
-        ),
-        packaging: video?.packaging,
-        documents,
-        source: video ? await this.git.contentRevision(video.path) : null,
-      }),
-    );
-    return {
+  openWorkspace(scope: Scope): Promise<Workspace> {
+    return workspaceSnapshot({
       scope,
-      brand,
-      video,
-      documents,
-      assets,
-      clips,
-      launches,
-      revision,
-      dirty: statuses.some((status) => status.dirty),
-    };
+      registry: this.registry,
+      projects: this.projects,
+      assets: this.assets,
+      git: this.git,
+      onRecovery: this.onRecovery,
+      assetDirectory: () => this.assetDirectory(scope),
+      repositories: () => this.repositories(scope),
+    });
   }
 
   private async assertRevision(scope: Scope, revision: string): Promise<Workspace> {

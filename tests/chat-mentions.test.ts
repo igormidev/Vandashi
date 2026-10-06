@@ -2,7 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { getSchema } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import { fileMention } from '../src/renderer/features/chat/mention-extension';
-import { promptDocument, promptText, referenceText } from '../src/renderer/features/chat/mention-document';
+import {
+  promptDocument,
+  promptText,
+  referenceText,
+  mentionedPaths,
+  removeMention,
+} from '../src/renderer/features/chat/mention-document';
 import {
   matchingReferences,
   mentionReferences,
@@ -45,6 +51,12 @@ describe('atomic mention documents', () => {
     expect(promptText(schema.nodeFromJSON(promptDocument('Just @unfinished and [ordinary](text)', [])))).toBe(
       'Just @unfinished and [ordinary](text)',
     );
+  });
+  it('recognizes copied filename labels by exact path and removes every variant without touching another file', () => {
+    const renamed = referenceText({ ...logo, name: 'image.png' });
+    const text = `${renamed} ${referenceText(logo)} ${referenceText(config)}`;
+    expect(mentionedPaths(text)).toEqual([logo.path, logo.path, config.path]);
+    expect(removeMention(text, logo.path)).toBe(`  ${referenceText(config)}`);
   });
   it('finds asset filenames as well as human titles without matching unrelated full directory paths', () => {
     expect(matchingReferences([logo, config], 'primary')).toEqual([logo]);

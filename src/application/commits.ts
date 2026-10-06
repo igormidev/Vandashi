@@ -1,3 +1,4 @@
+import { renderSystemPrompt } from '../domain/system-prompts/templates';
 import { AppFault } from '../domain/diagnostics';
 import { parseAgentJson } from './agent-json';
 import type { MediaPort } from '../domain/media';
@@ -61,7 +62,10 @@ export class Commits {
         writableRoots: [],
         selection: state.settings.automation,
         attachments: [],
-        prompt: `Write a concise Git commit title and a useful description for these changes. Do not modify any files. The pending manual edit, when present, describes the result that will be saved after the user reviews this message. Compare its before and after values; describe only actual differences, never unchanged context or documents as newly added. Do not mention that the edit is pending or that there are no on-disk changes yet. For an image selection, describe replacing the brand image without claiming its visual contents unless provided. Return JSON only with nonempty title and body.\nPending manual edit:\n${summary}\nExisting on-disk changes:\n${JSON.stringify(diffs).slice(0, 30000)}`,
+        prompt: renderSystemPrompt('commits-1', {
+          manualEdit: summary,
+          diff: JSON.stringify(diffs).slice(0, 30000),
+        }),
         outputSchema: {
           type: 'object',
           properties: { title: { type: 'string' }, body: { type: 'string' } },

@@ -1,4 +1,6 @@
 import ReactMarkdown, { defaultUrlTransform } from 'react-markdown';
+import { useState } from 'react';
+import { FileViewerDialog } from '../../shared/FileViewer';
 import { useApp } from '../../app/store';
 import { ChatImage } from './ChatImage';
 import { messagePath } from './message-path';
@@ -13,31 +15,42 @@ export function ChatMarkdown({
   mediaGeneration: number;
 }) {
   const { api, run } = useApp();
+  const [preview, setPreview] = useState<string | null>(null);
   return (
-    <ReactMarkdown
-      urlTransform={(value) => (messagePath(value, root) ? value : defaultUrlTransform(value))}
-      components={{
-        img: ({ src, alt }) => {
-          const path = typeof src === 'string' ? messagePath(src, root) : null;
-          return <ChatImage key={path} path={path} alt={alt ?? ''} mediaGeneration={mediaGeneration} />;
-        },
-        a: ({ href, children }) => (
-          <a
-            href={href}
-            onClick={(event) => {
-              event.preventDefault();
-              if (!href) return;
-              const path = messagePath(href, root);
-              if (path) void run(() => api.revealPath(path));
-              else if (/^https?:\/\//i.test(href)) void run(() => api.openExternal(href));
-            }}
-          >
-            {children}
-          </a>
-        ),
-      }}
-    >
-      {text}
-    </ReactMarkdown>
+    <>
+      <ReactMarkdown
+        urlTransform={(value) => (messagePath(value, root) ? value : defaultUrlTransform(value))}
+        components={{
+          img: ({ src, alt }) => {
+            const path = typeof src === 'string' ? messagePath(src, root) : null;
+            return <ChatImage key={path} path={path} alt={alt ?? ''} mediaGeneration={mediaGeneration} />;
+          },
+          a: ({ href, children }) => (
+            <a
+              href={href}
+              onClick={(event) => {
+                event.preventDefault();
+                if (!href) return;
+                const path = messagePath(href, root);
+                if (path) setPreview(path);
+                else if (/^https?:\/\//i.test(href)) void run(() => api.openExternal(href));
+              }}
+            >
+              {children}
+            </a>
+          ),
+        }}
+      >
+        {text}
+      </ReactMarkdown>
+      {preview && (
+        <FileViewerDialog
+          path={preview}
+          onClose={() => {
+            setPreview(null);
+          }}
+        />
+      )}
+    </>
   );
 }

@@ -16,6 +16,51 @@ afterEach(async () => {
 });
 
 describe('application operation transactions', () => {
+  it('grants only the owned generation stage to creative edits and excludes it from read turns and checkpoints', async () => {
+    const stage = await app.store.assetGenerationStage(app.scope);
+    const discard = vi.fn(() => Promise.resolve());
+    const prepareStage = vi.spyOn(app.store, 'assetGenerationStage').mockResolvedValue({
+      path: stage.path,
+      discard,
+    });
+    app.agent.run.mockImplementationOnce(async (input, emit) => {
+      expect(input.writableRoots).toEqual([...(await app.store.repositories(app.scope)), stage.path]);
+      expect(input.prompt).toContain(JSON.stringify(stage.path));
+      emit({ type: 'thread', threadId: 'creative-thread' });
+      emit({ type: 'turn', turnId: 'creative-turn' });
+      return {
+        threadId: 'creative-thread',
+        turnId: 'creative-turn',
+        status: 'completed',
+        error: null,
+        output: '',
+      };
+    });
+    await app.api.sendChat(app.request);
+    await app.idle();
+    expect(discard).toHaveBeenCalledOnce();
+    const checkpoint = (await app.store.getSession(app.session.id)).checkpoints?.at(-1);
+    expect(checkpoint?.heads).not.toHaveProperty(stage.path);
+    expect(checkpoint?.postHeads).not.toHaveProperty(stage.path);
+    app.agent.run.mockImplementationOnce((input, emit) => {
+      expect(input.writableRoots).toEqual([]);
+      expect(input.prompt).not.toContain(stage.path);
+      emit({ type: 'thread', threadId: 'creative-thread' });
+      emit({ type: 'turn', turnId: 'read-turn' });
+      return Promise.resolve({
+        threadId: 'creative-thread',
+        turnId: 'read-turn',
+        status: 'completed',
+        error: null,
+        output: '',
+      });
+    });
+    await app.api.sendChat({ ...app.request, mode: 'read' });
+    await app.idle();
+    expect(prepareStage).toHaveBeenCalledOnce();
+    expect(discard).toHaveBeenCalledOnce();
+  });
+
   it('keeps one lease even with an empty owner or broken observer and releases after failure', async () => {
     const gate = new OperationGate(() => {
       throw new Error('Window closed');

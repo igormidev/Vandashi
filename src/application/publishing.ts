@@ -1,3 +1,4 @@
+import { renderSystemPrompt } from '../domain/system-prompts/templates';
 import { AppFault } from '../domain/diagnostics';
 import { parseAgentJson } from './agent-json';
 import type { AgentPort } from '../domain/agent';
@@ -62,7 +63,12 @@ export class Publishing {
           writableRoots: [],
           selection: (await this.store.getState()).settings.chapters,
           attachments: [],
-          prompt: `Create accurate YouTube chapter timestamps from the actual video timeline and script. MANDATORY read ${JSON.stringify(script?.path)} and ${JSON.stringify(guidance?.path)}. The rendered video is ${JSON.stringify(workspace.video.renderedPath)}, duration ${String(duration)} seconds. Inspect index.html and relevant media to verify times. First chapter starts at zero; at least 3 chapters, each at least 10 seconds, timestamps in whole seconds. Do not invent timing. Return JSON {chapters:[{seconds:number,title:string}]}. Do not edit files.`,
+          prompt: renderSystemPrompt('publishing-3', {
+            scriptPath: JSON.stringify(script?.path),
+            tastePath: JSON.stringify(guidance?.path),
+            renderedPath: JSON.stringify(workspace.video.renderedPath),
+            duration: String(duration),
+          }),
           outputSchema: {
             type: 'object',
             properties: {
@@ -128,8 +134,8 @@ export class Publishing {
       if (!channelUrl) throw new AppFault({ id: 'appPublishChannelInvalid' });
       const horizontal = horizontalPlatforms.includes(platform);
       const packaging = structuredClone(input.packaging);
-      packaging.titles.long = packaging.titles.long.filter((title) => title.trim());
-      packaging.titles.short = packaging.titles.short.filter((title) => title.trim());
+      packaging.titles.long = packaging.titles.long.filter((title) => title.trim()).slice(0, 3);
+      packaging.titles.short = packaging.titles.short.filter((title) => title.trim()).slice(0, 3);
       const format = horizontal ? 'long' : 'short';
       if (packaging.titles[format].length === 0) throw new AppFault({ id: 'appPublishTitleRequired' });
       if (input.chapters?.length) {
@@ -147,7 +153,19 @@ export class Publishing {
       if (!capabilities.browserTools?.length) throw new AppFault({ id: 'appBrowserControlsUnavailable' });
       return {
         session,
-        prompt: `Upload ${JSON.stringify(video.name)} using this verified local video file: ${JSON.stringify(video.renderedPath)}. Destination: ${platform}. Browser: ${JSON.stringify(input.browser.trim())}. Exact channel: ${JSON.stringify(channelUrl.toString())}.\nUse this reviewed packaging (use the ${format}-form fields):\n${JSON.stringify(packaging, null, 2)}\nOrdered thumbnail files: ${JSON.stringify(thumbnails)}. The first is the main thumbnail. Before submitting candidates, inspect the destination and exact account to determine whether title/thumbnail testing is available and its current maximum for each kind. Use only the leading supported prefix of each ordered list; never skip an earlier candidate or exceed the verified maximum. If testing is unavailable or its limit cannot be verified, use only the first title and main thumbnail where supported and report omitted alternatives. Never infer capability from the number of supplied candidates.\nLaunch file: ${JSON.stringify(`${workspace.video?.path ?? video.path}/launch.yml`)}. Update only the record {platform:${JSON.stringify(platform)},clipId:${JSON.stringify(clipId)}}; preserve other releases.\nVerify the exact channel before taking any upload action. If the account differs, switch only when the matching account can be positively identified; otherwise stop and notify me. If signed out, pause so I can sign in directly in the browser. Never request passwords or codes in chat. Monitor actual upload and processing through completion, then set uploaded and the verified public URL. If it fails, set failed and explain the remaining work. Do not invent successful results.`,
+        prompt: renderSystemPrompt('publishing-4', {
+          videoName: JSON.stringify(video.name),
+          renderedPath: JSON.stringify(video.renderedPath),
+          platform: platform,
+          browser: JSON.stringify(input.browser.trim()),
+          channel: JSON.stringify(channelUrl.toString()),
+          format: format,
+          packaging: JSON.stringify(packaging, null, 2),
+          thumbnails: JSON.stringify(thumbnails),
+          launchPath: JSON.stringify(`${workspace.video?.path ?? video.path}/launch.yml`),
+          platformRecord: JSON.stringify(platform),
+          clipId: JSON.stringify(clipId),
+        }),
       };
     });
   }

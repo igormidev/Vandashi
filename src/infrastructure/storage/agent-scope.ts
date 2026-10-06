@@ -1,3 +1,4 @@
+import { presetRepository } from './presets';
 import { readFile, readdir, realpath } from 'node:fs/promises';
 import { parse } from 'yaml';
 import { AppFault } from '../../domain/diagnostics';
@@ -58,6 +59,8 @@ export async function discoverAgentScope(
   const identity = await containedPath(root, 'brand_identity');
   const sharedRoot = await containedPath(root, 'shared_assets');
   const repositories = [identity, sharedRoot];
+  const presetRoot = await presetRepository(root, brand.id, git);
+  if (presetRoot) repositories.push(presetRoot);
   const sharedScopes: Scope[] = [];
   if (!scope.videoId) {
     if (scope.clipId) throw new AppFault({ id: 'storageClipParentRequired' });

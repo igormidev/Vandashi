@@ -5,6 +5,7 @@ export type Page =
   | 'brand'
   | 'videos'
   | 'sharedAssets'
+  | 'editingPresets'
   | 'packaging'
   | 'creation'
   | 'manual'
@@ -16,6 +17,7 @@ export const brandTabs = [
   { id: 'brand', icon: SlidersHorizontal },
   { id: 'videos', icon: Film },
   { id: 'sharedAssets', icon: Images },
+  { id: 'editingPresets', icon: SlidersHorizontal },
 ] as const;
 export const videoTabs = [
   { id: 'packaging', icon: Layers },

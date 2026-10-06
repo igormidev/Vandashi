@@ -29,10 +29,12 @@ async function main(): Promise<void> {
   if ((await realpath(path)) !== path || !(await lstat(path)).isFile())
     throw new Error('Use the canonical path of a regular asset file.');
   let root = dirname(path);
-  while (!['video_assets', 'shared_assets'].includes(basename(root))) {
+  while (!['video_assets', 'shared_assets', 'edition_presets'].includes(basename(root))) {
     const parent = dirname(root);
     if (parent === root)
-      throw new Error('Place the media in video_assets or shared_assets before running this command.');
+      throw new Error(
+        'Place the media in video_assets, shared_assets or edition_presets before running this command.',
+      );
     root = parent;
   }
   const selected =

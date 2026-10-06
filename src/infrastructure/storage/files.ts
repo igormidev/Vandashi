@@ -56,7 +56,8 @@ export async function containedPath(root: string, path: string): Promise<string>
 }
 
 /** Records exact intended bytes before installation, never a later read of the destination. */
-export type WriteReceipt = (path: string, hash: string | null) => void;
+/** installed=false cancels an announcement when an exclusive publication never installed. */
+export type WriteReceipt = (path: string, hash: string | null, installed?: boolean) => void;
 
 export async function atomicWrite(
   path: string,

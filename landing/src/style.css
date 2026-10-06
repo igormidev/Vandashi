@@ -641,3 +641,23 @@ figcaption a {
     }
   }
 }
+
+.screenshot-frame {
+  min-width: 0;
+}
+.screenshot-date {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.screenshot-date-dialog {
+  position: absolute;
+  top: 12px;
+  left: 16px;
+  z-index: 1;
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: 4px;
+  background: #121214;
+  color: #c5c5cb;
+}

@@ -9,7 +9,7 @@ export async function publishImportedDirectory(
   staging: string,
   destination: string,
   expected?: Pick<Stats, 'dev' | 'ino'>,
-  manifest: '.vandashi.yml' | '.vandashi-brand.json' = '.vandashi.yml',
+  manifest: '.vandashi.yml' | '.vandashi-brand.json' | '.vandashi-presets.json' = '.vandashi.yml',
 ): Promise<void> {
   const reserved = expected ?? (await lstat(destination));
   const guard = async (): Promise<void> => {

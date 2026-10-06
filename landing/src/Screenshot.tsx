@@ -29,24 +29,28 @@ export function Screenshot({
 }) {
   return (
     <Dialog.Root>
-      <Dialog.Trigger className="screenshot" aria-label={`${copy.enlarge}: ${alt}`}>
-        <img
-          src={src}
-          alt={alt}
-          width={2960}
-          height={1880}
-          loading={priority ? 'eager' : 'lazy'}
-          fetchPriority={priority ? 'high' : 'auto'}
-        />
-        <span className="enlarge">
-          <Maximize2 size={18} aria-hidden="true" />
-          <span>{copy.enlarge}</span>
-        </span>
-      </Dialog.Trigger>
+      <div className="screenshot-frame">
+        <Dialog.Trigger className="screenshot" aria-label={`${copy.enlarge}: ${alt}`}>
+          <img
+            src={src}
+            alt={alt}
+            width={2960}
+            height={1880}
+            loading={priority ? 'eager' : 'lazy'}
+            fetchPriority={priority ? 'high' : 'auto'}
+          />
+          <span className="enlarge">
+            <Maximize2 size={18} aria-hidden="true" />
+            <span>{copy.enlarge}</span>
+          </span>
+        </Dialog.Trigger>
+        <p className="screenshot-date">{copy.screenshotDate}</p>
+      </div>
       <Dialog.Portal>
         <Dialog.Overlay className="image-overlay" />
         <Dialog.Content className="image-dialog" aria-describedby={undefined}>
           <Dialog.Title className="sr-only">{alt}</Dialog.Title>
+          <p className="screenshot-date screenshot-date-dialog">{copy.screenshotDate}</p>
           <Dialog.Close className="image-close" aria-label={copy.close}>
             <X aria-hidden="true" />
           </Dialog.Close>

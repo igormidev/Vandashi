@@ -21,6 +21,11 @@ function invoke<K extends ApiMethod>(
   ) as ReturnType<DesktopApi[K]>;
 }
 const api: DesktopApi = {
+  ensurePresets: (scope) => invoke('ensurePresets', scope),
+  savePreset: (input) => invoke('savePreset', input),
+  installedBrowsers: () => invoke('installedBrowsers'),
+  storePastedImage: (base64) => invoke('storePastedImage', base64),
+  filePreview: (path) => invoke('filePreview', path),
   prepareTranscriptions: (input) => invoke('prepareTranscriptions', input),
   prepareTranscriptionModel: (model) => invoke('prepareTranscriptionModel', model),
   getUpdateState: () => invoke('getUpdateState'),
@@ -48,6 +53,9 @@ const api: DesktopApi = {
   closeChat: (id) => invoke('closeChat', id),
   resetChat: (id) => invoke('resetChat', id),
   sendChat: (input) => invoke('sendChat', input),
+  queueChat: (input) => invoke('queueChat', input),
+  queuedChats: (id) => invoke('queuedChats', id),
+  removeQueuedChat: (input) => invoke('removeQueuedChat', input),
   cancelChat: () => invoke('cancelChat'),
   undoChat: (id) => invoke('undoChat', id),
   importAsset: (input) => invoke('importAsset', input),

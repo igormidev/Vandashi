@@ -37,6 +37,13 @@ export class ChatPreparation {
     }
     const scope = publishTarget(session.scope, session.topic)?.scope ?? session.scope;
     if (request.mode === 'edit' && scope.videoId) await this.media?.stopStudio();
+    if (request.mode === 'edit' && this.store.preparePresetLibrary) {
+      const discovered = await this.store.discoverAgentScope(scope);
+      for (const repository of discovered.repositories)
+        if ((await this.git.status(repository)).dirty) throw new AppFault({ id: 'appSaveBeforeAi' });
+      state.filesTouched = true;
+      await this.store.preparePresetLibrary(scope);
+    }
     const transcriptions = this.transcriptions;
     const files = await prepareAgentScope(
       this.store,
@@ -50,7 +57,11 @@ export class ChatPreparation {
         ? (repositories) => transcriptions.reconcileRepositories(repositories)
         : undefined,
     );
-    const { repositories, sharedScopes, heads, cwd } = files;
+    const { repositories, sharedScopes, heads } = files;
+    const cwd =
+      session.topic === 'presets' || session.topic.startsWith('preset:')
+        ? (repositories.find((path) => /[/\\]edition_presets$/u.test(path)) ?? files.cwd)
+        : files.cwd;
     const publication = await publishScope(this.store, session.scope, session.topic);
     if (publication && request.mode === 'edit') await verifyPublishMedia(publication, this.media);
     const capabilities = await this.agent.capabilities(cwd);
@@ -77,6 +88,8 @@ export class ChatPreparation {
         await this.git.stage(cwd, ['script.md']);
       }
       const workspace = publication?.workspace ?? (await this.store.openWorkspace(session.scope));
+      const stage =
+        request.mode === 'edit' && !publication ? await this.store.assetGenerationStage?.(scope) : undefined;
       const prompt =
         (publication ? publishScopeGuidance(publication, repositories) : '') +
         buildWorkspacePrompt({
@@ -85,11 +98,19 @@ export class ChatPreparation {
           mode: request.mode,
           text: request.text,
           scriptStaged: !!script,
+          ...(stage ? { generationStage: stage.path } : {}),
+          assetSkills: capabilities.skills.filter(
+            (entry) =>
+              entry.name === 'vandashi-create-assets' ||
+              entry.name === 'vandashi-use-assets' ||
+              entry.name === 'vandashi-create-presets',
+          ),
           ...(skill ? { hyperframesSkill: skill } : {}),
           ...(transcriptions?.guidePath ? { transcriptionGuidePath: transcriptions.guidePath } : {}),
         });
       const message: ChatMessage = {
-        id: crypto.randomUUID(),
+        id: request.clientMessageId ?? crypto.randomUUID(),
+        attachments: request.attachments,
         role: 'user',
         text: request.text,
         ...(script && !script.guidance.trim() ? { appMessage: { id: 'scriptHandoff' as const } } : {}),
@@ -113,11 +134,12 @@ export class ChatPreparation {
         sharedScopes,
         heads,
         rollback,
+        ...(stage ? { discardGenerationStage: stage.discard } : {}),
         input: {
           threadId: session.threadId,
           cwd,
           mode: request.mode,
-          writableRoots: request.mode === 'edit' ? repositories : [],
+          writableRoots: request.mode === 'edit' ? [...repositories, ...(stage ? [stage.path] : [])] : [],
           selection: request.selection,
           prompt,
           attachments: request.attachments,

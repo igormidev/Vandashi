@@ -24,6 +24,12 @@ test('keeps every brand reachable at the minimum size with long names and paths'
     let workspace = fixture.workspace;
     ipcMain.removeHandler('vandashi:invoke');
     ipcMain.handle('vandashi:invoke', (_event, method: string, args: unknown[]) => {
+      if (method === 'queuedChats') return [];
+      if (method === 'installedBrowsers')
+        return [
+          { name: 'Chrome', icon: null },
+          { name: 'Safari', icon: null },
+        ];
       if (method === 'prepareTranscriptions') return { status: 'ready' };
       if (method === 'prepareTranscriptionModel') return undefined;
       if (method === 'getState') return fixture.state;

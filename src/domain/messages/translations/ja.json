@@ -293,5 +293,7 @@
   "appTranscriptionChoiceStale": "確認後に音声が変更されました。種類を選び直してください。",
   "appTranscriptionInvalid": "文字起こしメタデータが無効です。再試行して作成し直してください。",
   "appInstallDependency": "このコンピューターにVandashi用の{{name}}をインストールしてください。現在の設定を確認し、公式の手順に従って、Vandashiで使用できることを検証してください。既存のプロジェクトと設定は保持してください。",
-  "appSetupUndoUnavailable": "コンピューターへのインストールはGitで元に戻せません。インストールの会話は保持されます。"
+  "appSetupUndoUnavailable": "コンピューターへのインストールはGitで元に戻せません。インストールの会話は保持されます。",
+  "desktopPreviewInvalid": "この画像または文書をプレビューできません。有効なファイルを選択してください。",
+  "appPresetConversationMissing": "このチャットのプリセットは存在しません。別のプリセットを選んでください。"
 }

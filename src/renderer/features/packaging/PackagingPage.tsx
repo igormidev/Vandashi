@@ -1,14 +1,13 @@
-import { ArrowLeft, ArrowRight, ImagePlus, RotateCcw } from 'lucide-react';
-import { useEffect, useId, useState } from 'react';
+import { ArrowLeft, ArrowRight, ImagePlus, RotateCcw, Plus, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useApp } from '../../app/store';
 import { AiButton, IconButton, InfoTip, PendingLabel } from '../../shared/ui';
 import { CommitDialog } from '../history/CommitDialog';
-import { TagsInput } from '../../shared/TagsInput';
+import { TagChips } from '../../shared/TagChips';
 
 export function PackagingPage() {
   const { t } = useTranslation();
-  const tagsId = useId();
   const { workspace, api, run, busy, setDirty, setWorkspace, setChatTarget } = useApp();
   const [packaging, setPackaging] = useState(workspace?.video?.packaging);
   const [format, setFormat] = useState<'long' | 'short'>(
@@ -16,6 +15,11 @@ export function PackagingPage() {
   );
   const [confirm, setConfirm] = useState(false);
   const [importing, setImporting] = useState(false);
+  const incomplete =
+    packaging &&
+    (['long', 'short'] as const).some((entry) =>
+      [...packaging.titles[entry], ...packaging.tags[entry]].some((value) => !value.trim()),
+    );
   const dirty = JSON.stringify(packaging) !== JSON.stringify(workspace?.video?.packaging);
   useEffect(() => {
     setDirty(dirty || importing);
@@ -71,7 +75,7 @@ export function PackagingPage() {
                 }}
               />
             </label>
-            <label className="field">
+            <div className="field">
               <span className="field-label">
                 <span>
                   {t('titles')}
@@ -87,18 +91,56 @@ export function PackagingPage() {
                   }}
                 />
               </span>
-              <textarea
-                aria-label={t('titles')}
-                rows={3}
-                value={packaging.titles[format].join('\n')}
-                onChange={(event) => {
-                  setPackaging({
-                    ...packaging,
-                    titles: { ...packaging.titles, [format]: event.target.value.split('\n') },
-                  });
-                }}
-              />
-            </label>
+              <div className="title-inputs">
+                {packaging.titles[format].map((title, index) => (
+                  <div className="title-input" key={index}>
+                    <input
+                      aria-label={t('titles')}
+                      value={title}
+                      onChange={(event) => {
+                        setPackaging({
+                          ...packaging,
+                          titles: {
+                            ...packaging.titles,
+                            [format]: packaging.titles[format].map((entry, position) =>
+                              position === index ? event.target.value : entry,
+                            ),
+                          },
+                        });
+                      }}
+                    />
+                    <IconButton
+                      label={t('remove')}
+                      onClick={() => {
+                        setPackaging({
+                          ...packaging,
+                          titles: {
+                            ...packaging.titles,
+                            [format]: packaging.titles[format].filter((_, position) => position !== index),
+                          },
+                        });
+                      }}
+                    >
+                      <X size={14} />
+                    </IconButton>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  className="title-add"
+                  aria-label={t('addTitle')}
+                  disabled={packaging.titles[format].some((title) => !title.trim())}
+                  onClick={() => {
+                    setPackaging({
+                      ...packaging,
+                      titles: { ...packaging.titles, [format]: [...packaging.titles[format], ''] },
+                    });
+                  }}
+                >
+                  <Plus size={16} />
+                </button>
+              </div>
+            </div>
             <label className="field">
               <span className="field-label">
                 <span>{t('description')}</span>
@@ -124,7 +166,7 @@ export function PackagingPage() {
                 }}
               />
             </label>
-            <label className="field" htmlFor={tagsId}>
+            <div className="field">
               <span className="field-label">
                 <span>{t('tags')}</span>
                 <AiButton
@@ -137,11 +179,8 @@ export function PackagingPage() {
                   }}
                 />
               </span>
-              <TagsInput
-                id={tagsId}
-                aria-label={t('tags')}
+              <TagChips
                 value={packaging.tags[format]}
-                placeholder={t('tagsHint')}
                 onChange={(tags) => {
                   setPackaging({
                     ...packaging,
@@ -152,7 +191,7 @@ export function PackagingPage() {
                   });
                 }}
               />
-            </label>
+            </div>
             <div className="field">
               <span className="field-label">
                 <span>
@@ -237,7 +276,7 @@ export function PackagingPage() {
         <button
           className="button primary"
           type="button"
-          disabled={!dirty || busy}
+          disabled={!dirty || busy || !!incomplete}
           onClick={() => {
             setConfirm(true);
           }}

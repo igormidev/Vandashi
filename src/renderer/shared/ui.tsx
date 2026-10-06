@@ -49,7 +49,7 @@ export function InfoTip({ text }: { text: string }) {
 export function AiButton({ onClick, disabled = false }: { onClick: () => void; disabled?: boolean }) {
   const { t } = useTranslation();
   return (
-    <IconButton label={t('askAi')} onClick={onClick} disabled={disabled}>
+    <IconButton label={t('askAi')} className="icon-button ai-action" onClick={onClick} disabled={disabled}>
       <Sparkles size={16} />
     </IconButton>
   );

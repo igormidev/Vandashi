@@ -20,6 +20,7 @@ async function attachToConversation(page: Page, title: string) {
   await expect(page.locator('.chat-scope')).toHaveText(title);
   await expect(page.locator('.chat-toolbar[role="status"]')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Start a fresh conversation', exact: true })).toBeEnabled();
+  await page.getByRole('textbox', { name: 'AI chat', exact: true }).fill('Review this reference');
   await page.getByRole('button', { name: 'Attach files', exact: true }).click();
 }
 const asset: Asset = {
@@ -78,7 +79,7 @@ const cases: {
     title: 'Titles · long form',
     open: async (page) => {
       await page
-        .locator('label.field')
+        .locator('.field')
         .filter({ has: page.getByRole('textbox', { name: 'Titles', exact: true }) })
         .getByRole('button', { name: 'Work on this with AI', exact: true })
         .click();
@@ -163,20 +164,19 @@ for (const consumer of cases)
     await page.reload();
     await consumer.open(page);
     await attachToConversation(page, consumer.title);
-    await expect(page.locator('.attachments .badge')).toHaveText(['selected.svg']);
-    await page.getByRole('textbox', { name: 'AI chat', exact: true }).fill('Review this reference');
+    await expect(page.locator('.composer .attachments .attachment')).toHaveText(['selected.svg']);
     const send = page.getByRole('button', { name: 'Send message', exact: true });
     await send.click();
     await expectPending(send);
     await expect(
-      page.locator('.attachments').getByRole('button', { name: 'Remove', exact: true }),
+      page.locator('.composer .attachments').getByRole('button', { name: 'Remove', exact: true }),
     ).toBeDisabled();
     expect((await feedbackState(desktopApp)).pending[0]?.args[0]).toMatchObject({
       sessionId: consumer.sessionId,
       attachments: ['/tmp/selected.svg'],
     });
     await feedbackControl(desktopApp, { finish: { method: 'sendChat' } });
-    await expect(page.locator('.attachments .badge')).toHaveCount(0);
+    await expect(page.locator('.composer .attachments .attachment')).toHaveCount(0);
   });
 
 test('clip packaging attachments reach the clip conversation and retain their selection on failure', async ({
@@ -193,24 +193,23 @@ test('clip packaging attachments reach the clip conversation and retain their se
     .getByRole('button', { name: 'Edit packaging', exact: true })
     .click();
   await page
-    .locator('label.field')
+    .locator('.field')
     .filter({ has: page.getByRole('textbox', { name: 'Titles', exact: true }) })
     .getByRole('button', { name: 'Work on this with AI', exact: true })
     .click();
   await attachToConversation(page, 'Titles · short form');
-  await page.getByRole('textbox', { name: 'AI chat', exact: true }).fill('Use this clip reference');
   const send = page.getByRole('button', { name: 'Send message', exact: true });
   await send.click();
   await expectPending(send);
   await expect(
-    page.locator('.attachments').getByRole('button', { name: 'Remove', exact: true }),
+    page.locator('.composer .attachments').getByRole('button', { name: 'Remove', exact: true }),
   ).toBeDisabled();
   expect((await feedbackState(desktopApp)).pending[0]?.args[0]).toMatchObject({
     sessionId: 'created-clip:packaging:title:short',
     attachments: ['/tmp/clip-reference.svg'],
   });
   await feedbackControl(desktopApp, { finish: { method: 'sendChat', fail: true } });
-  await expect(page.locator('.attachments .badge')).toHaveText(['clip-reference.svg']);
+  await expect(page.locator('.composer .attachments .attachment')).toHaveText(['clip-reference.svg']);
   await expect(send).toBeEnabled();
 });
 
@@ -227,7 +226,7 @@ test('attachment selection waits for an opening conversation to replace the prev
   await expect.poll(async () => (await chatCalls(desktopApp)).includes('openChat')).toBe(true);
   await feedbackControl(desktopApp, { hold: ['openChat', 'sendChat'] });
   await page
-    .locator('label.field')
+    .locator('.field')
     .filter({ has: page.getByRole('textbox', { name: 'Titles', exact: true }) })
     .getByRole('button', { name: 'Work on this with AI', exact: true })
     .click();
@@ -254,8 +253,7 @@ test('attachment selection waits for an opening conversation to replace the prev
   await feedbackControl(desktopApp, { finish: { method: 'openChat' } });
   expect(await attachmentResult).toBeNull();
 
-  await expect(page.locator('.attachments .badge')).toHaveText(['selected.svg']);
-  await page.getByRole('textbox', { name: 'AI chat', exact: true }).fill('Review this reference');
+  await expect(page.locator('.composer .attachments .attachment')).toHaveText(['selected.svg']);
   const send = page.getByRole('button', { name: 'Send message', exact: true });
   await send.click();
   await expectPending(send);
@@ -273,5 +271,5 @@ test('attachment selection waits for an opening conversation to replace the prev
       }),
     ]);
   await feedbackControl(desktopApp, { finish: { method: 'sendChat' } });
-  await expect(page.locator('.attachments .badge')).toHaveCount(0);
+  await expect(page.locator('.composer .attachments .attachment')).toHaveCount(0);
 });

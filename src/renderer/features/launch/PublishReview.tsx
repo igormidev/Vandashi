@@ -166,7 +166,7 @@ export function PublishReview({
               <span>{t('chapters')}</span>
               <div className="toolbar">
                 <button
-                  className="button"
+                  className="button ai-action"
                   type="button"
                   aria-busy={generating}
                   onClick={() => {

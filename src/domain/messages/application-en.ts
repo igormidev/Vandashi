@@ -58,6 +58,7 @@ export const applicationMessagesEn = {
   appWorkspaceSaved: 'All workspace changes are saved.',
   appHyperframesSkillReady: 'Hyperframes skill is available to Codex.',
   appUnknownTaste: 'Unknown taste document.',
+  appPresetConversationMissing: 'The preset for this conversation no longer exists. Choose another preset.',
   appAssetConversationMissing:
     'The asset for this conversation no longer exists. Select an available asset or open the asset library chat.',
   appPublishClipMissing: 'The clip for this publishing conversation no longer exists.',
