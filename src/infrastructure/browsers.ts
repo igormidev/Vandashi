@@ -4,6 +4,7 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
 import type { InstalledBrowser } from '../domain/browsers';
+import { macBrowserIcon } from './mac-browser-icon';
 
 const execute = promisify(execFile);
 const knownNames =
@@ -24,10 +25,13 @@ export async function discoverBrowsers(
   home = homedir(),
 ): Promise<InstalledBrowser[]> {
   const found = new Map<string, InstalledBrowser>();
-  const add = async (name: string, path: string) => {
+  const add = async (name: string, path: string, bundleIcon?: string | null) => {
     if (!name.trim() || found.has(name.toLocaleLowerCase())) return;
     const canonical = await realpath(path);
-    found.set(name.toLocaleLowerCase(), { name, icon: await icon(canonical).catch(() => null) });
+    found.set(name.toLocaleLowerCase(), {
+      name,
+      icon: bundleIcon === undefined ? await icon(canonical).catch(() => null) : bundleIcon,
+    });
   };
   if (platform === 'darwin') {
     for (const directory of ['/Applications', '/System/Applications', join(home, 'Applications')]) {
@@ -50,7 +54,8 @@ export async function discoverBrowsers(
             const schemes = (registration as Record<string, unknown>).CFBundleURLSchemes;
             return Array.isArray(schemes) && schemes.includes('http') && schemes.includes('https');
           });
-          if (web || knownNames.test(name)) await add(name, path);
+          if (web || knownNames.test(name))
+            await add(name, path, await macBrowserIcon(path, data.CFBundleIconFile));
         } catch {
           /* A removed or invalid application is not an installed browser. */
         }

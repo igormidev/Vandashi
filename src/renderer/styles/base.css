@@ -1272,6 +1272,7 @@ svg {
 .browser-select img {
   width: 20px;
   height: 20px;
+  flex-shrink: 0;
   object-fit: contain;
 }
 .browser-select svg {
@@ -1303,6 +1304,7 @@ svg {
 .browser-choice img {
   width: 32px;
   height: 32px;
+  flex-shrink: 0;
   object-fit: contain;
 }
 .platform-field {

@@ -47,6 +47,10 @@ Read `genesis_prompt.md` and `docs/REQUIREMENTS.md` before changing a feature. T
 
 Use Hyperframes' studio visual language: quiet dark surfaces, restrained borders, compact controls, sparse copy. Do not put everything in cards or add empty marketing subtitles. Explain with accessible tooltips. Use official platform marks. Horizontal scrollers carry padding INSIDE their content so scrolling reaches the component edge. Keep keyboard navigation, focus visibility, reduced motion, and error recovery usable.
 
+Browser-picker question text stays neutral; do not color individual social-platform
+names inside sentences. Installed app icons come from host-verified app resources,
+never a generic MIME-type placeholder or a renderer-provided filesystem path.
+
 ## Safety and consistency
 
 Opening an existing brand registers its selected canonical folder in place. Validate

@@ -5,7 +5,7 @@ import type { InstalledBrowser } from '../../../domain/browsers';
 import type { Platform } from '../../../domain/models';
 import { useApp } from '../../app/store';
 import { Loading, Modal, Tip } from '../../shared/ui';
-import { PlatformIcon, platformColor } from '../../shared/PlatformIcon';
+import { PlatformIcon } from '../../shared/PlatformIcon';
 
 export function BrowserPicker({
   value,
@@ -51,7 +51,6 @@ export function BrowserPicker({
   const selected = (choices ?? browsers)?.find((browser) => browser.name === value);
   const platformName = t(platform);
   const question = t('browserForPlatform', { platform: platformName });
-  const [questionBefore, questionAfter] = question.split(platformName);
   return (
     <>
       <Tip
@@ -73,15 +72,7 @@ export function BrowserPicker({
           ) : (
             <Globe size={16} />
           )}
-          <span>
-            {value || (
-              <>
-                {questionBefore}
-                <span style={{ color: platformColor(platform) }}>{platformName}</span>
-                {questionAfter}
-              </>
-            )}
-          </span>
+          <span>{value || question}</span>
           <ChevronDown size={13} />
         </button>
       </Tip>

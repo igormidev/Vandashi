@@ -690,6 +690,10 @@ Implementation and verification are recorded in [CODEX.md](CODEX.md).
 - Brand platform settings use a native installed-browser picker and separate saves
   for brand attributes and creative guides. Threads remains a brand link, without
   implying a verified automated publishing provider.
+  Picker questions use neutral text with the complete translated sentence. On macOS,
+  options and selected values show the installed application's declared bundle icon;
+  a missing or invalid resource falls back to a globe. Official platform marks keep
+  their original colors.
 - Chats retain text-size preferences, pasted images, removable mention attachments,
   contained file/PDF previews, immediate send feedback and a session-bound creative
   queue. Undo depends on a verified conversation boundary.

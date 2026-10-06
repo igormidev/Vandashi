@@ -53,7 +53,14 @@ holds remaining entries for review. Restore locks text, mode, attachment picking
 sending through queue removal and exact draft adoption. Queues do not survive process exit.
 
 Native browser discovery inspects app registrations and returns display names and native
-icons only. It never executes discovered binaries. File viewers use narrow host-authorized
+icons only. On macOS it reads the declared `CFBundleIconFile` inside the canonical app
+bundle, checks containment and bounded stable file bytes, then uses the built-in `sips`
+decoder on a private copy to return a capped 64px PNG. Temporary conversion files are
+disposed after settlement; missing or invalid icons retain the UI's globe fallback.
+It never executes discovered binaries or exposes their paths to the renderer. Browser
+selection questions use the complete translated sentence in the normal text color;
+only the separate official platform marks retain their brand colors.
+File viewers use narrow host-authorized
 media URLs or capped PDF/plain-text payloads. HTML stays inert. PDF.js uses a bundled worker;
 no remote viewer receives local documents. Paste events provide image bytes without any
 clipboard-read permission. Normalized native images retain exact owned records and hashes;

@@ -1,8 +1,4 @@
 {
-  "version": "0.1.14",
-  "notes": [
-    "Restore brand controls, chat attachments, asset tools, and editing presets.",
-    "Improve file preview protection and clip workflow verification.",
-    "Keep AI checks focused and simplify outdated project documentation."
-  ]
+  "version": "0.1.15",
+  "notes": ["Show real installed app icons and neutral platform text in the browser picker."]
 }
