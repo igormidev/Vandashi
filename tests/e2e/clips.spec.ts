@@ -167,7 +167,7 @@ test('trims real media, keeps the initial conversation through packaging edits, 
   await expect(dialog).toHaveCount(0);
   await expect(titles).toHaveValue('Edited square title');
   await page
-    .locator('label.field')
+    .locator('.field')
     .filter({ has: titles })
     .getByRole('button', { name: 'Work on this with AI', exact: true })
     .click();
