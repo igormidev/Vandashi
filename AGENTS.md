@@ -2,6 +2,28 @@
 
 Read `genesis_prompt.md` and `docs/REQUIREMENTS.md` before changing a feature. The brief is the product contract. Update this file and `docs/ARCHITECTURE.md` whenever relevant architecture changes.
 
+## MANDATORY AI test scope
+
+- NEVER run the full test suite, unrelated tests, or existing test cases unless the
+  user EXPLICITLY asks for that testing. A request to implement, fix, commit, push,
+  build, install, or release is NOT permission to run all tests.
+- By default, run ONLY tests you create during the current task. Pass exact test
+  file paths. When adding cases to an existing file, also use Vitest's `-t` or
+  Playwright's `-g` to select ONLY the newly created cases.
+- NEVER use bare `npm test`, `vitest run`, `playwright test`, `npm run check:all`,
+  `npm run test:e2e`, or `npm run test:site` as a routine task check. Do not broaden
+  testing through default discovery, directory/glob selection, hooks or packaging.
+- Review affected code and consumers, and create meaningful focused tests where
+  needed. Documentation-only changes do not require invented tests. If wider
+  testing would help, report that limitation; do not run it without an explicit request.
+- `npm run check` and the pre-commit hook perform static/source/build checks only;
+  they MUST NOT invoke test suites. Automated native/site CI remains separate;
+  agents must not duplicate those runs locally or dispatch extra suites without
+  explicit user authorization.
+- This policy takes precedence over older broad-testing instructions in the brief,
+  integration guides, historical checklists and agent guidance. NEVER restart a
+  large regression sweep merely to finish a small task.
+
 ## MANDATORY quality gates
 
 - EVERY commit MUST increase the app version and update the concise release notes. Run
@@ -11,10 +33,10 @@ Read `genesis_prompt.md` and `docs/REQUIREMENTS.md` before changing a feature. T
   verified installers and update metadata are published as a complete GitHub Release.
 
 - ALWAYS follow dependency boundaries. NEVER bypass a port to reach the filesystem, Codex, Git, Electron, or Hyperframes from the renderer.
-- ZERO static analysis warnings or errors. Run `npm run check` before EVERY commit. This includes consistent Prettier formatting, strict types, lint, architecture, tests, and a production build. NEVER disable checks to make a commit pass. Git hooks and CI enforce the same gate.
+- ZERO static analysis warnings or errors. Run `npm run check` before EVERY commit. This includes version consistency, Prettier formatting, strict types, lint, architecture, and production builds, with NO tests. Run only the tests permitted by the AI test-scope policy separately. NEVER disable static checks to make a commit pass. Git hooks and CI enforce the same source gate.
 - Add meaningful tests for business rules, concurrency, recovery, schemas, and edge cases. Avoid tests that merely restate code.
 - COMMIT after each verified feature or meaningful increment. Ask before every commit: does this meet the brief, handle failure and edge cases, preserve architecture, avoid unnecessary UI text, and require updated documentation?
-- Check ALL consumers of a shared component before editing it. Test it on EVERY affected page, especially brand and video assets and chat.
+- Check ALL consumers of a shared component before editing it, especially brand and video assets and chat. Cover affected behavior with task-created tests and focused manual inspection; do not run existing page suites without an explicit request.
 - Never claim a feature works from compilation alone. Exercise real integrations and inspect the actual app. Record unavailable external prerequisites honestly.
 - NEVER hardcode user-facing text in UI components. The English implementation checkpoint is complete and translation is active. Keep English source keys and every supported UI/diagnostic/native catalog in sync; preserve named interpolation and review natural language in context. Follow `docs/TRANSLATION.md` and its catalog/layout checks.
 - Localization checks cover TS helpers, templates, constants, JSX and accessible attributes. Keep machine-token exceptions narrow and file-specific. Layer imports use explicit package allowlists; host APIs belong behind infrastructure ports.
@@ -138,8 +160,9 @@ diagnostics so a language change updates the explanation without restarting the 
 
 The landing page lives in `landing/src`, with its own browser-only TypeScript environment
 and eight complete catalogs. It must never import Electron, host adapters, Node, or desktop
-renderer code. `npm run check` verifies and builds both products. Run `npm run test:site`
-against the production `/Vandashi/` base path before site delivery. Keep screenshots tied
+renderer code. `npm run check` statically verifies and builds both products without tests.
+Run task-created site tests against the production `/Vandashi/` base path; the complete
+`npm run test:site` suite requires an explicit user request. Keep screenshots tied
 to an identified real app revision; preserve full captures in `docs/screenshots` and record
 any lossless web encoding in `docs/SITE.md`. Never replace real screenshots with invented UI.
 

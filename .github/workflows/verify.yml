@@ -84,7 +84,7 @@ jobs:
         run: npx playwright install-deps chromium
       - name: Check source coverage for installed native components
         run: npm run sources:check
-      - name: Verify architecture, types, lint, tests, and build
+      - name: Verify architecture, types, lint, and production builds without tests
         run: npm run check
       - name: Test the real Electron renderer
         if: runner.os != 'Linux'

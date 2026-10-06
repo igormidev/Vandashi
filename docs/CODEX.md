@@ -12,7 +12,9 @@ reset times never establish recovery. Workspace entry and AI repair remain block
 until explicit permission is available. Authenticated API-key, Bedrock and custom
 providers are not required to expose ChatGPT subscription quotas.
 
-Run:
+The following are reference commands for explicitly requested integration checks.
+For routine AI tasks, follow [AGENTS.md](../AGENTS.md): run only newly created tests
+with exact paths and case-name filters, rather than this existing group.
 
 ```sh
 npm test -- tests/codex.test.ts tests/codex-discovery.test.ts tests/codex-launch.test.ts tests/codex-prompts.test.ts

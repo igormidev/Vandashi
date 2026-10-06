@@ -1,7 +1,4 @@
 {
-  "version": "0.1.12",
-  "notes": [
-    "Restore brand controls, chat attachments, asset tools, and editing presets.",
-    "Improve file preview protection and workspace loading."
-  ]
+  "version": "0.1.13",
+  "notes": ["Keep AI tests focused and simplify outdated project documentation."]
 }

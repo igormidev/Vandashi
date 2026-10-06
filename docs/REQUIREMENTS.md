@@ -1,6 +1,13 @@
 # Vandashi acceptance checklist
 
-Source of truth: [`genesis_prompt.md`](../genesis_prompt.md), read in full again on 2026-09-23. Source references below use `genesis_prompt.md:Lx–Ly`. Re-read the relevant source section before each implementation or review. This checklist records the entire requested product; milestones sequence work and do not remove scope. The user-approved recovered prompt additions and their verification are recorded in [`RECONSTRUCTION.md`](RECONSTRUCTION.md).
+Source of truth: [`genesis_prompt.md`](../genesis_prompt.md). Source references below use `genesis_prompt.md:Lx–Ly`. Re-read the relevant source section before each implementation or review. This checklist records the entire requested product; milestones sequence work and do not remove scope. Later user additions appear below and take precedence where they change the original brief.
+
+**AI testing policy (October 6, 2026):** run only tests created during the current task
+unless the user explicitly requests broader testing. Select exact files and filter
+new cases when editing existing test files. Routine implementation, commits, builds
+and releases do not authorize a full suite. `npm run check` retains strict static and
+production-build gates without tests; the staged hook uses that same gate. Historical
+test counts below record earlier runs, not instructions to repeat them. See [AGENTS.md](../AGENTS.md).
 
 Unchecked means **not yet verified**, including work that may already exist. Check an item only with a corresponding implementation and current test or manual verification evidence. Record evidence in the verification log; do not equate scaffolding, a disabled button, or a mock adapter with a working integration. Ambiguities and chosen interpretations live in [`DECISIONS.md`](DECISIONS.md).
 
@@ -360,9 +367,9 @@ paths provide these flows. Brand-summary, storage-creation and native workspace-
 cover ordering/renames, persistence, manual draft locks, editable commit fields, unavailable
 helper fallback and independent preferences. Native pane/asset geometry tests verify the
 1200×720 minimum and 25%/75% splits; narrow asset library/inspector panes stack without
-horizontal overflow. The journal records actual creation, saved description/guides, restart,
-Home title refresh and a fresh branded composition. F01/F05/F06/F08 in the
-[interim review](INTERIM-FUNCTIONAL-REVIEW.md) describe staged creation and preserved work.
+horizontal overflow. Earlier native walkthroughs verified actual creation, saved
+description/guides, restart, Home title refresh and a fresh branded composition. The
+[architecture contract](ARCHITECTURE.md) describes staged creation and preserved work.
 All three native missing-Git/open-failure cases passed: selected parent/name survive, official
 Git help is available, and retry avoids duplicate creation. Actual `.draft` video rejection
 kept its value without creating a hidden project. Filesystem tests cover portable collision,
@@ -432,7 +439,7 @@ disposable Fresh canvas project produced a persistent Git-restoration notice ide
 the exact recovery backup. SHA256 verification confirmed byte-exact restoration of the
 original packaging and preservation of the malformed content; Git remained clean and
 subsequent video entry completed its visible prerequisite sequence. This closes VIDEO-10.
-See [the packaged recovery walkthrough](MANUAL-VERIFICATION.md#current-packaged-recovery--0784307).
+See [Codex integration](CODEX.md) and the [desktop verification record](MANUAL-VERIFICATION.md).
 Thumbnail rename and actual platform
 candidate limits remain PACK-04/05 rather than being inferred from the two-image case.
 
@@ -596,7 +603,8 @@ keyboard pane resizing, readable wrapping, full controls and visible focus. The
 reviewer accepted UX-01/03/05/06 without another UI sweep. The macOS bundle names,
 identifier and icon resource were independently checked; final Windows/Linux artifact
 identity remains under UX-02 and platform release acceptance. See the
-[manual journal](MANUAL-VERIFICATION.md) and [same-reviewer record](FINAL-REVIEW.md).
+[desktop verification record](MANUAL-VERIFICATION.md). Earlier detailed reviewer logs
+remain available in Git history.
 
 ### Residual acceptance, kept explicit
 
@@ -676,3 +684,25 @@ systems are not implied by one native sample.
   actionable guides rather than impossible installation requests.
 
 Implementation and verification are recorded in [CODEX.md](CODEX.md).
+
+## Requested desktop workflows — September 28–October 2, 2026
+
+- Brand platform settings use a native installed-browser picker and separate saves
+  for brand attributes and creative guides. Threads remains a brand link, without
+  implying a verified automated publishing provider.
+- Chats retain text-size preferences, pasted images, removable mention attachments,
+  contained file/PDF previews, immediate send feedback and a session-bound creative
+  queue. Undo depends on a verified conversation boundary.
+- Asset inspectors support resizing, fullscreen media, tag chips, dates, reference
+  copying and folder breadcrumbs. Creation uses an owned generation stage and
+  managed asset skills; failed operations retain recovery evidence.
+- Packaging titles are individual ordered inputs; incomplete tag entries block saves.
+  A compact shared app bar and workspace tabs retain visible Settings feedback.
+- Each brand owns the `edition_presets` repository. Named preset folders contain
+  `HOW_TO_USE.md`, supporting files and contained previews. Three resizable panes,
+  natural folder-name mentions and a managed creation skill support the workflow.
+
+The durable ownership and safety contracts are documented in
+[ARCHITECTURE.md](ARCHITECTURE.md) and [AGENTS.md](../AGENTS.md). Current verification
+boundaries are in [MANUAL-VERIFICATION.md](MANUAL-VERIFICATION.md); implementation
+does not imply live external publishing or unavailable model/runtime verification.

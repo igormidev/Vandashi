@@ -73,14 +73,24 @@ The app stores preferences and conversation records in the operating system's ap
 ## Development
 
 ```sh
-npm run check          # Types, strict lint, architecture, tests, production bundle
-npm run test:e2e       # Actual Electron shell and workflow tests
-npm run test:site      # Production landing page in Chromium, Firefox, and WebKit
+npm run check          # Version, formatting, types, lint, architecture, production builds; no tests
 npm run package:dir    # Build an unpacked native app for this machine
 npm run package        # Verify and create native installers
 ```
 
-`npm ci` installs a pre-commit hook that runs the complete verification gate. CI runs it on macOS, Windows, and Linux, then tests Electron and packages the app. Live Codex tests are opt-in because they use a signed-in account; live media tests require the rendering tools. See [Codex integration](docs/CODEX.md), [Hyperframes integration](docs/HYPERFRAMES.md), and [architecture](docs/ARCHITECTURE.md).
+AI agents run only tests created for the current task. Select exact files and, when
+adding cases to existing files, filter to the new case names. Full suites require an
+explicit user request; implementation, commit and release requests do not grant that
+permission. See the mandatory [agent test policy](AGENTS.md).
+
+`npm ci` installs a pre-commit hook that checks an immutable staged snapshot using
+`npm run check`, without running tests. `npm run check:all` additionally runs the
+complete unit suite and is opt-in. `npm run test:e2e` and `npm run test:site` are also
+full-suite commands, not routine AI task checks. Automated CI verifies source on
+macOS, Windows and Linux, then handles native and site release checks separately.
+Live Codex tests use a signed-in account; live media tests require rendering tools.
+See [Codex integration](docs/CODEX.md), [Hyperframes integration](docs/HYPERFRAMES.md),
+and [architecture](docs/ARCHITECTURE.md).
 
 The separate [landing page](landing/) uses the same strict source checks and a production build under `/Vandashi/`. See [site maintenance](docs/SITE.md) for language catalogs, screenshot provenance, responsive checks, and GitHub Pages deployment.
 
@@ -88,7 +98,7 @@ The separate [landing page](landing/) uses the same strict source checks and a p
 
 Copy this prompt into a coding agent with local terminal access:
 
-> Install and open Vandashi from https://github.com/igormidev/Vandashi. Inspect its README and AGENTS.md first. Use the latest repository state and Node.js 24. Set ONNXRUNTIME_NODE_INSTALL=skip in the installation environment, then run npm ci to use the included CPU inference runtime without downloading CUDA. Check Git and Codex CLI; install missing prerequisites from their official sources without replacing my existing configurations. Ask me to sign in directly if Codex needs authentication. Install the bundled Hyperframes skill with `node node_modules/hyperframes/bin/hyperframes.mjs skills update --json`, verify the media prerequisites, run the checks, then start `npm run dev` and open the desktop app. Keep my existing projects and credentials intact. Report any failed dependency check with the exact error.
+> Install and open Vandashi from https://github.com/igormidev/Vandashi. Inspect its README and AGENTS.md first. Use the latest repository state and Node.js 24. Set ONNXRUNTIME_NODE_INSTALL=skip in the installation environment, then run npm ci to use the included CPU inference runtime without downloading CUDA. Check Git and Codex CLI; install missing prerequisites from their official sources without replacing my existing configurations. Ask me to sign in directly if Codex needs authentication. Install the bundled Hyperframes skill with `node node_modules/hyperframes/bin/hyperframes.mjs skills update --json`, verify the media prerequisites, run `npm run check` (static checks and builds only; no full test suites), then start `npm run dev` and open the desktop app. Keep my existing projects and credentials intact. Report any failed dependency check with the exact error.
 
 ## References and license
 

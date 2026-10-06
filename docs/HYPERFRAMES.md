@@ -87,7 +87,7 @@ Hyperframes' media metadata endpoint reports codec/color information; it does **
 
 1. Read the [Studio documentation](https://hyperframes.heygen.com/packages/studio), [Studio server contract](https://hyperframes.heygen.com/packages/studio-server), and release notes. Inspect the exact installed source/types, not an old example.
 2. Bump both pinned packages and the lockfile together. Review `previewLifecycleOutput.ts`, `server/studioServer.ts`, `studio-server/src/routes/{preview,files,render}.ts` and `player` cross-origin behavior.
-3. Run `npm run check` and `VANDASHI_MEDIA_SMOKE=1 npx vitest run tests/media-integration.test.ts` with working Chrome, FFmpeg and FFprobe.
+3. Run `npm run check` for static/build validation. Run only task-created tests by default; the existing `VANDASHI_MEDIA_SMOKE=1 npx vitest run tests/media-integration.test.ts` integration check requires an explicit request and working Chrome, FFmpeg and FFprobe. Follow [AGENTS.md](../AGENTS.md) for test selection.
 4. Manually edit an element in embedded Studio, leave with Save, confirm script synchronization and Git history, then reopen. Repeat with Discard. Render and inspect a landscape video and a trimmed portrait/square clip with audio.
 5. Verify the real packaged app, process cleanup, port conflicts, missing dependencies, restart, and external edits. Audit the landing page screenshots after a visible Studio change.
 

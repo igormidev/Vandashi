@@ -71,10 +71,11 @@ Recheck them after structural or visible app changes.
 ## Verification and deployment
 
 - `npm run check` checks both strict TypeScript environments, translation/accessibility
-  lint, import boundaries, unit tests, and both production builds.
+  lint, import boundaries, formatting, versions, and both production builds, without tests.
 - `npm run test:site` builds the production bundle and starts an exclusive preview at
   `http://127.0.0.1:4174/Vandashi/` for Chromium, Firefox, and WebKit. Site tests remain
-  separate from native Electron tests.
+  separate from native Electron tests. AI agents use exact paths/case filters for
+  task-created tests; running this complete suite requires an explicit user request.
 - Browser scenarios cover all eight languages at 320×568, 375×812, 390×844,
   768×1024, 1024×768, 1440×900, 1920×1080, and 844×390, plus enlarged text,
   reduced motion, localization, keyboard/modal/copy behavior, denied capabilities,

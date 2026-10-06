@@ -1,6 +1,6 @@
 {
   "name": "vandashi",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "description": "A local-first, AI-driven video studio powered by Codex and Hyperframes.",
   "private": true,
   "type": "module",
@@ -23,7 +23,8 @@
     "site:preview": "vite preview --config vite.site.config.ts",
     "site:typecheck": "tsc --noEmit --project landing/tsconfig.json",
     "test:site": "npm run site:build && playwright test --config playwright.site.config.ts",
-    "check": "npm run version:check && npm run format:check && npm run typecheck && npm run lint && npm run architecture && npm test && npm run build && npm run site:build",
+    "check": "npm run version:check && npm run format:check && npm run typecheck && npm run lint && npm run architecture && npm run build && npm run site:build",
+    "check:all": "npm run check && npm test",
     "prepare": "node scripts/install-hooks.mjs",
     "package": "npm run check && npm run licenses:generate && npm run sources:generate && npm run sources:verify && electron-builder",
     "package:dir": "npm run build && npm run licenses:generate && npm run sources:check && electron-builder --dir",

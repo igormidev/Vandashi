@@ -24,10 +24,6 @@ Vandashi is an Electron desktop application. There is no hosted backend. The ren
 
 ## Persistence
 
-The recovered September 28–October 2 requests are recorded in
-[`RECONSTRUCTION.md`](RECONSTRUCTION.md). The implementation was sequenced by
-dependency, with one final source commit requested by the user.
-
 Brands now also own an independent `edition_presets` repository, identified by
 `.vandashi-presets.json`. Initialization prepares Git privately and publishes complete
 files exclusively, with the marker last. Cleanup compares the exact staging directory
@@ -398,8 +394,14 @@ retain their separate contracts. Architecture rules constrain both internal laye
 external packages, including Node host modules. The application layer permits the pure
 `node:path` utility while filesystem/process capabilities stay behind infrastructure ports.
 
-The pre-commit hook materializes an immutable copy of the Git index and runs the entire
-`npm run check` there using a validated matching dependency installation. It preserves
+The pre-commit hook materializes an immutable copy of the Git index and runs
+`npm run check` there using a validated matching dependency installation. This gate
+checks release/version consistency, formatting, strict types, zero-warning lint,
+architecture boundaries and both production builds; it does not execute tests.
+`check:all` adds the full unit suite only for an explicit request. AI task verification
+selects only tests created during that task, with case-name filters when an existing
+file also contains older cases. Automated CI's native/site checks are separate.
+The hook preserves
 unstaged edits and original index bytes, rejects escaping source symlinks, gitlinks and
 checkout-filter substitutions, strips inherited Git routing from test subprocesses, and
 rejects concurrent index changes. A commit cannot pass using an unstaged correction or

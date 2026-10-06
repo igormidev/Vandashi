@@ -70,10 +70,10 @@ activity-done event. Read-only answers, helpers, failed turns, and no-change rec
 produce no success toast. Loading persisted history does not toast again, and dismissing
 the toast does not remove the independent receipt or its expandable file diffs.
 
-`domain/messages.ts` supplies two English app-owned message IDs in a separate i18next
+`domain/messages.ts` supplies typed app-owned message IDs in a separate i18next
 namespace; this keeps receipts localizable without treating arbitrary agent text as UI
-strings. The broader localization boundary remains the work described in
-`LOCALIZATION-READINESS.md`. This change does not translate existing content.
+strings. The current [translation contract](TRANSLATION.md) also covers diagnostics
+and native dialogs. Existing user and provider content remains unchanged.
 
 `tests/chat-mentions.test.ts` checks serialization, special paths, atom semantics, legacy drafts, and scope filtering. `tests/e2e/chat-mentions.spec.ts`, `chat.spec.ts`, and `chat-drafts.spec.ts` exercise the actual bundled Electron renderer with a deterministic test IPC backend. These UI tests do not imply external model execution; the separate Codex live tests exercise the real installed app-server.
 
