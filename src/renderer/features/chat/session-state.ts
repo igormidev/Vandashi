@@ -20,7 +20,32 @@ export function mergeSession(incoming: ChatSession, current?: ChatSession): Chat
   for (const message of current.messages) {
     const index = messages.findIndex((entry) => entry.id === message.id);
     if (index < 0) messages.push(message);
-    else if ((messages[index]?.text.length ?? 0) <= message.text.length) messages[index] = message;
+    else {
+      const incomingMessage = messages[index];
+      if (!incomingMessage) continue;
+      const currentTerminal =
+        message.streaming === false || (message.activity && message.activity.status !== 'inProgress');
+      const incomingActive =
+        incomingMessage.streaming === true || incomingMessage.activity?.status === 'inProgress';
+      if (currentTerminal && incomingActive) {
+        messages[index] = message;
+        continue;
+      }
+      const terminal =
+        incomingMessage.streaming === false ||
+        (incomingMessage.activity && incomingMessage.activity.status !== 'inProgress');
+      // Text length is not a lifecycle clock. Keep authoritative final metadata even
+      // when completion replaces a longer partial output, while retaining live deltas.
+      messages[index] = {
+        ...message,
+        ...incomingMessage,
+        text:
+          terminal || incomingMessage.text.length >= message.text.length
+            ? incomingMessage.text
+            : message.text,
+        ...(message.streaming === false && incomingMessage.streaming === true ? { streaming: false } : {}),
+      };
+    }
   }
   return { ...incoming, messages };
 }

@@ -43,10 +43,10 @@ export async function installChatFixture(
       ipcMain.on('vandashi:test-calls', (_event, reply: (value: string[]) => void) => {
         reply(calls);
       });
-      ipcMain.handle('vandashi:invoke', (_event, method: string, args: unknown[]) => {
+      ipcMain.handle('vandashi:invoke', (_event, method: string, [input]: unknown[]) => {
         calls.push(method);
-        const input = args[0];
         if (method === 'queuedChats') return [];
+        if (method === 'pendingChatInput') return null;
         if (method === 'installedBrowsers') return fixture.options.installedBrowsers ?? [];
         if (method === 'prepareTranscriptions') return { status: 'ready' };
         if (method === 'prepareTranscriptionModel') return undefined;

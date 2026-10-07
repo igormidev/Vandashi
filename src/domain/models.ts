@@ -3,6 +3,10 @@ import type { AssetInspectionNote, AssetInspectionProgress } from './asset-inspe
 import type { AppMessage } from './messages';
 import type { Diagnostic } from './diagnostics';
 import type { Locale } from './locales';
+import type { ChatItemActivity } from './chat-activity';
+export type { ChatItemActivity } from './chat-activity';
+import type { ChatInputRequest } from './chat-input';
+import type { ChatContextUsage } from './chat-usage';
 import type {
   AssetAnalysis,
   AudioCategory,
@@ -165,6 +169,12 @@ export interface DependencyCheck {
 export interface ChatMessage {
   /** Renderer-only optimistic state. Never persisted or treated as provider evidence. */
   pending?: 'sending' | 'queued';
+  /** Live provider lifecycle, stripped from stored sessions. */
+  streaming?: boolean;
+  phase?: 'commentary' | 'final_answer';
+  activity?: ChatItemActivity;
+  /** Actual provider plan proposal, distinct from its progress checklist. */
+  proposedPlan?: boolean;
   attachments?: string[];
   id: string;
   role: 'user' | 'assistant' | 'reasoning' | 'tool' | 'error';
@@ -172,12 +182,15 @@ export interface ChatMessage {
   turnId: string | null;
   files: FileChange[];
   createdAt: string;
+  /** Recovered provider history can omit original timestamps. */
+  timestampKnown?: boolean;
   appMessage?: AppMessage;
   userText?: string;
   diagnostic?: Diagnostic;
   generatedImages?: string[];
 }
 export interface ChatSession {
+  branch?: { parentId: string; messageId: string };
   id: string;
   scope: Scope;
   topic: string;
@@ -191,6 +204,7 @@ export interface ChatSession {
 export interface ChatCheckpoint {
   turnId: string;
   mode?: 'read' | 'edit';
+  collaboration?: 'default' | 'plan';
   threadId: string;
   heads: Record<string, string>;
   postHeads?: Record<string, string>;
@@ -201,6 +215,7 @@ export interface ChatRequest {
   sessionId: string;
   text: string;
   mode: 'read' | 'edit';
+  collaboration?: 'default' | 'plan';
   selection: ModelSelection;
   attachments: string[];
   handoff?: ClipHandoff;
@@ -237,6 +252,8 @@ export type AppEvent =
       currentLabel?: AppMessage;
     }
   | { type: 'chat'; sessionId: string; message: ChatMessage; delta: boolean }
+  | { type: 'chat-input'; sessionId: string; request: ChatInputRequest | null }
+  | { type: 'chat-usage'; sessionId: string; context: ChatContextUsage }
   | { type: 'activity'; activity: ChatActivity }
   | { type: 'chat-settled'; scope: Scope; sessionId: string }
   | { type: 'workspace-changed'; scope: Scope }

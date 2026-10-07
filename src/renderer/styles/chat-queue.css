@@ -1,0 +1,103 @@
+.queued-messages {
+  margin: 0 7px -1px;
+  padding: 10px 10px 14px;
+  background: #141416;
+  border: 1px solid #303035;
+  border-radius: 14px 14px 0 0;
+  font-size: 11px;
+  color: var(--muted);
+}
+.queue-heading {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 3px 8px;
+}
+.queue-count {
+  font-variant-numeric: tabular-nums;
+  margin-left: auto;
+  color: var(--faint);
+}
+.queue-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: min(33vh, 260px);
+  overflow: auto;
+  padding: 1px 2px;
+}
+.queued-message {
+  position: relative;
+  display: block;
+  padding: 9px 10px 0;
+  background: #1a1a1e;
+  border: 1px solid #2a2a30;
+  border-radius: 8px;
+  font-size: 11px;
+  color: var(--text);
+}
+.queued-text {
+  display: block;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.65;
+  max-height: 3.3em;
+  overflow: hidden;
+  transition: max-height 180ms ease;
+}
+.queued-message:hover .queued-text,
+.queued-message:focus-within .queued-text {
+  max-height: 8.25em;
+  overflow: auto;
+}
+.queue-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  min-height: 30px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 140ms ease;
+}
+.queued-message:hover .queue-actions,
+.queued-message:focus-within .queue-actions,
+.queued-message[aria-busy='true'] .queue-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+.queue-actions .icon-button {
+  width: 24px;
+  height: 24px;
+}
+.queue-action {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 6px;
+  border-radius: 5px;
+  font-size: 10px;
+  color: var(--muted);
+}
+.queue-action:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+.queue-held {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--warning);
+  font-size: 10px;
+}
+@media (hover: none) {
+  .queue-actions {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .queued-text,
+  .queue-actions {
+    transition: none;
+  }
+}

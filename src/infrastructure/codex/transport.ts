@@ -2,9 +2,12 @@ import { spawn } from 'node:child_process';
 import type { ChildProcessWithoutNullStreams } from 'node:child_process';
 import { z } from 'zod';
 import { AgentError } from '../../domain/agent';
+import type { AgentInputRequest, AgentInputResponse } from '../../domain/chat-input';
+import { validateInputResponse } from '../../domain/chat-input';
 import { resolveCodexBinary } from './binary';
 import { codexLaunch } from './launch';
 import { shutdownProcess } from './shutdown';
+import { parseUserInput } from './user-input';
 
 const envelope = z.object({
   id: z.union([z.string(), z.number()]).optional(),
@@ -12,6 +15,10 @@ const envelope = z.object({
   params: z.unknown().optional(),
   result: z.unknown().optional(),
   error: z.object({ code: z.number(), message: z.string() }).optional(),
+});
+const resolvedRequest = z.object({
+  requestId: z.union([z.string(), z.number()]),
+  threadId: z.string(),
 });
 export interface RpcNotification {
   method: string;
@@ -21,6 +28,9 @@ export interface RpcClient {
   request(method: string, params: unknown): Promise<unknown>;
   subscribe(listener: (event: RpcNotification) => void): () => void;
   onFailure(listener: (error: Error) => void): () => void;
+  subscribeUserInput?(threadId: string, listener: (request: AgentInputRequest | null) => void): () => void;
+  respondUserInput?(response: AgentInputResponse): Promise<void>;
+  dismissUserInput?(threadId: string, turnId: string): void;
   close(): Promise<void>;
 }
 interface Pending {
@@ -61,6 +71,15 @@ export class CodexTransport implements RpcClient {
   private readonly processClosed: Promise<void>;
   private shutdown: Promise<void> | null = null;
   private failureDrain: Promise<void> | null = null;
+  private inputScope: {
+    threadId: string;
+    listener: (request: AgentInputRequest | null) => void;
+  } | null = null;
+  private userInput: {
+    nativeId: string | number;
+    request: AgentInputRequest;
+    responding: boolean;
+  } | null = null;
   constructor(
     binary = resolveCodexBinary(),
     private readonly timeoutMs = 30_000,
@@ -130,6 +149,45 @@ export class CodexTransport implements RpcClient {
     this.failures.add(listener);
     return () => this.failures.delete(listener);
   }
+  subscribeUserInput(threadId: string, listener: (request: AgentInputRequest | null) => void): () => void {
+    if (this.inputScope) throw new AgentError('busy', { id: 'codexBusy' });
+    const scope = { threadId, listener };
+    this.inputScope = scope;
+    return () => {
+      if (this.inputScope !== scope) return;
+      this.clearUserInput();
+      this.inputScope = null;
+    };
+  }
+  async respondUserInput(response: AgentInputResponse): Promise<void> {
+    const pending = this.userInput;
+    if (!pending || pending.responding || this.closed || this.failureDrain)
+      throw new AgentError('protocol', { id: 'untrustedRequest' });
+    validateInputResponse(pending.request, response);
+    pending.responding = true;
+    const answers = Object.fromEntries(
+      pending.request.questions.map((question) => [question.id, { answers: response.answers[question.id] }]),
+    );
+    await new Promise<void>((resolve, reject) => {
+      this.child.stdin.write(
+        `${JSON.stringify({ id: pending.nativeId, result: { answers } })}\n`,
+        (error) => {
+          if (error) {
+            this.drainFailure(error);
+            reject(error);
+          } else resolve();
+        },
+      );
+    });
+    if (this.userInput === pending) {
+      this.userInput = null;
+      this.inputScope?.listener(null);
+    }
+  }
+  dismissUserInput(threadId: string, turnId: string): void {
+    if (this.userInput?.request.threadId === threadId && this.userInput.request.turnId === turnId)
+      this.clearUserInput();
+  }
   close(): Promise<void> {
     if (this.failureDrain) return this.failureDrain;
     this.fail(new AgentError('unavailable', { id: 'codexConnectionClosed' }));
@@ -177,6 +235,15 @@ export class CodexTransport implements RpcClient {
     const message = envelope.parse(JSON.parse(line));
     if (message.method) {
       const event = { method: message.method, params: message.params };
+      if (message.id === undefined && message.method === 'serverRequest/resolved') {
+        const resolved = resolvedRequest.safeParse(message.params);
+        if (
+          resolved.success &&
+          this.userInput?.nativeId === resolved.data.requestId &&
+          this.userInput.request.threadId === resolved.data.threadId
+        )
+          this.clearUserInput(false);
+      }
       if (message.id !== undefined) this.rejectServerRequest(message.id, event);
       else for (const listener of this.listeners) listener(event);
       return;
@@ -195,7 +262,20 @@ export class CodexTransport implements RpcClient {
       return;
     }
     if (event.method === 'item/tool/requestUserInput') {
-      this.write({ id, result: { answers: {} } });
+      const request = parseUserInput(event.params, crypto.randomUUID());
+      if (request && request.threadId === this.inputScope?.threadId && !this.userInput) {
+        this.userInput = { nativeId: id, request, responding: false };
+        this.inputScope.listener(request);
+        return;
+      }
+      this.write({
+        id,
+        error: {
+          code: -32602,
+          message:
+            'Interactive input is unavailable for this turn. Ask the user in the conversation instead.',
+        },
+      });
     } else if (
       event.method === 'item/commandExecution/requestApproval' ||
       event.method === 'item/fileChange/requestApproval'
@@ -214,6 +294,7 @@ export class CodexTransport implements RpcClient {
   }
   private fail(error: Error): void {
     if (this.closed) return;
+    this.clearUserInput();
     this.closed = true;
     for (const pending of this.pending.values()) {
       clearTimeout(pending.timer);
@@ -221,5 +302,16 @@ export class CodexTransport implements RpcClient {
     }
     this.pending.clear();
     for (const listener of this.failures) listener(error);
+  }
+  private clearUserInput(sendCancellation = true): void {
+    const pending = this.userInput;
+    if (!pending) return;
+    this.userInput = null;
+    if (sendCancellation && !pending.responding)
+      this.write({
+        id: pending.nativeId,
+        error: { code: -32800, message: 'The interactive request is no longer active.' },
+      });
+    this.inputScope?.listener(null);
   }
 }

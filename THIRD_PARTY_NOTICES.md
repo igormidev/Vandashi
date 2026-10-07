@@ -99,6 +99,14 @@ Keep dependency-package notices, GSAP's generated-project header, original ExifT
 
 ## Update integration reference
 
+The October 7 chat refactor inspected T3 Code again at
+`f570bd21663f56ce94c41829d3b7d72886e25a34` (MIT, copyright 2026 T3 Tools Inc.).
+Its composer, event/history adapter, work logs, Markdown, plans and context controls
+informed the independent implementation described in [CHAT.md](docs/CHAT.md).
+The fresh checkout remains outside this repository; its license matches the retained
+reference license. The generated distribution inventory now includes remark-gfm,
+Shiki, Mermaid, DOMPurify and their installed dependencies.
+
 T3 Code's update controller and Electron adapter were inspected again at revision
 `95030dc674883f0f2a7fd034b32ce742c8cf55d0` on September 26, 2026 (MIT, T3 Tools Inc.).
 They informed the separate check/download/apply state machine and disabled automatic

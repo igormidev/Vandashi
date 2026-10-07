@@ -26,7 +26,15 @@ export async function readHistory(client: RpcClient, threadId: string): Promise<
         thread.turnIds.push(turn.id);
         for (const item of turn.items) {
           const message = itemMessage(item, turn.id);
-          if (message) thread.messages.push(message);
+          if (message) {
+            // History carries observed provider settlement, unlike a persisted local cache.
+            if (turn.status === 'inProgress') message.streaming = true;
+            else if (turn.status === 'completed' || turn.status === 'failed' || turn.status === 'interrupted')
+              message.streaming = false;
+            else delete message.streaming;
+            message.timestampKnown = false;
+            thread.messages.push(message);
+          }
         }
       }
       cursor = page.nextCursor;

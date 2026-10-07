@@ -7,6 +7,9 @@ import { repositoryHeads, turnReceipt } from './turn-receipt';
 import type { MediaPort } from '../domain/media';
 import type { OpenedChat } from '../domain/api';
 import type { AgentPort } from '../domain/agent';
+import type { ChatInputRequest, ChatInputResponse } from '../domain/chat-input';
+import { ChatInputs } from './chat-input';
+import { receiveChatEvent } from './chat-events';
 import { AgentError } from '../domain/agent';
 import type { AppEvent, ChatMessage, ChatRequest, ChatSession, Scope } from '../domain/models';
 import { appMessagesEn } from '../domain/messages';
@@ -19,6 +22,7 @@ import type { Transcriptions } from './transcriptions';
 
 export class Chats {
   private readonly preparation: ChatPreparation;
+  private readonly inputs: ChatInputs;
   constructor(
     private readonly store: StoragePort,
     private readonly git: GitPort,
@@ -31,6 +35,9 @@ export class Chats {
     private readonly validateAttachments?: (paths: string[]) => Promise<string[]>,
     private readonly settled?: (success: boolean) => void,
   ) {
+    this.inputs = new ChatInputs(agent, gate, (event) => {
+      this.notify(event);
+    });
     this.preparation = new ChatPreparation(
       store,
       git,
@@ -50,11 +57,20 @@ export class Chats {
       /* Persist even when the window has closed. */
     }
   }
-  async open(input: { scope: Scope; topic: string; title: string }): Promise<OpenedChat> {
+  pendingInput(sessionId: string): ChatInputRequest | null {
+    return this.inputs.pending(sessionId);
+  }
+  respondInput(response: ChatInputResponse): Promise<void> {
+    return this.inputs.respond(response);
+  }
+  async open(input: { scope: Scope; topic: string; title: string; sessionId?: string }): Promise<OpenedChat> {
     const foregroundBusy = () => this.gate.busy && !this.gate.readingWorkspace;
     if (foregroundBusy()) {
       const existing = (await this.store.sessions(input.scope)).find(
-        (session) => session.topic === input.topic && session.open,
+        (session) =>
+          session.topic === input.topic &&
+          session.open &&
+          (input.sessionId ? session.id === input.sessionId : !session.branch),
       );
       if (existing && foregroundBusy()) return { ...existing, historyDeferred: true };
     }
@@ -66,7 +82,12 @@ export class Chats {
   ): Promise<T> {
     return this.gate.run('prepare-chat', async () => task(await this.openUnlocked(input)));
   }
-  private async openUnlocked(input: { scope: Scope; topic: string; title: string }): Promise<ChatSession> {
+  private async openUnlocked(input: {
+    scope: Scope;
+    topic: string;
+    title: string;
+    sessionId?: string;
+  }): Promise<ChatSession> {
     return openChatSession(this.store, this.agent, input, (event) => {
       this.notify(event);
     });
@@ -196,6 +217,7 @@ export class Chats {
     rejected: (error: unknown) => void,
   ): Promise<boolean> {
     const { session, original, heads } = prepared;
+    const inputRun = this.inputs.begin(session.id, session.threadId);
     const lifecycle = { started: false };
     let failed = false;
     let uncertainStart = false;
@@ -213,43 +235,18 @@ export class Chats {
         });
     };
     try {
-      const result = await this.agent.run(prepared.input, (event) => {
-        if (event.type === 'thread') session.threadId = event.threadId;
-        if (event.type === 'turn') {
-          if (lifecycle.started) return;
-          lifecycle.started = true;
-          session.checkpoints = [
-            ...(session.checkpoints ?? []),
-            {
-              turnId: event.turnId,
-              mode: prepared.request.mode,
-              threadId: session.threadId ?? '',
-              heads,
-              messageCount: original.messages.length,
-            },
-          ];
-          const message = session.messages.at(-1);
-          if (message?.role === 'user') message.turnId = event.turnId;
-          this.notify({
-            type: 'activity',
-            activity: { sessionId: session.id, phase: 'working', detail: '' },
-          });
-          accepted();
-        }
-        if (event.type === 'message') {
-          const index = session.messages.findIndex((message) => message.id === event.message.id);
-          if (index < 0) session.messages.push(event.message);
-          else session.messages[index] = event.message;
-          this.notify({ type: 'chat', sessionId: session.id, message: event.message, delta: event.delta });
-        }
-        if (event.type === 'warning')
-          this.notify({
-            type: 'notice',
-            code: 'agent-warning',
-            detail: event.detail,
-            ...(event.diagnostic ? { diagnostic: event.diagnostic } : {}),
-          });
-        persist();
+      const observer = {
+        prepared,
+        lifecycle,
+        inputRun,
+        inputs: this.inputs,
+        accepted,
+        notify: (event: AppEvent) => {
+          this.notify(event);
+        },
+      };
+      const result = await this.agent.run({ ...prepared.input, interactive: true }, (event) => {
+        if (receiveChatEvent(observer, event)) persist();
       });
       if (!lifecycle.started) throw new AppFault({ id: 'appTurnNotAccepted' });
       session.threadId = result.threadId;
@@ -277,6 +274,8 @@ export class Chats {
         session.messages.push(message);
         this.notify({ type: 'chat', sessionId: session.id, message, delta: false });
       }
+    } finally {
+      this.inputs.end(inputRun);
     }
     await persistence;
     try {

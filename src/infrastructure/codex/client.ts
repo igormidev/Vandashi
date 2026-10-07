@@ -15,16 +15,21 @@ import type {
 } from '../../domain/agent';
 import { AgentError } from '../../domain/agent';
 import { diagnosticFromError } from '../../domain/diagnostics';
+import type { AgentInputResponse } from '../../domain/chat-input';
+import type { ChatContextUsage, ChatUsage } from '../../domain/chat-usage';
 import type { ModelInfo } from '../../domain/models';
 import { loadCapabilities, loadModels, status } from './discovery';
 import { executeTurn } from './execution';
 import { readHistory } from './history';
+import { forkHistory } from './fork';
 import { CodexImageArtifacts } from './image-artifacts';
 import { threadConfiguration } from './policy';
 import { missingHistory, object, string, threadResponse } from './schemas';
 import type { CodexModel } from './schemas';
 import { CodexTransport } from './transport';
 import type { RpcClient } from './transport';
+import { CodexUsage } from './usage';
+import { compactContext } from './compaction';
 
 export interface CodexConnection {
   client: RpcClient;
@@ -36,6 +41,10 @@ export interface CodexAgentOptions {
   transportFactory?: () => Promise<CodexConnection>;
 }
 export class CodexAgent implements AgentPort {
+  private readonly usageListeners = new Set<(threadId: string, context: ChatContextUsage) => void>();
+  private readonly usageState = new CodexUsage((threadId, context) => {
+    for (const listener of this.usageListeners) listener(threadId, context);
+  });
   private readonly images = new CodexImageArtifacts();
   private connection: Promise<CodexConnection> | null = null;
   private rawModels: CodexModel[] = [];
@@ -158,19 +167,79 @@ export class CodexAgent implements AgentPort {
     if (this.running) throw new AgentError('busy', { id: 'codexWaitBeforeUndo' });
     const { client } = await this.ensureConnection();
     try {
-      const response = threadResponse.parse(
-        await client.request('thread/fork', { threadId, beforeTurnId: turnId, excludeTurns: true }),
-      );
-      return await this.readThread(response.thread.id);
+      const fork = await forkHistory(client, threadId, turnId, 'before');
+      return await this.readThread(fork.id);
     } catch (error) {
       return missingHistory(error);
     }
+  }
+  async forkThrough(threadId: string, turnId: string): Promise<AgentThread> {
+    if (this.running) throw new AgentError('busy', { id: 'codexWaitBeforeUndo' });
+    const { client } = await this.ensureConnection();
+    const fork = await forkHistory(client, threadId, turnId, 'through');
+    return this.readThread(fork.id);
   }
   async stop(): Promise<void> {
     this.stopRequested = true;
     if (!this.active) return;
     const { client } = await this.ensureConnection();
+    client.dismissUserInput?.(this.active.threadId, this.active.turnId);
     await client.request('turn/interrupt', this.active);
+  }
+  async respondUserInput(response: AgentInputResponse): Promise<void> {
+    if (
+      !this.running ||
+      this.stopRequested ||
+      this.active?.threadId !== response.threadId ||
+      this.active.turnId !== response.turnId
+    )
+      throw new AgentError('protocol', { id: 'untrustedRequest' });
+    const { client } = await this.ensureConnection();
+    if (!client.respondUserInput) throw new AgentError('protocol', { id: 'untrustedRequest' });
+    await client.respondUserInput(response);
+  }
+  async usage(threadId: string | null): Promise<ChatUsage> {
+    const { client } = await this.ensureConnection();
+    return this.usageState.read(client, threadId);
+  }
+  subscribeUsage(listener: (threadId: string, context: ChatContextUsage) => void): () => void {
+    this.usageListeners.add(listener);
+    return () => this.usageListeners.delete(listener);
+  }
+  async compactThread(
+    threadId: string,
+    options: AgentThreadOptions,
+    onEvent: (event: AgentEvent) => void,
+  ): Promise<void> {
+    if (this.running) throw new AgentError('busy', { id: 'codexBusy' });
+    if (options.mode !== 'read' || options.purpose || options.writableRoots.length)
+      throw new AgentError('protocol', { id: 'untrustedRequest' });
+    this.running = true;
+    this.stopRequested = false;
+    try {
+      const { client } = await this.connectionForMode(options);
+      await client.request('thread/resume', {
+        threadId,
+        excludeTurns: true,
+        ...(await threadConfiguration(client, options)),
+      });
+      this.loadedThreads.add(threadId);
+      if (this.wasStopped()) throw new AgentError('protocol', { id: 'appOperationInterrupted' });
+      await compactContext(client, threadId, onEvent, (turnId) => {
+        this.active = { threadId, turnId };
+        if (this.wasStopped())
+          void this.stop().catch((error: unknown) => {
+            onEvent({
+              type: 'warning',
+              detail: error instanceof Error ? error.message : String(error),
+              diagnostic: diagnosticFromError(error),
+            });
+          });
+      });
+    } finally {
+      this.running = false;
+      this.active = null;
+    }
   }
   dispose(): void {
     const connection = this.connection;
@@ -179,6 +248,7 @@ export class CodexAgent implements AgentPort {
     this.rawModels = [];
     this.lastMode = null;
     this.loadedThreads.clear();
+    this.usageState.clear();
     if (connection) void connection.then(({ client }) => client.close()).catch(() => undefined);
   }
   async refreshConfiguration(): Promise<void> {
@@ -208,7 +278,13 @@ export class CodexAgent implements AgentPort {
     return this.connection;
   }
   private async startConnection(generation: number): Promise<CodexConnection> {
-    if (this.options.transportFactory) return this.options.transportFactory();
+    if (this.options.transportFactory) {
+      const connection = await this.options.transportFactory();
+      connection.client.subscribe((event) => {
+        if (generation === this.generation) this.usageState.observe(event);
+      });
+      return connection;
+    }
     const client = new CodexTransport(this.options.binary);
     try {
       const initialized = object(await client.initialize());
@@ -217,7 +293,11 @@ export class CodexAgent implements AgentPort {
           this.connection = null;
           this.rawModels = [];
           this.loadedThreads.clear();
+          this.usageState.clear();
         }
+      });
+      client.subscribe((event) => {
+        if (generation === this.generation) this.usageState.observe(event);
       });
       const codexHome = string(initialized['codexHome']);
       if (codexHome) await installManagedSkills(codexHome);

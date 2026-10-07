@@ -305,3 +305,22 @@ queue. Restoring a held draft shares the synchronous composer owner through remo
 and adoption. Cached attachment paths restore selection only, never filesystem access.
 Owned pasted images retain exact native byte/hash records and are revalidated after
 restart; never grant an attachment directory. PDF/text reads have explicit byte caps.
+
+Chat activity comes from typed provider lifecycle and phase metadata, never prose.
+Only observed provider settlement may replace a longer live partial with a shorter final.
+Cached sessions do not establish completion. Keep child lifecycle separate from its tool;
+historical status is only the last reported status. Structured questions belong to the exact
+foreground session/request/thread/turn and remain transient. Plan collaboration is separate
+from access mode and requires read-only access; default turns reset a resumed Plan thread.
+
+Branches keep their canonical topic and explicit parent identity. Hydrate by exact session
+ID and seed app-prepared prompts only into the intended canonical composer. Rewind verifies
+the full current repository set and every crossed checkpoint before one compensated restore.
+Pending queues block reset, Undo, rewind and fork. Adopt a returned rewind draft before
+workspace refresh; failed refresh retains the UI owner and retries only that read.
+
+Chat Markdown uses text-safe syntax tokens and strict sanitized local Mermaid SVG. Never load
+diagram resources, execute provider HTML or enable JavaScript eval. The CSP permits only the
+narrower WASM compilation required by the highlighter; retain the OS sandbox. Context/quota
+values require native observations and fresh provider reads; unknown remains unavailable.
+Manual compaction owns its lease through actual settlement and preserves history/receipts.

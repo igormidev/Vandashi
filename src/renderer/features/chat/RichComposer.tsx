@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { EditorContent, useEditor } from '@tiptap/react';
 import { Slice } from '@tiptap/pm/model';
 import StarterKit from '@tiptap/starter-kit';
@@ -14,9 +14,13 @@ interface Props {
   disabled: boolean;
   placeholder: string;
   label?: string;
+  focusKey?: number;
   onChange: (text: string) => void;
   onSend?: () => void;
+  onHistory?: (direction: 'older' | 'newer') => boolean;
   onPasteFiles?: (files: File[]) => void;
+  onCommandKeyDown?: (event: KeyboardEvent) => boolean;
+  commandMenu?: { id: string; activeId: string | null } | null;
 }
 export function RichComposer({
   value,
@@ -24,12 +28,17 @@ export function RichComposer({
   disabled,
   placeholder,
   label,
+  focusKey = 0,
   onChange,
   onSend,
+  onHistory,
   onPasteFiles,
+  onCommandKeyDown,
+  commandMenu,
 }: Props) {
   const { t } = useTranslation();
   const id = useId();
+  const focused = useRef(0);
   const [menu, setMenu] = useState<MentionMenu | null>(null);
   const [controller] = useState(() => createMentionController(references, setMenu));
   useEffect(() => {
@@ -70,6 +79,30 @@ export function RichComposer({
         class: 'rich-composer',
       },
       handleKeyDown: (view, event) => {
+        if (
+          !event.isComposing &&
+          !view.composing &&
+          !mentionKey.getState(view.state)?.active &&
+          onCommandKeyDown?.(event)
+        )
+          return true;
+        if (
+          onHistory &&
+          !event.altKey &&
+          !event.ctrlKey &&
+          !event.metaKey &&
+          !event.shiftKey &&
+          !event.isComposing &&
+          !view.composing &&
+          !mentionKey.getState(view.state)?.active &&
+          view.state.selection.empty &&
+          ((event.key === 'ArrowUp' && view.state.selection.head === 1) ||
+            (event.key === 'ArrowDown' && view.state.selection.head === view.state.doc.content.size - 1)) &&
+          onHistory(event.key === 'ArrowUp' ? 'older' : 'newer')
+        ) {
+          event.preventDefault();
+          return true;
+        }
         if (!onSend || event.key !== 'Enter' || event.shiftKey || event.isComposing || view.composing)
           return false;
         if (mentionKey.getState(view.state)?.active) return false;
@@ -109,13 +142,21 @@ export function RichComposer({
     editor.setEditable(!disabled, false);
   }, [editor, disabled]);
   useEffect(() => {
+    if (!disabled && focusKey > focused.current) {
+      focused.current = focusKey;
+      editor.commands.focus('end');
+    }
+  }, [editor, disabled, focusKey]);
+  useEffect(() => {
     editor.view.dom.setAttribute('aria-disabled', String(disabled));
     editor.view.dom.setAttribute('data-placeholder', placeholder);
-    editor.view.dom.setAttribute('aria-controls', id);
+    editor.view.dom.setAttribute('aria-controls', commandMenu?.id ?? id);
     if (menu?.items.length)
       editor.view.dom.setAttribute('aria-activedescendant', `${id}-${String(menu.selected)}`);
+    else if (commandMenu?.activeId)
+      editor.view.dom.setAttribute('aria-activedescendant', commandMenu.activeId);
     else editor.view.dom.removeAttribute('aria-activedescendant');
-  }, [editor, disabled, placeholder, id, menu]);
+  }, [editor, disabled, placeholder, id, menu, commandMenu]);
   return (
     <>
       {menu && !disabled && (

@@ -18,8 +18,25 @@ import { setupTarget } from '../../../domain/setup';
 import { useAttachments, attachmentReference } from './use-attachments';
 import { AttachmentStrip } from './AttachmentStrip';
 import { QueuedMessages } from './QueuedMessages';
+import { ComposerMode } from './ComposerMode';
+import { useComposerActions } from './use-composer-actions';
+import { useComposerHistory } from './composer-history';
+import { useComposerSubmit } from './use-composer-submit';
+import { useComposerTools } from './use-composer-tools';
+import { ComposerTools } from './ComposerTools';
+import '../../styles/chat-composer.css';
 
-export function Composer({ session, disabled = false }: { session: ChatSession; disabled?: boolean }) {
+export function Composer({
+  session,
+  disabled = false,
+  targeted = false,
+  visible = true,
+}: {
+  session: ChatSession;
+  disabled?: boolean;
+  targeted?: boolean;
+  visible?: boolean;
+}) {
   const { t } = useTranslation();
   const {
     api,
@@ -44,12 +61,12 @@ export function Composer({ session, disabled = false }: { session: ChatSession; 
   const busy = (appBusy && !queueable) || disabled || savingModel;
   // Resolve an explicit handoff once. Passive locale changes must not replace an existing draft.
   const seed = useMemo(() => {
-    if (chatTarget?.topic !== session.topic) return null;
+    if (!targeted || chatTarget?.topic !== session.topic) return null;
     return chatTarget.handoff
       ? clipHandoffText(chatTarget.handoff, messageText)
       : (chatTarget.prompt ?? null);
-  }, [chatTarget, session.topic]);
-  const handoff = chatTarget?.topic === session.topic ? chatTarget.handoff : undefined;
+  }, [chatTarget, session.topic, targeted]);
+  const handoff = targeted && chatTarget?.topic === session.topic ? chatTarget.handoff : undefined;
   const [restored] = useState(() => readDraft(session.id, seed, handoff));
   const [draft, setDraft] = useState<Draft>(restored.draft);
   if (seed !== null && (draft.seed !== seed || (handoff && draft.handoff !== handoff)))
@@ -59,9 +76,11 @@ export function Composer({ session, disabled = false }: { session: ChatSession; 
     setDraft((current) => ({ ...current, text: value }));
   };
   const [mode, setMode] = useState<'read' | 'edit'>(restored.mode);
+  const [collaboration, setCollaboration] = useState<'default' | 'plan'>(restored.collaboration);
   const [chosen, setChosen] = useState<ModelSelection | null>(null);
   const selection = validSelection(chosen ?? state?.settings.chat ?? defaultSettings.chat, models);
   const [sending, setSending] = useState(false);
+  const [focusKey, setFocusKey] = useState(0);
   const submissionOwner = useRef(false);
   const attachmentState = useAttachments(
     text,
@@ -71,13 +90,17 @@ export function Composer({ session, disabled = false }: { session: ChatSession; 
     restored.attachments,
   );
   useEffect(() => {
-    cacheDraft(session.id, draft, mode, attachmentState.paths);
-  }, [session.id, draft, mode, attachmentState.paths]);
+    cacheDraft(session.id, draft, mode, attachmentState.paths, collaboration);
+  }, [session.id, draft, mode, attachmentState.paths, collaboration]);
   const { picking } = attachmentState;
   const locked = busy || dirty || sending || picking;
   const [cancelling, setCancelling] = useState(false);
   const logoLabel = t('logo');
   const installation = !!setupTarget(session.topic);
+  const plan = !installation && collaboration === 'plan' && !(draft.handoff && text === draft.seed);
+  const recall = useComposerHistory(text, session.messages, (value) => {
+    setDraft((current) => ({ ...current, text: value }));
+  });
   const references = useMemo(
     () => (workspace && !installation ? mentionReferences(workspace, session.topic, logoLabel) : []),
     [workspace, installation, session.topic, logoLabel],
@@ -89,31 +112,53 @@ export function Composer({ session, disabled = false }: { session: ChatSession; 
   const attachments = [
     ...new Set([...attachmentState.paths, ...mentionedImages.map((reference) => reference.path)]),
   ].slice(0, 50);
-  const send = async () => {
-    if (!text.trim() || draft.pending || locked || submissionOwner.current || !models.length) return;
-    submissionOwner.current = true;
-    setSending(true);
-    const value = await run(async () => {
-      const request = {
-        clientMessageId: crypto.randomUUID(),
-        sessionId: session.id,
-        text: text.trim(),
-        mode,
-        selection,
-        attachments,
-        ...(draft.handoff && text === draft.seed ? { handoff: draft.handoff } : {}),
-      };
-      if (queueable) await api.queueChat(request);
-      else await api.sendChat(request);
-      return true;
-    });
-    if (value) {
+  const send = useComposerSubmit({
+    sessionId: session.id,
+    draft,
+    locked,
+    queueable,
+    plan,
+    mode,
+    selection,
+    attachments,
+    owner: submissionOwner,
+    setSending,
+    clearText: () => {
       setText('');
-      attachmentState.clear();
-    }
-    setSending(false);
-    submissionOwner.current = false;
-  };
+    },
+    clearAttachments: attachmentState.clear,
+  });
+  useComposerActions({
+    sessionId: session.id,
+    locked,
+    draft,
+    attachments: attachmentState.paths,
+    owner: submissionOwner,
+    setDraft,
+    setMode,
+    setCollaboration,
+    restoreAttachments: attachmentState.restore,
+    setSending,
+    setFocusKey,
+    submit: send,
+  });
+  const tools = useComposerTools({
+    visible,
+    session,
+    draft,
+    mode,
+    collaboration,
+    attachments: attachmentState.paths,
+    locked,
+    owner: submissionOwner,
+    setDraft,
+    setMode,
+    setCollaboration,
+    restoreAttachments: attachmentState.restore,
+    clearAttachments: attachmentState.clear,
+    setSending,
+    setFocusKey,
+  });
   const changeModel = (value: ModelSelection) => {
     if (!state || modelOwner.current) return;
     modelOwner.current = true;
@@ -138,16 +183,23 @@ export function Composer({ session, disabled = false }: { session: ChatSession; 
     <div className="composer-wrap">
       <QueuedMessages
         sessionId={session.id}
-        canRestore={!text.trim() && !locked}
+        canRestore={!text.trim() && !draft.pending && !attachments.length && !locked}
         restore={async (entry) => {
-          if (text.trim() || locked || submissionOwner.current) return;
+          if (text.trim() || draft.pending || attachments.length || locked || submissionOwner.current) return;
           submissionOwner.current = true;
           setSending(true);
           try {
             await api.removeQueuedChat({ sessionId: session.id, id: entry.id });
-            setText(entry.request.text);
+            setDraft((current) => ({
+              text: entry.request.text,
+              seed: entry.request.handoff ? entry.request.text : current.seed,
+              pending: null,
+              ...(entry.request.handoff ? { handoff: entry.request.handoff } : {}),
+            }));
             setMode(entry.request.mode);
+            setCollaboration(entry.request.collaboration ?? 'default');
             attachmentState.restore(entry.request.attachments);
+            setFocusKey((current) => current + 1);
           } finally {
             submissionOwner.current = false;
             setSending(false);
@@ -198,41 +250,34 @@ export function Composer({ session, disabled = false }: { session: ChatSession; 
           }}
         />
         <RichComposer
+          focusKey={focusKey}
           value={text}
           references={[...references, ...attachmentState.paths.map(attachmentReference)]}
           disabled={locked}
           onChange={attachmentState.changed}
           onPasteFiles={attachmentState.paste}
+          onHistory={(direction) => !locked && !draft.pending && !attachments.length && recall(direction)}
+          onCommandKeyDown={tools.keyDown}
+          commandMenu={tools.commandMenu}
           placeholder={t(dirty ? 'dirtyHelp' : 'chatPlaceholder')}
           onSend={() => {
             void send();
           }}
         />
         <div className="composer-actions">
-          <IconButton
-            label={t('attach')}
-            disabled={locked}
-            aria-busy={picking}
-            onClick={attachmentState.select}
-          >
-            {picking ? (
-              <LoaderCircle className="spin" size={16} aria-hidden="true" />
-            ) : (
-              <Paperclip size={16} />
-            )}
-          </IconButton>
-          <select
-            className="mode-select"
-            aria-label={t('readMode')}
-            value={mode}
+          <ComposerTools controls={tools} />
+          <ComposerMode
+            mode={mode}
+            plan={plan}
+            installation={installation}
+            canPlan={!installation && !(draft.handoff && text === draft.seed)}
             disabled={busy || sending || picking}
-            onChange={(event) => {
-              setMode(event.target.value === 'read' ? 'read' : 'edit');
+            onChange={(value) => {
+              if (submissionOwner.current) return;
+              setCollaboration(value === 'plan' ? 'plan' : 'default');
+              setMode(value === 'plan' || value === 'read' ? 'read' : 'edit');
             }}
-          >
-            <option value="read">{t('readMode')}</option>
-            <option value="edit">{t(installation ? 'installationMode' : 'editMode')}</option>
-          </select>
+          />
           <div className="spacer" />
           {appBusy && activity?.sessionId === session.id && (
             <Tip label={t('stop')}>
@@ -257,6 +302,18 @@ export function Composer({ session, disabled = false }: { session: ChatSession; 
               </button>
             </Tip>
           )}
+          <IconButton
+            label={t('attach')}
+            disabled={locked}
+            aria-busy={picking}
+            onClick={attachmentState.select}
+          >
+            {picking ? (
+              <LoaderCircle className="spin" size={16} aria-hidden="true" />
+            ) : (
+              <Paperclip size={16} />
+            )}
+          </IconButton>
           <button
             className="send-button"
             type="button"
@@ -272,6 +329,7 @@ export function Composer({ session, disabled = false }: { session: ChatSession; 
         </div>
       </div>
       <ModelPicker
+        attached
         value={selection}
         onChange={changeModel}
         disabled={appBusy || disabled || savingModel || sending || picking}

@@ -27,6 +27,10 @@ import type { UpdateState } from './updates';
 import type { InstalledBrowser } from './browsers';
 import type { FilePreview } from './file-preview';
 import type { QueuedChat } from './chat-queue';
+import type { ChatInputRequest, ChatInputResponse } from './chat-input';
+import type { ChatUsage } from './chat-usage';
+import type { ChatSkill } from './chat-skills';
+import type { ChatMessageTarget, RewoundChat } from './chat-history-actions';
 import type { Diagnostic } from './diagnostics';
 import type {
   AudioCategory,
@@ -75,7 +79,7 @@ export interface DesktopApi {
   models(): Promise<ModelInfo[]>;
   settings(settings: Settings): Promise<void>;
   sessions(scope: Scope): Promise<ChatSession[]>;
-  openChat(input: { scope: Scope; topic: string; title: string }): Promise<OpenedChat>;
+  openChat(input: { scope: Scope; topic: string; title: string; sessionId?: string }): Promise<OpenedChat>;
   closeChat(id: string): Promise<void>;
   resetChat(id: string): Promise<ChatSession>;
   sendChat(request: ChatRequest): Promise<void>;
@@ -83,7 +87,14 @@ export interface DesktopApi {
   queuedChats(sessionId: string): Promise<QueuedChat[]>;
   removeQueuedChat(input: { sessionId: string; id: string }): Promise<void>;
   cancelChat(): Promise<void>;
+  pendingChatInput(sessionId: string): Promise<ChatInputRequest | null>;
+  respondChatInput(response: ChatInputResponse): Promise<void>;
+  chatUsage(sessionId: string): Promise<ChatUsage>;
+  chatSkills(sessionId: string): Promise<ChatSkill[]>;
+  compactChat(sessionId: string): Promise<void>;
   undoChat(id: string): Promise<ChatSession>;
+  rewindChat(target: ChatMessageTarget): Promise<RewoundChat>;
+  forkChat(target: ChatMessageTarget): Promise<ChatSession>;
   importAsset(input: { scope: Scope; draft: AssetDraft }): Promise<Asset>;
   describeAsset(input: {
     scope: Scope;

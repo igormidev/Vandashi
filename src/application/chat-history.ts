@@ -41,6 +41,7 @@ export function mergeThreadHistory(session: ChatSession, thread: AgentThread): C
               text: remote.text || local.text,
               files: remote.files.length ? remote.files : local.files,
               createdAt: local.createdAt,
+              timestampKnown: local.timestampKnown !== false,
             };
       previous = { id: local.id, turnId: remote.turnId };
       continue;
@@ -62,12 +63,15 @@ export function mergeThreadHistory(session: ChatSession, thread: AgentThread): C
 export async function openChatSession(
   store: StoragePort,
   agent: AgentPort,
-  input: { scope: Scope; topic: string; title: string },
+  input: { scope: Scope; topic: string; title: string; sessionId?: string },
   notify: (event: AppEvent) => void,
 ): Promise<ChatSession> {
-  let session: ChatSession = (await store.sessions(input.scope)).find(
-    (session) => session.topic === input.topic,
-  ) ?? {
+  const existing = (await store.sessions(input.scope)).find(
+    (session) =>
+      session.topic === input.topic && (input.sessionId ? session.id === input.sessionId : !session.branch),
+  );
+  if (input.sessionId && !existing) throw new AppFault({ id: 'untrustedRequest' });
+  let session: ChatSession = existing ?? {
     id: crypto.randomUUID(),
     scope: input.scope,
     topic: input.topic,

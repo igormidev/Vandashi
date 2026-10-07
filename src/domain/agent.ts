@@ -2,6 +2,8 @@ import type { ChatMessage, ModelInfo, ModelSelection } from './models';
 import { AppFault, DiagnosticError } from './diagnostics';
 import type { Diagnostic } from './diagnostics';
 import type { AppMessage } from './messages';
+import type { AgentInputRequest, AgentInputResponse } from './chat-input';
+import type { ChatContextUsage, ChatUsage } from './chat-usage';
 
 export interface AgentStatus {
   connected: boolean;
@@ -35,6 +37,7 @@ export interface AgentThread {
 export type AgentEvent =
   | { type: 'thread'; threadId: string }
   | { type: 'turn'; turnId: string }
+  | { type: 'user-input'; request: AgentInputRequest | null }
   | { type: 'message'; message: ChatMessage; delta: boolean }
   | { type: 'warning'; detail: string; diagnostic?: Diagnostic };
 export interface AgentRunInput extends AgentThreadOptions {
@@ -42,6 +45,9 @@ export interface AgentRunInput extends AgentThreadOptions {
   prompt: string;
   attachments: string[];
   outputSchema?: Record<string, unknown>;
+  /** Foreground chats may wait for a structured answer; automatic helpers never do. */
+  interactive?: boolean;
+  collaboration?: 'default' | 'plan';
 }
 export interface AgentRunResult {
   threadId: string;
@@ -59,7 +65,16 @@ export interface AgentPort {
   readThread(threadId: string): Promise<AgentThread>;
   run(input: AgentRunInput, onEvent: (event: AgentEvent) => void): Promise<AgentRunResult>;
   forkBefore(threadId: string, turnId: string): Promise<AgentThread>;
+  forkThrough?(threadId: string, turnId: string): Promise<AgentThread>;
   stop(): Promise<void>;
+  respondUserInput?(response: AgentInputResponse): Promise<void>;
+  usage?(threadId: string | null): Promise<ChatUsage>;
+  subscribeUsage?(listener: (threadId: string, context: ChatContextUsage) => void): () => void;
+  compactThread?(
+    threadId: string,
+    options: AgentThreadOptions,
+    onEvent: (event: AgentEvent) => void,
+  ): Promise<void>;
   dispose(): void;
 }
 export class AgentError extends DiagnosticError {

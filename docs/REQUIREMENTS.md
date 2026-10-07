@@ -113,6 +113,26 @@ Source: `genesis_prompt.md:L100–L121`, `L241–L247`, `L263–L367`.
 - [x] CHAT-25 — Apply the same commit-recovery sequence on brand entry and video entry, with blocking progress. Crash/interruption recovery preserves available conversation history and current file state. [E05](#e05).
 - [x] CHAT-26 — Undo captures all affected repository checkpoints and the supported conversation boundary. Test commits made by AI itself, multiple repositories, no-file-change turns, unavailable histories, interrupted runs, and rollback failure. [E05](#e05).
 
+### October 7 chat refactor
+
+The fresh comparison uses [T3 Code `f570bd2`](https://github.com/pingdotgg/t3code/tree/f570bd21663f56ce94c41829d3b7d72886e25a34).
+Implementation and evidence boundaries are recorded in [CHAT.md](CHAT.md).
+
+- [x] CHAT-27 — Center model, reasoning and speed in an attached composer pill; show model-family and reasoning icons, use above-trigger menus, enlarge the mode choice, and place Attach beside Send. Text fields use a quiet focus treatment while keyboard controls retain visible focus.
+- [x] CHAT-28 — Expand available thinking and tool output with accurate live/settled statuses, tool icons, parallel work and child-agent reports. Do not fabricate hidden reasoning or enable child-agent execution through UI metadata.
+- [x] CHAT-29 — Copy complete user messages and fenced code, fold long messages, render GFM and bounded syntax highlighting, and safely render completed Mermaid diagrams.
+- [x] CHAT-30 — Show queued requests in a Query pill with two-line cards, hover/focus expansion, and immediate Remove or owned Edit-to-draft. Editing advances the queue and preserves exact text, attachments and modes through failure.
+- [x] CHAT-31 — Extend the timeline behind the composer using inner scroll padding; preserve reading position and offer an explicit return to the latest response.
+- [x] CHAT-32 — Render native structured questions and proposed plans. Answers retain exact request ownership; Plan mode is enforced by Codex and read-only roots. Implement submits through the composer owner; Revise prepares editable guidance.
+- [x] CHAT-33 — Edit verified historical requests through guarded Git/Codex rewind; branch through a selected response without inheriting historical Undo rights. A failed refresh retains the restored draft and retries only refresh.
+- [x] CHAT-34 — Distinguish current-thread context usage from account allowance, preserve unavailable states, and compact only an idle conversation without queued work or conflicting manual edits.
+
+These items do not establish every upstream T3 feature. Turn steering, unrestricted
+approval prompts, live child-agent execution, project/worktree management and embedded
+terminal control require separate product and native authority decisions. Native UI
+fixtures verify interaction and layout; real Codex framing, Plan/questions, forks,
+usage and compaction are verified separately with task-created integration tests.
+
 ## 5. Video validation, onboarding, and workspace shell
 
 Source: `genesis_prompt.md:L368–L435`.

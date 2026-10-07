@@ -17,6 +17,9 @@ export class ChatQueue {
   list(sessionId: string): QueuedChat[] {
     return structuredClone(this.entries.filter((entry) => entry.request.sessionId === sessionId));
   }
+  get hasPending(): boolean {
+    return this.entries.length > 0;
+  }
   private changed(sessionId: string): void {
     this.emit({ type: 'chat-queue', sessionId, entries: this.list(sessionId) });
   }
@@ -54,7 +57,9 @@ export class ChatQueue {
   }
   remove({ sessionId, id }: { sessionId: string; id: string }): Promise<void> {
     const entry = this.entries.find((entry) => entry.id === id && entry.request.sessionId === sessionId);
-    if (!entry) return Promise.resolve();
+    // Editing adopts the draft only after this acknowledgement. A stale entry must
+    // fail, otherwise an already dispatched/sent request could be restored and sent twice.
+    if (!entry) return Promise.reject(new AppFault({ id: 'untrustedRequest' }));
     if (this.starting && this.entries[0] === entry)
       return Promise.reject(new AppFault({ id: 'appOperationBusy' }));
     this.entries = this.entries.filter((candidate) => candidate !== entry);

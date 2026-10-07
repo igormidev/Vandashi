@@ -68,6 +68,11 @@ its enlargement dialog; README identifies their revision too. Preserve the genui
 captures until replacement images from an identified real app revision are available.
 Recheck them after structural or visible app changes.
 
+The October 7 chat refactor was independently checked against the landing copy and
+all eight catalogs. The existing screenshots remain authentic earlier-interface
+captures with their visible date/revision labeling. No fixture chat screenshots replace
+them, and the site makes no new claim of complete T3 feature parity.
+
 ## Verification and deployment
 
 - `npm run check` checks both strict TypeScript environments, translation/accessibility

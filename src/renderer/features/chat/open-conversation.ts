@@ -6,9 +6,9 @@ const pending = new WeakMap<DesktopApi, Map<string, Promise<OpenedChat>>>();
 /** React StrictMode may repeat effects while the first IPC request is still active. */
 export function openConversation(
   api: DesktopApi,
-  input: { scope: Scope; topic: string; title: string },
+  input: { scope: Scope; topic: string; title: string; sessionId?: string },
 ): Promise<OpenedChat> {
-  const key = `${scopeKey(input.scope)}:${input.topic}`;
+  const key = `${scopeKey(input.scope)}:${input.topic}:${input.sessionId ?? ''}`;
   let requests = pending.get(api);
   if (!requests) {
     requests = new Map();

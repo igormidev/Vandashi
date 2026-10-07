@@ -52,6 +52,48 @@ lease only after persistence/recovery, then starts the next preflight. Failure/c
 holds remaining entries for review. Restore locks text, mode, attachment picking and
 sending through queue removal and exact draft adoption. Queues do not survive process exit.
 
+The timeline groups consecutive reasoning/tool items without hiding assistant commentary.
+Typed activity retains commands, output, diffs, status, timing, plans and observed child state.
+Indexed reasoning summaries take precedence over duplicate content lanes. Only settled provider
+history or completed live items establish terminal evidence; persisted partial caches cannot
+replace a newer live answer. The inner scroll extends behind the measured composer and follows
+only near the bottom, preserving each conversation's position.
+Stable row IDs and viewport offsets preserve reading positions across short/long chats
+and reflow. A single visible-timeline selection listener and memoized rows avoid repeated
+historical Markdown parsing. Source quotation links resolve exact message IDs locally
+inside the selected timeline; they never grant native file access.
+
+Slash commands and enabled skill names come from fresh project-scoped provider discovery
+without workspace hydration or feature/configuration changes. Hidden mounted composers
+cannot open portals. Per-session prompt stashes persist complete draft/mode/collaboration
+and attachment-selection snapshots before a reviewed replacement. A synchronous composer
+owner blocks picker/send changes through review; cached paths remain selections only.
+Plan Markdown export is a browser-owned Blob download with a sanitized filename and
+URL cleanup. Live elapsed indicators measure observed monotonic intervals only.
+
+Structured questions use `domain/chat-input.ts`, the narrow app-server response adapter and
+`application/chat-input.ts`. Session/request/thread/turn identities must match the existing
+foreground operation owner. Questions/answers remain transient and pause the progress timeout.
+Automatic helpers never invent answers. Plan is explicit Codex collaboration under read-only
+access, separate from read/edit permissions; subsequent default turns reset collaboration.
+Actual provider/model support determines question availability.
+
+Historical Edit performs one compensated rewind over the complete current registered repository
+set. Queues, dirty/external heads, unverified checkpoints and publishing effects block it. Adopt
+the returned draft before refreshing; failed refresh retains the navigation owner and retries
+only the read. Codex native forks use inclusive `lastTurnId`; before the first turn, revert only
+the new fork. Returned turn IDs must match the requested boundary. Branches retain their canonical
+topic plus parent/message metadata, hydrate by exact session ID, and start without old workspace
+Undo rights. App-prepared prompts cannot seed hidden branches sharing the topic.
+
+`ChatUsage` separates native context occupancy from total processed tokens and fresh account
+quotas. Unknown observations remain unavailable. Explicit compact discovers paths read-only,
+rejects queues/dirty repositories, resumes under read-only policy, and owns its lease through
+native completion while preserving history, receipts and checkpoints. Markdown supports GFM;
+local Shiki WASM tokens render as React text. The CSP allows WASM compilation while denying
+JavaScript eval. Mermaid renders bounded settled source with strict configuration and sanitized
+local SVG; resource-bearing source is rejected before layout. Provider HTML remains inert.
+
 Native browser discovery inspects app registrations and returns display names and native
 icons only. On macOS it reads the declared `CFBundleIconFile` inside the canonical app
 bundle, checks containment and bounded stable file bytes, then uses the built-in `sips`

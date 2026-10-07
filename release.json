@@ -1,7 +1,7 @@
 {
-  "version": "0.1.17",
+  "version": "0.1.18",
   "notes": [
-    "Keep the local Vandashi installation current after completed AI changes.",
-    "Show real installed app icons and neutral platform text in the browser picker."
+    "Rebuild chat with expandable Codex thinking and tools, richer messages and attached controls.",
+    "Edit queued requests, answer Plan questions, and preserve drafts and reading positions."
   ]
 }

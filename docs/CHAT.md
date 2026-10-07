@@ -95,3 +95,65 @@ strict type checking, scoped lint, and the architecture gate were clean. Rendere
 used deterministic IPC fixtures; the receipt backend tests used actual Git and disk I/O.
 
 References: [Tiptap Suggestion](https://tiptap.dev/docs/editor/api/utilities/suggestion), [Tiptap mention rendering](https://tiptap.dev/docs/editor/extensions/nodes/mention). The inspected T3 Code checkout was commit `f5ef0ddb90a8c36584e181b1913e7b8a5df30ffc` in `/tmp/vandashi-references/t3code`; it is a reference checkout outside this repository.
+
+## October 7 chat refactor
+
+The fresh reference is [T3 Code at `f570bd21663f56ce94c41829d3b7d72886e25a34`](https://github.com/pingdotgg/t3code/tree/f570bd21663f56ce94c41829d3b7d72886e25a34),
+cloned outside this repository. The comparison covers its Codex adapter, work log, composer,
+Markdown, proposed plans and context controls against the original Vandashi brief.
+
+Model, reasoning and speed controls form a centered attached pill. Model families have distinct
+icons with a generic fallback; selected reasoning and menu options share their icons. Accessible
+menus open above triggers. Text fields have quiet focus cues while buttons/non-text inputs retain
+keyboard focus visibility. Attachments sit beside Send, and the scroll extends behind the composer.
+
+The Query pill separates queued text from the transcript. Cards show two lines and expand on
+hover/keyboard focus to five scrollable lines with Edit/Remove beneath. Edit owns removal through
+acknowledgement and exact text/mode/collaboration/attachment adoption. Already dispatched entries
+cannot become duplicate drafts. Sent messages fold long text and copy complete original content.
+Arrow Up/Down recalls sent prompts from an empty draft; selected assistant text can be quoted.
+Quotes retain a source link that navigates only within the current conversation. Reading positions
+use stable row anchors, preserving the visible row through tab switches and font/content reflow.
+One timeline selection listener and memoized settled rows avoid reparsing the full history for
+each streamed delta; this is bounded rendering optimization, not transcript virtualization.
+Only known timestamps are displayed; recovered provider history does not invent send times.
+
+The command menu provides Read/Edit/Plan and explicit compaction plus freshly discovered enabled
+Codex skills. Skill insertion passes a native `$name` mention without expanding writable roots.
+Per-conversation prompt stashes retain exact text, mode, Plan selection and attachment selections;
+restoring over an occupied draft requires a reviewed swap that retains the previous draft. Stored
+paths remain selections and never grant filesystem access. Failed preference writes preserve a
+recoverable copy rather than silently clearing the live draft.
+
+Work logs distinguish reasoning, read/search/command, file edits, browser, MCP/dynamic tools,
+images, review, compaction, plans and child history. Commands, output and diffs expand individually.
+Completed tools do not imply their children completed. Historical child status is last reported;
+later observations update the current turn without rewriting raw snapshots. Only reasoning
+actually supplied by Codex is displayed.
+Elapsed Working indicators measure the interval observed by the mounted live UI, not a guessed
+historical duration. Proposed plans download their exact Markdown through a browser-owned Blob.
+
+Plan collaboration is read-only. Real GPT-6.1-Sol questions, exact replies and settlement were
+verified against Codex 0.160.1; older Luna reported the tool unavailable. Proposed plans differ
+from progress checklists. Implement sends through normal composer ownership; Revise prepares a
+Plan draft for extra guidance. Failed sends retain that exact draft.
+
+Context/quota controls distinguish unknown from zero. Native usage provides context occupancy;
+account limits refresh from the provider. Explicit compaction waits for completion and preserves
+history. Markdown supports tables/task lists, literal-text syntax highlighting, code copying and
+sanitized local Mermaid diagrams with source switching.
+Mermaid's KaTeX dependency is pinned to the fixed `0.18.2` through a scoped override for
+[GHSA-238p-pmpm-9mq7](https://github.com/advisories/GHSA-238p-pmpm-9mq7); native diagram verification
+covers that installed dependency. Existing unrelated audit findings remain outside this change.
+
+Historical Edit rewinds one verified transaction across all captured repositories, preserves
+Git/Codex history and compensates owned partial failures. A saved rewind followed by failed
+refresh retains the restored draft and retries only the read. Branches keep their topic, show
+a branch mark, hydrate by exact session ID and have no inherited workspace Undo rights. Queues
+block history replacement; hidden branches never receive canonical app-prepared prompts.
+
+This does not claim unrestricted T3 parity. Vandashi retains its one-operation lease,
+repository-scoped creative access and `approvalPolicy: never`. External approval prompts,
+arbitrary terminal management, queued turn steering and new child-agent execution remain outside
+this contract. Child history display does not enable concurrent child writes. Cross-platform
+release acceptance and external publishing require their separate verification.

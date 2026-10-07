@@ -69,8 +69,53 @@
 .messages {
   flex: 1;
   overflow: auto;
-  padding: 10px 22px 20px;
+  padding: 10px 22px calc(var(--composer-height, 210px) + 20px);
   min-height: 0;
+}
+.chat-composer-slot:not([hidden]) {
+  margin-top: calc(-1 * var(--composer-height, 210px));
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
+}
+.chat-composer-slot:has(.chat-input-panel):not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100% - 90px);
+}
+.chat-composer-slot:has(.chat-input-panel) .chat-input-panel {
+  flex: 1 1 230px;
+  min-height: 140px;
+  margin-inline: 15px;
+}
+.chat-composer-slot:has(.chat-input-panel) .composer-wrap {
+  display: flex;
+  flex-direction: column;
+  flex: 0 1 auto;
+  min-height: 0;
+}
+.chat-composer-slot:has(.chat-input-panel) .queued-messages {
+  display: flex;
+  flex-direction: column;
+  max-height: 125px;
+  min-height: 75px;
+}
+.chat-composer-slot:has(.chat-input-panel) .queue-list {
+  min-height: 0;
+  max-height: 85px;
+}
+.chat-composer-slot:has(.chat-input-panel) .rich-composer {
+  min-height: 40px;
+  max-height: 90px;
+}
+.chat-scroll-end {
+  position: absolute;
+  right: 22px;
+  top: -42px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 50%;
+  box-shadow: 0 4px 12px #0005;
 }
 .message {
   font-size: 12px;
@@ -164,7 +209,7 @@
   color: var(--muted);
 }
 .composer-wrap {
-  padding: 10px 15px 14px;
+  padding: 0 15px 14px;
   position: relative;
 }
 .composer {
@@ -508,8 +553,7 @@
 }
 .composer:focus-within {
   border-color: transparent;
-  outline: 1px solid var(--accent);
-  outline-offset: 2px;
+  outline: none;
 }
 .chat-image {
   margin-inline-end: 12px;
@@ -600,20 +644,6 @@
   display: block;
   margin: auto;
   max-width: 100%;
-}
-.queued-message {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 6px 0;
-  color: var(--muted);
-  font-size: 10px;
-}
-.queued-text {
-  flex: 1;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
 }
 .message .attachments .attachment-remove {
   display: none;

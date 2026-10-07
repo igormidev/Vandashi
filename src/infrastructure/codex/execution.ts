@@ -1,5 +1,6 @@
 import type { AgentEvent, AgentRunInput, AgentRunResult } from '../../domain/agent';
 import { AgentError } from '../../domain/agent';
+import type { AgentInputRequest } from '../../domain/chat-input';
 import { EventReducer } from './events';
 import { object, string, turnResponse, turnSchema } from './schemas';
 import type { RpcClient } from './transport';
@@ -44,10 +45,13 @@ export async function executeTurn(
   input: AgentRunInput,
   callbacks: TurnCallbacks,
 ): Promise<AgentRunResult> {
+  if (input.collaboration === 'plan' && input.mode !== 'read')
+    throw new AgentError('protocol', { id: 'untrustedRequest' });
   const reducer = new EventReducer();
   let complete: ((result: AgentRunResult) => void) | undefined;
   let reject: ((error: Error) => void) | undefined;
   let currentTurnId: string | null = null;
+  const interactive = { pending: null as AgentInputRequest | null };
   const finished = new Map<string, AgentRunResult>();
   let timer: ReturnType<typeof setTimeout> | undefined;
   const completion = new Promise<AgentRunResult>((resolve, fail) => {
@@ -58,10 +62,22 @@ export async function executeTurn(
   void completion.catch(() => undefined);
   const resetTimer = (): void => {
     clearTimeout(timer);
+    if (interactive.pending) return;
     timer = setTimeout(() => {
       reject?.(new AgentError('timeout', { id: 'codexProgressTimeout' }));
     }, callbacks.inactivityMs ?? 600_000);
   };
+  const unsubscribeInput = input.interactive
+    ? client.subscribeUserInput?.(threadId, (request) => {
+        if (request && currentTurnId && request.turnId !== currentTurnId) {
+          client.dismissUserInput?.(threadId, request.turnId);
+          return;
+        }
+        interactive.pending = request;
+        resetTimer();
+        if (currentTurnId) callbacks.onEvent({ type: 'user-input', request });
+      })
+    : undefined;
   resetTimer();
   const unsubscribe = client.subscribe((event) => {
     const data = object(event.params);
@@ -80,6 +96,7 @@ export async function executeTurn(
           callbacks.onEvent(normalized);
       }
       const status = turn.status === 'completed' || turn.status === 'interrupted' ? turn.status : 'failed';
+      for (const settled of reducer.settle(turn.id, status)) callbacks.onEvent(settled);
       const result: AgentRunResult = {
         threadId,
         turnId: turn.id,
@@ -114,12 +131,29 @@ export async function executeTurn(
         serviceTier: input.selection.fast ? 'priority' : null,
         approvalPolicy: 'never',
         sandboxPolicy: sandboxPolicy(input),
+        ...(input.interactive || input.collaboration
+          ? {
+              collaborationMode: {
+                mode: input.collaboration ?? 'default',
+                settings: {
+                  model: input.selection.model,
+                  reasoning_effort: input.selection.reasoning,
+                  developer_instructions: null,
+                },
+              },
+            }
+          : {}),
         ...(input.outputSchema ? { outputSchema: input.outputSchema } : {}),
       }),
     );
     currentTurnId = response.turn.id;
     callbacks.onTurn(currentTurnId);
     callbacks.onEvent({ type: 'turn', turnId: currentTurnId });
+    if (interactive.pending) {
+      if (interactive.pending.turnId === currentTurnId)
+        callbacks.onEvent({ type: 'user-input', request: interactive.pending });
+      else client.dismissUserInput?.(threadId, interactive.pending.turnId);
+    }
     const earlyResult = finished.get(currentTurnId);
     if (earlyResult) complete?.(earlyResult);
     return await completion;
@@ -136,6 +170,7 @@ export async function executeTurn(
       );
     throw error;
   } finally {
+    unsubscribeInput?.();
     clearTimeout(timer);
     unsubscribe();
     failure();

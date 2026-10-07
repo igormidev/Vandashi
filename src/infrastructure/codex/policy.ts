@@ -7,7 +7,11 @@ export async function threadConfiguration(
   client: RpcClient,
   options: AgentThreadOptions,
 ): Promise<Record<string, unknown>> {
-  const config: Record<string, unknown> = { 'features.multi_agent': false, 'features.multi_agent_v2': false };
+  const config: Record<string, unknown> = {
+    'features.multi_agent': false,
+    'features.multi_agent_v2': false,
+    'tools.update_plan.enabled': true,
+  };
   if (options.mode === 'read') {
     const [settings, installed] = await Promise.all([
       client.request('config/read', { cwd: options.cwd, includeLayers: false }),

@@ -1,26 +1,50 @@
 import ReactMarkdown, { defaultUrlTransform } from 'react-markdown';
-import { useState } from 'react';
+import { memo, useMemo, useState } from 'react';
+import remarkGfm from 'remark-gfm';
 import { FileViewerDialog } from '../../shared/FileViewer';
 import { useApp } from '../../app/store';
 import { ChatImage } from './ChatImage';
 import { messagePath } from './message-path';
+import { ChatCodeBlock } from './ChatCodeBlock';
+import { messageCitationId } from './message-citation';
 
-export function ChatMarkdown({
+export const ChatMarkdown = memo(function ChatMarkdown({
   text,
   root,
   mediaGeneration,
+  streaming = false,
+  onCitation,
 }: {
   text: string;
   root: string;
   mediaGeneration: number;
+  streaming?: boolean;
+  onCitation?: (messageId: string) => void;
 }) {
   const { api, run } = useApp();
   const [preview, setPreview] = useState<string | null>(null);
-  return (
-    <>
+  const markdown = useMemo(
+    () => (
       <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
         urlTransform={(value) => (messagePath(value, root) ? value : defaultUrlTransform(value))}
         components={{
+          pre: ({ node }) => {
+            const code = node?.children.find((child) => child.type === 'element' && child.tagName === 'code');
+            const text =
+              code?.type === 'element'
+                ? code.children.map((child) => (child.type === 'text' ? child.value : '')).join('')
+                : '';
+            const classes =
+              code?.type === 'element' && Array.isArray(code.properties.className)
+                ? code.properties.className
+                : [];
+            const languageClass = classes.find(
+              (value) => typeof value === 'string' && /^language-/.test(value),
+            );
+            const language = typeof languageClass === 'string' ? languageClass.slice(9) : '';
+            return <ChatCodeBlock source={text} language={language} streaming={streaming} />;
+          },
           img: ({ src, alt }) => {
             const path = typeof src === 'string' ? messagePath(src, root) : null;
             return <ChatImage key={path} path={path} alt={alt ?? ''} mediaGeneration={mediaGeneration} />;
@@ -31,6 +55,11 @@ export function ChatMarkdown({
               onClick={(event) => {
                 event.preventDefault();
                 if (!href) return;
+                const citation = messageCitationId(href);
+                if (citation) {
+                  onCitation?.(citation);
+                  return;
+                }
                 const path = messagePath(href, root);
                 if (path) setPreview(path);
                 else if (/^https?:\/\//i.test(href)) void run(() => api.openExternal(href));
@@ -43,6 +72,12 @@ export function ChatMarkdown({
       >
         {text}
       </ReactMarkdown>
+    ),
+    [text, root, mediaGeneration, streaming, onCitation, api, run],
+  );
+  return (
+    <>
+      {markdown}
       {preview && (
         <FileViewerDialog
           path={preview}
@@ -53,4 +88,4 @@ export function ChatMarkdown({
       )}
     </>
   );
-}
+});

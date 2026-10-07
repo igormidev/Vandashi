@@ -111,7 +111,7 @@ export const validators: Readonly<Record<ApiMethod, z.ZodType>> = Object.freeze(
       .strict(),
   ]),
   sessions: z.tuple([scope]),
-  openChat: z.tuple([z.object({ scope, topic: id, title: id }).strict()]),
+  openChat: z.tuple([z.object({ scope, topic: id, title: id, sessionId: id.optional() }).strict()]),
   closeChat: z.tuple([id]),
   resetChat: z.tuple([id]),
   cancelChat: noArgs,

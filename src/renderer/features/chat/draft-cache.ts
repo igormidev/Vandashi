@@ -21,12 +21,14 @@ export function cacheChatFontSize(size: number): void {
 interface SavedDraft {
   draft: Draft;
   mode: 'read' | 'edit';
+  collaboration: 'default' | 'plan';
   attachments: string[];
 }
 export function readDraft(id: string, seed: string | null, handoff?: ClipHandoff): SavedDraft {
   const fallback: SavedDraft = {
     draft: { text: seed ?? '', seed, pending: null, ...(handoff ? { handoff } : {}) },
     mode: 'edit',
+    collaboration: 'default',
     attachments: [],
   };
   try {
@@ -56,6 +58,8 @@ export function readDraft(id: string, seed: string | null, handoff?: ClipHandoff
         handoff,
       ),
       mode: 'mode' in value && value.mode === 'read' ? 'read' : 'edit',
+      collaboration:
+        'collaboration' in value && value.collaboration === 'plan' && !restoredHandoff ? 'plan' : 'default',
       // This restores selection only. Every preview and send still needs native authorization.
       attachments:
         'attachments' in value && Array.isArray(value.attachments)
@@ -77,6 +81,7 @@ export function cacheDraft(
   draft: Draft,
   mode: 'read' | 'edit',
   attachments: string[] = [],
+  collaboration: 'default' | 'plan' = 'default',
 ): void {
   try {
     localStorage.setItem(
@@ -86,6 +91,7 @@ export function cacheDraft(
         seed: draft.seed,
         pending: draft.pending,
         mode,
+        collaboration,
         attachments,
         ...(draft.handoff ? { handoff: draft.handoff } : {}),
       }),

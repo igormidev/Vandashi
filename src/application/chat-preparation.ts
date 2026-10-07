@@ -28,6 +28,8 @@ export class ChatPreparation {
     state: { filesTouched: boolean },
     script?: ScriptInput,
   ): Promise<Prepared> {
+    if (request.collaboration === 'plan' && (request.mode !== 'read' || request.handoff || script))
+      throw new AppFault({ id: 'untrustedRequest' });
     if (session.topic.startsWith('setup:'))
       return prepareSetupChat(this.store, this.agent, session, request, this.notify, this.media);
     if (request.handoff) {
@@ -139,6 +141,7 @@ export class ChatPreparation {
           threadId: session.threadId,
           cwd,
           mode: request.mode,
+          collaboration: request.collaboration ?? 'default',
           writableRoots: request.mode === 'edit' ? [...repositories, ...(stage ? [stage.path] : [])] : [],
           selection: request.selection,
           prompt,

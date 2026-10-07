@@ -34,6 +34,7 @@ export interface ChatFixtureOptions {
   chatMediaUrls?: Record<string, string>;
   delayedFirstOpen?: boolean;
   installedBrowsers?: InstalledBrowser[];
+  models?: ModelInfo[];
 }
 
 export function chatFixtureData(video: boolean, options: ChatFixtureOptions) {
@@ -225,7 +226,7 @@ export function chatFixtureData(video: boolean, options: ChatFixtureOptions) {
     state,
     workspace,
     sessions,
-    models,
+    models: options.models ?? models,
     options,
     clip,
     platforms,

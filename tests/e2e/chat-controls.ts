@@ -8,6 +8,7 @@ export interface ChatControlAction {
   failSend?: boolean;
   discard?: 'success' | 'failure';
   open?: boolean;
+  queueRemoval?: 'success' | 'failure';
 }
 
 export async function chatControl(desktopApp: ElectronApplication, action: ChatControlAction): Promise<void> {

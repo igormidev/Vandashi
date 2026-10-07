@@ -11,15 +11,37 @@ export async function undoChat(
   agent: AgentPort,
   id: string,
   notify: (event: AppEvent) => void,
+  beforeTurnId?: string,
 ): Promise<ChatSession> {
   const session = await store.getSession(id);
-  const issue = chatUndoIssue(session);
+  const checkpoints = session.checkpoints ?? [];
+  const checkpointIndex = beforeTurnId
+    ? checkpoints.findIndex((checkpoint) => checkpoint.turnId === beforeTurnId)
+    : checkpoints.length - 1;
+  const checkpoint = checkpoints[checkpointIndex];
+  const crossed = checkpoints.slice(checkpointIndex);
+  const issue = chatUndoIssue({ ...session, checkpoints: crossed });
   if (issue) throw new AppFault(issue);
   const original = structuredClone(session);
-  const checkpoint = session.checkpoints?.at(-1);
   if (!checkpoint?.threadId) throw new AppFault({ id: 'appUndoUnavailable' });
-  if (!checkpoint.postHeads) throw new AppFault({ id: 'appUndoUnverified' });
-  const current = { ...checkpoint.postHeads };
+  const latest = checkpoints.at(-1);
+  if (!latest?.postHeads || crossed.some((entry) => !entry.postHeads))
+    throw new AppFault({ id: 'appUndoUnverified' });
+  const repositories = Object.keys(checkpoint.heads).sort();
+  const discovered = await store.discoverAgentScope(session.scope);
+  if (JSON.stringify([...discovered.repositories].sort()) !== JSON.stringify(repositories))
+    throw new AppFault({ id: 'appUndoUnverified' });
+  if (
+    crossed.some(
+      (entry) =>
+        JSON.stringify(Object.keys(entry.heads).sort()) !== JSON.stringify(repositories) ||
+        JSON.stringify(Object.keys(entry.postHeads ?? {}).sort()) !== JSON.stringify(repositories),
+    )
+  )
+    throw new AppFault({ id: 'appUndoUnverified' });
+  if (session.topic.startsWith('publish:') && crossed.some((entry) => entry.mode !== 'read'))
+    throw new AppFault({ id: 'appPublishUndoUnavailable' });
+  const current = { ...latest.postHeads };
   const verify = async (expected: Record<string, string>) => {
     for (const repository of Object.keys(checkpoint.heads)) {
       if ((await git.status(repository)).dirty) throw new AppFault({ id: 'appSaveBeforeUndo' });
@@ -37,8 +59,8 @@ export async function undoChat(
     await verify({ ...current, ...Object.fromEntries(restored) });
     session.threadId = branch.id;
     session.messages = session.messages.slice(0, checkpoint.messageCount);
-    session.checkpoints?.pop();
-    const previous = session.checkpoints?.at(-1);
+    session.checkpoints = checkpoints.slice(0, checkpointIndex);
+    const previous = session.checkpoints.at(-1);
     if (
       previous?.postHeads &&
       Object.entries(previous.postHeads).every(([repo, sha]) => checkpoint.heads[repo] === sha)

@@ -45,6 +45,7 @@ export async function prepareSetupChat(
       threadId: session.threadId,
       cwd,
       mode: request.mode,
+      collaboration: request.collaboration ?? 'default',
       purpose: 'host-setup',
       writableRoots: [],
       selection: request.selection,

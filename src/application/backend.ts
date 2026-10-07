@@ -19,6 +19,9 @@ import { Transcriptions } from './transcriptions';
 import type { TranscriptionPort } from '../domain/transcription';
 import { assetKind } from '../domain/asset-kind';
 import { ChatQueue } from './chat-queue';
+import { rewindMessage, forkMessage } from './chat-history-actions';
+import { ChatUsageService } from './chat-usage';
+import { ChatSkills } from './chat-skills';
 
 export type HostMethods = Pick<
   DesktopApi,
@@ -127,6 +130,8 @@ export function createBackend(
     },
   );
   const queue = new ChatQueue(store, gate, (request) => chats.start(request), notify);
+  const usage = new ChatUsageService(store, git, agent, gate, () => queue.hasPending, notify);
+  const skills = new ChatSkills(store, agent);
   const clips = new ClipCreation(store, media, chats, gate, remember, dispatch);
   const studio = new Studio(
     store,
@@ -241,16 +246,45 @@ export function createBackend(
     sessions: (scope) => store.sessions(scope),
     openChat: (input) => chats.open(input),
     closeChat: (id) => chats.close(id),
-    resetChat: (id) => chats.reset(id),
+    resetChat: async (id) => {
+      if (queue.hasPending) throw new AppFault({ id: 'appOperationBusy' });
+      return chats.reset(id);
+    },
     sendChat: (request) => chats.start(request),
     queueChat: (request) => queue.enqueue(request),
     queuedChats: (id) => Promise.resolve(queue.list(id)),
     removeQueuedChat: (input) => queue.remove(input),
+    pendingChatInput: (id) => Promise.resolve(chats.pendingInput(id)),
+    respondChatInput: (input) => chats.respondInput(input),
+    chatUsage: (id) => usage.read(id),
+    chatSkills: (id) => skills.read(id),
+    compactChat: async (id) => {
+      try {
+        await usage.compact(id);
+      } catch (error) {
+        queue.pause();
+        throw error;
+      }
+      queue.settle();
+    },
     cancelChat: () => {
       queue.pause();
       return agent.stop();
     },
-    undoChat: (id) => chats.undo(id),
+    undoChat: async (id) => {
+      if (queue.hasPending) throw new AppFault({ id: 'appOperationBusy' });
+      return chats.undo(id);
+    },
+    rewindChat: (target) =>
+      gate.run('chat-rewind', () => {
+        if (queue.hasPending) throw new AppFault({ id: 'appOperationBusy' });
+        return rewindMessage(store, git, agent, target, dispatch);
+      }),
+    forkChat: (target) =>
+      gate.run('chat-fork', () => {
+        if (queue.hasPending) throw new AppFault({ id: 'appOperationBusy' });
+        return forkMessage(store, agent, target);
+      }),
     describeAsset: (input) => automation.describeAsset(input),
     cancelAssetInspection: (requestId) => automation.cancelAssetInspection(requestId),
     importAsset: (input) =>

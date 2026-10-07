@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { ListOrdered, Pencil, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { QueuedChat } from '../../../domain/models';
 import { useApp } from '../../app/store';
-import { PendingLabel } from '../../shared/ui';
+import { IconButton, PendingLabel, Tip } from '../../shared/ui';
 import { diagnosticFromBridge, type Diagnostic } from '../../../domain/diagnostics';
 import { diagnosticText } from '../../app/diagnostics';
+import '../../styles/chat-queue.css';
 
 export function QueuedMessages({
   sessionId,
@@ -19,8 +21,9 @@ export function QueuedMessages({
   const { api, run } = useApp();
   const [entries, setEntries] = useState<QueuedChat[]>([]);
   const [pending, setPending] = useState<string | null>(null);
+  const actionOwner = useRef(false);
   const [failure, setFailure] = useState<Diagnostic | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     let active = true;
@@ -52,8 +55,14 @@ export function QueuedMessages({
       remove();
     };
   }, [api, sessionId, attempt]);
+  if (!entries.length && !failure && !loading) return null;
   return (
-    <div className="queued-messages" aria-busy={loading}>
+    <section className="queued-messages" aria-label={t('queueTitle')} aria-busy={loading}>
+      <div className="queue-heading">
+        <ListOrdered size={14} aria-hidden="true" />
+        <span>{t('queueTitle')}</span>
+        {!!entries.length && <span className="queue-count">{entries.length}</span>}
+      </div>
       {loading && <PendingLabel label={t('loading')} />}
       {failure && (
         <div role="alert">
@@ -71,40 +80,52 @@ export function QueuedMessages({
           </button>
         </div>
       )}
-      {entries.map((entry) => (
-        <div className="queued-message" key={entry.id}>
-          <span>{t(entry.failed ? 'queueHeld' : 'queued')}</span>
-          <span className="queued-text">{entry.request.text}</span>
-          {entry.failed && (
-            <button
-              type="button"
-              className="button compact"
-              disabled={!canRestore || pending !== null}
-              onClick={() => {
-                setPending(entry.id);
-                void run(() => restore(entry)).finally(() => {
-                  setPending(null);
-                });
-              }}
-            >
-              {pending === entry.id ? <PendingLabel label={t('loading')} /> : t('queueRestore')}
-            </button>
-          )}
-          <button
-            type="button"
-            className="button compact"
-            disabled={pending !== null}
-            onClick={() => {
-              setPending(entry.id);
-              void run(() => api.removeQueuedChat({ sessionId, id: entry.id })).finally(() => {
-                setPending(null);
-              });
-            }}
-          >
-            {t('remove')}
-          </button>
-        </div>
-      ))}
-    </div>
+      <div className="queue-list">
+        {entries.map((entry) => (
+          <article className="queued-message" key={entry.id} aria-busy={pending === entry.id}>
+            {entry.failed && <span className="queue-held">{t('queueHeld')}</span>}
+            <div className="queued-text">{entry.request.text}</div>
+            <div className="queue-actions">
+              {pending === entry.id && <PendingLabel label={t('loading')} />}
+              <Tip label={canRestore ? t('queueEdit') : t('queueEditHelp')}>
+                <button
+                  type="button"
+                  className="queue-action"
+                  disabled={!canRestore || pending !== null}
+                  aria-label={t('queueEdit')}
+                  onClick={() => {
+                    if (actionOwner.current) return;
+                    actionOwner.current = true;
+                    setPending(entry.id);
+                    void run(() => restore(entry)).finally(() => {
+                      actionOwner.current = false;
+                      setPending(null);
+                    });
+                  }}
+                >
+                  <Pencil size={13} aria-hidden="true" />
+                  {t('queueEdit')}
+                </button>
+              </Tip>
+              <IconButton
+                label={t('queueRemove')}
+                disabled={pending !== null}
+                onClick={() => {
+                  if (actionOwner.current) return;
+                  actionOwner.current = true;
+                  setPending(entry.id);
+                  void run(() => api.removeQueuedChat({ sessionId, id: entry.id })).finally(() => {
+                    actionOwner.current = false;
+                    setPending(null);
+                  });
+                }}
+              >
+                <Trash2 size={13} aria-hidden="true" />
+              </IconButton>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
   );
 }

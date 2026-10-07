@@ -99,6 +99,80 @@ const fileChangeSchema = z.object({
 });
 const messageSchema = z
   .object({
+    phase: z.enum(['commentary', 'final_answer']).optional(),
+    proposedPlan: z.boolean().optional(),
+    timestampKnown: z.boolean().optional(),
+    activity: z
+      .object({
+        kind: z.enum([
+          'command',
+          'read',
+          'search',
+          'file-change',
+          'mcp',
+          'dynamic',
+          'browser',
+          'web-search',
+          'image-generation',
+          'agent',
+          'plan',
+          'compaction',
+          'review',
+        ]),
+        status: z.enum(['inProgress', 'completed', 'failed', 'declined', 'interrupted']),
+        title: z.string().optional(),
+        detail: z
+          .string()
+          .max(64 * 1024)
+          .optional(),
+        command: z.string().optional(),
+        cwd: z.string().optional(),
+        exitCode: z.number().optional(),
+        durationMs: z.number().nonnegative().optional(),
+        startedAt: z.string().optional(),
+        completedAt: z.string().optional(),
+        agents: z
+          .array(
+            z.object({
+              id: z.string(),
+              name: z.string(),
+              status: z.enum(['pending', 'inProgress', 'completed', 'failed', 'declined', 'interrupted']),
+              result: z.string().max(64 * 1024),
+            }),
+          )
+          .optional(),
+        steps: z
+          .array(z.object({ text: z.string(), status: z.enum(['pending', 'inProgress', 'completed']) }))
+          .optional(),
+      })
+      .transform(
+        ({
+          title,
+          detail,
+          command,
+          cwd,
+          exitCode,
+          durationMs,
+          startedAt,
+          completedAt,
+          steps,
+          agents,
+          ...activity
+        }) => ({
+          ...activity,
+          ...(title === undefined ? {} : { title }),
+          ...(detail === undefined ? {} : { detail }),
+          ...(command === undefined ? {} : { command }),
+          ...(cwd === undefined ? {} : { cwd }),
+          ...(exitCode === undefined ? {} : { exitCode }),
+          ...(durationMs === undefined ? {} : { durationMs }),
+          ...(startedAt === undefined ? {} : { startedAt }),
+          ...(completedAt === undefined ? {} : { completedAt }),
+          ...(steps === undefined ? {} : { steps }),
+          ...(agents === undefined ? {} : { agents }),
+        }),
+      )
+      .optional(),
     attachments: z.array(z.string()).max(50).optional(),
     id: z.string(),
     role: z.enum(['user', 'assistant', 'reasoning', 'tool', 'error']),
@@ -111,36 +185,58 @@ const messageSchema = z
     diagnostic: z.custom<Diagnostic>((value) => parseDiagnostic(value) !== null).optional(),
     generatedImages: z.array(z.string()).max(20).optional(),
   })
-  .transform(({ appMessage, userText, diagnostic, generatedImages, attachments, ...message }) => ({
-    ...message,
-    ...(appMessage === undefined ? {} : { appMessage }),
-    ...(userText === undefined ? {} : { userText }),
-    ...(diagnostic === undefined ? {} : { diagnostic }),
-    ...(generatedImages === undefined ? {} : { generatedImages }),
-    ...(attachments === undefined ? {} : { attachments }),
-  }));
+  .transform(
+    ({
+      appMessage,
+      userText,
+      diagnostic,
+      generatedImages,
+      attachments,
+      activity,
+      phase,
+      proposedPlan,
+      timestampKnown,
+      ...message
+    }) => ({
+      ...message,
+      ...(appMessage === undefined ? {} : { appMessage }),
+      ...(userText === undefined ? {} : { userText }),
+      ...(diagnostic === undefined ? {} : { diagnostic }),
+      ...(generatedImages === undefined ? {} : { generatedImages }),
+      ...(attachments === undefined ? {} : { attachments }),
+      ...(activity === undefined ? {} : { activity }),
+      ...(phase === undefined ? {} : { phase }),
+      ...(proposedPlan === undefined ? {} : { proposedPlan }),
+      ...(timestampKnown === undefined ? {} : { timestampKnown }),
+    }),
+  );
 const checkpointSchema = z
   .object({
     turnId: z.string(),
     threadId: z.string(),
     mode: z.enum(['read', 'edit']).optional(),
+    collaboration: z.enum(['default', 'plan']).optional(),
     heads: z.record(z.string(), z.string()),
     messageCount: z.number().int().nonnegative(),
     postHeads: z.record(z.string(), z.string()).optional(),
   })
-  .transform(({ postHeads, mode, ...checkpoint }) => ({
+  .transform(({ postHeads, mode, collaboration, ...checkpoint }) => ({
     ...checkpoint,
     ...(mode === undefined ? {} : { mode }),
+    ...(collaboration === undefined ? {} : { collaboration }),
     ...(postHeads === undefined ? {} : { postHeads }),
   }));
-export const sessionSchema = z.object({
-  id: z.string(),
-  scope: scopeSchema,
-  topic: z.string(),
-  title: z.string(),
-  threadId: z.string().nullable(),
-  messages: z.array(messageSchema),
-  open: z.boolean(),
-  updatedAt: z.string(),
-  checkpoints: z.array(checkpointSchema).default([]),
-});
+export const sessionSchema = z
+  .object({
+    branch: z.object({ parentId: z.string().min(1), messageId: z.string().min(1) }).optional(),
+    id: z.string(),
+    scope: scopeSchema,
+    topic: z.string(),
+    title: z.string(),
+    threadId: z.string().nullable(),
+    messages: z.array(messageSchema),
+    open: z.boolean(),
+    updatedAt: z.string(),
+    checkpoints: z.array(checkpointSchema).default([]),
+  })
+  .transform(({ branch, ...session }) => ({ ...session, ...(branch ? { branch } : {}) }));

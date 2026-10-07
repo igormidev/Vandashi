@@ -187,7 +187,12 @@ export function useSessions(scope: Scope) {
     const idleAtStart = idleGeneration.current;
     void run(async () => {
       try {
-        const result = await openConversation(api, { scope, topic: session.topic, title: session.title });
+        const result = await openConversation(api, {
+          scope,
+          topic: session.topic,
+          title: session.title,
+          ...(session.branch ? { sessionId: session.id } : {}),
+        });
         if (!mounted.current) return;
         if (result.historyDeferred) {
           // The operation's idle event retries this read. Updating sessions here would
@@ -264,7 +269,11 @@ export function useSessions(scope: Scope) {
   const replace = (result: ChatSession) => {
     generation.current++;
     pending.current.delete(result.id);
-    setSessions((current) => current.map((session) => (session.id === result.id ? result : session)));
+    setSessions((current) =>
+      current.some((session) => session.id === result.id)
+        ? current.map((session) => (session.id === result.id ? result : session))
+        : [result, ...current],
+    );
   };
   const close = async (id: string) => {
     if (closeOwners.current.has(id)) return;

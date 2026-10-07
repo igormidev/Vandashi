@@ -1,0 +1,111 @@
+.chat-input-panel {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 12px 12px 6px 6px;
+  background: var(--surface);
+  padding: 12px;
+  margin-bottom: 4px;
+  max-height: min(400px, 45vh);
+  overflow: hidden;
+  font-size: 12px;
+}
+.chat-input-heading,
+.chat-input-tabs,
+.chat-input-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.chat-input-heading {
+  flex-shrink: 0;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+.chat-input-tabs {
+  flex-shrink: 0;
+  overflow-x: auto;
+  margin: 0 -12px 10px;
+  padding: 0 12px;
+}
+.chat-input-tabs button {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 7px;
+  font-size: 11px;
+  color: var(--muted);
+  background: transparent;
+  border-radius: 6px;
+}
+.chat-input-tabs button.active {
+  background: var(--hover);
+  color: var(--text);
+}
+.chat-input-question {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.chat-input-question legend {
+  font-size: 13px;
+  line-height: 1.5;
+  margin-bottom: 10px;
+  overflow-wrap: anywhere;
+}
+.chat-input-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  line-height: 1.5;
+}
+.chat-input-option:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.chat-input-option:has(input:focus-visible) {
+  border-color: var(--accent);
+}
+.chat-input-option input {
+  flex: 0 0 auto;
+  width: 13px;
+  height: 13px;
+  margin: 2px 0 0;
+  accent-color: var(--accent);
+}
+.chat-input-option > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.chat-input-option strong {
+  display: block;
+  font-weight: 500;
+}
+.chat-input-option small {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.chat-input-question textarea {
+  resize: vertical;
+  min-height: 62px;
+}
+.chat-input-actions {
+  flex-shrink: 0;
+  justify-content: flex-end;
+  margin-top: 10px;
+}

@@ -1,20 +1,26 @@
-import { LoaderCircle, MessageSquare, Minus, Plus, RotateCcw, Sparkles, Undo2, X } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowDown, GitBranch, LoaderCircle, MessageSquare, Sparkles, X } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { TranscriptionStatus, useTranscriptionProgress } from '../transcription/TranscriptionStatus';
 import { useTranslation } from 'react-i18next';
 import type { Scope } from '../../../domain/models';
 import { scopeKey } from '../../../domain/defaults';
-import { chatUndoIssue } from '../../../domain/chat-undo-policy';
 import { useApp } from '../../app/store';
-import { messageText } from '../../app/diagnostics';
-import { Empty, IconButton, Loading, Modal, Tip, PendingLabel } from '../../shared/ui';
+import { Empty, IconButton, Loading, Modal, PendingLabel } from '../../shared/ui';
 import { clearDraft, readChatFontSize, cacheChatFontSize } from './draft-cache';
 import type { CSSProperties } from 'react';
 import { Composer } from './Composer';
 import { useSessions } from './use-sessions';
 import { sessionTitle } from './session-title';
 import '../../styles/chat.css';
-import { Message } from './ChatMessage';
+import { ChatTimeline } from './ChatTimeline';
+import { useChatScroll } from './use-chat-scroll';
+import { ChatInputPanel } from './ChatInputPanel';
+import { insertComposerText, quotedText } from './composer-actions';
+import { HistoryEditDialog } from './HistoryEditDialog';
+import { ChatUsage } from './ChatUsage';
+import { ChatToolbar } from './ChatToolbar';
+import { useHistoryActions } from './use-history-actions';
+import { ChatElapsed } from './ChatElapsed';
 
 export function ChatPane() {
   const { workspace } = useApp();
@@ -26,7 +32,7 @@ export function ChatPane() {
 }
 function Conversation({ scope }: { scope: Scope }) {
   const { t } = useTranslation();
-  const { api, run, chatTarget, setChatTarget, busy, activity, dirty, workspace } = useApp();
+  const { api, run, chatTarget, setChatTarget, setToast, busy, activity, dirty, workspace } = useApp();
   const transcriptionProgress = useTranscriptionProgress();
   const {
     sessions,
@@ -51,21 +57,15 @@ function Conversation({ scope }: { scope: Scope }) {
     cacheChatFontSize(next);
   };
   const [resetVersion, setResetVersion] = useState<Record<string, number>>({});
-  const scroll = useRef<HTMLDivElement>(null);
-  const follow = useRef(true);
   const session = sessions.find((entry) => entry.id === selected && entry.open);
-  const undoIssue = session ? chatUndoIssue(session) : null;
-  const lastMessage = session?.messages.at(-1);
-  useEffect(() => {
-    follow.current = true;
-    if (scroll.current) scroll.current.scrollTop = scroll.current.scrollHeight;
-  }, [selected]);
-  useEffect(() => {
-    if (follow.current && scroll.current) scroll.current.scrollTop = scroll.current.scrollHeight;
-  }, [lastMessage?.text, lastMessage?.id, activity?.phase]);
+  const history = useHistoryActions(session, replace, setSelected);
+  const { paneRef, scrollRef, contentRef, composerRef, onScroll, toEnd, toMessage, away } = useChatScroll(
+    session?.id,
+  );
   return (
     <section
       className="chat-pane"
+      ref={paneRef}
       aria-label={t('chat')}
       style={{ '--chat-font-size': `${String(fontSize)}px` } as CSSProperties}
     >
@@ -82,8 +82,11 @@ function Conversation({ scope }: { scope: Scope }) {
                   setChatTarget(null);
                 }}
               >
-                <MessageSquare size={12} />
-                <span>{sessionTitle(entry, t)}</span>
+                {entry.branch ? <GitBranch size={12} /> : <MessageSquare size={12} />}
+                <span>
+                  {sessionTitle(entry, t)}
+                  {entry.branch && ` · ${t('chatBranch')}`}
+                </span>
               </button>
               <button
                 className="close-tab"
@@ -112,104 +115,112 @@ function Conversation({ scope }: { scope: Scope }) {
       )}
       {session ? (
         <>
-          <div className="chat-toolbar">
-            <span className="chat-scope">
-              <Sparkles size={13} />
-              {sessionTitle(session, t)}
-            </span>
-            <IconButton
-              label={t('smallerText')}
-              disabled={fontSize <= 10}
-              onClick={() => {
-                resizeText(-1);
-              }}
-            >
-              <Minus size={13} />
-            </IconButton>
-            <IconButton
-              label={t('biggerText')}
-              disabled={fontSize >= 22}
-              onClick={() => {
-                resizeText(1);
-              }}
-            >
-              <Plus size={13} />
-            </IconButton>
-            {session.messages.filter((message) => message.role === 'user').length > 1 &&
-              (undoIssue ? (
-                <Tip label={messageText(undoIssue)}>
-                  <button
-                    className="icon-button"
-                    type="button"
-                    aria-label={t('undoTurn')}
-                    aria-disabled="true"
-                  >
-                    <Undo2 size={14} />
-                  </button>
-                </Tip>
-              ) : (
-                <IconButton
-                  label={t('undoTurn')}
-                  disabled={busy || dirty || opening || !session.checkpoints?.length}
-                  onClick={() => {
-                    setConfirm('undo');
-                  }}
-                >
-                  <Undo2 size={14} />
-                </IconButton>
-              ))}
-            <IconButton
-              label={t('newConversation')}
-              disabled={busy || dirty || opening}
-              onClick={() => {
-                setConfirm('reset');
-              }}
-            >
-              <RotateCcw size={14} />
-            </IconButton>
-          </div>
-          <div
-            className="messages"
-            ref={scroll}
-            onScroll={(event) => {
-              const node = event.currentTarget;
-              follow.current = node.scrollHeight - node.scrollTop - node.clientHeight < 90;
+          <ChatToolbar
+            session={session}
+            fontSize={fontSize}
+            opening={opening}
+            resizeText={resizeText}
+            onUndo={() => {
+              setConfirm('undo');
             }}
-          >
-            {session.messages.map((message) => (
-              <Message
-                key={message.id}
-                message={message}
+            onReset={() => {
+              setConfirm('reset');
+            }}
+          />
+          <div className="messages" ref={scrollRef} onScroll={onScroll}>
+            <div className="messages-content" ref={contentRef}>
+              <ChatTimeline
+                key={session.id}
+                messages={session.messages}
                 mediaGeneration={mediaGeneration[session.id] ?? 0}
                 root={workspace?.video?.path ?? `${workspace?.brand.path ?? ''}/brand_identity`}
+                active={activity?.sessionId === session.id}
+                disabled={busy || dirty || opening || history.pendingId !== null}
+                onEdit={history.setTarget}
+                onFork={history.fork}
+                pendingMessageId={history.pendingId}
+                onQuote={(text, message) => {
+                  const source = [
+                    '[',
+                    t('chatQuoteSource'),
+                    '](',
+                    '#chat-message-',
+                    encodeURIComponent(message.id),
+                    ')',
+                  ].join('');
+                  if (!insertComposerText(session.id, { text: [quotedText(text), source].join('\n\n') }))
+                    setToast({ kind: 'interface', key: 'chatDraftOccupied' });
+                }}
+                onCitation={(messageId) => {
+                  if (!toMessage(messageId)) setToast({ kind: 'interface', key: 'chatQuoteUnavailable' });
+                }}
+                onPlanAction={(action, message) => {
+                  const inserted = insertComposerText(session.id, {
+                    text: t(action === 'implement' ? 'chatPlanImplementPrompt' : 'chatPlanRevisePrompt', {
+                      plan: message.text,
+                    }),
+                    replace: true,
+                    mode: action === 'implement' ? 'edit' : 'read',
+                    collaboration: action === 'implement' ? 'default' : 'plan',
+                    ...(action === 'implement' ? { submit: true } : {}),
+                  });
+                  if (!inserted) setToast({ kind: 'interface', key: 'chatDraftOccupied' });
+                }}
               />
-            ))}
-            {!session.messages.length && (
-              <div className="chat-start">
-                <Sparkles size={25} />
-                <h2>{sessionTitle(session, t)}</h2>
-              </div>
-            )}
-            {activity?.sessionId === session.id && (
-              <div className="activity">
-                <span className="status-dot busy" />
-                {transcriptionProgress ? (
-                  <TranscriptionStatus progress={transcriptionProgress} />
-                ) : (
-                  <span>{t(activity.phase === 'committing' ? 'committing' : 'working')}</span>
-                )}
-              </div>
-            )}
+              {!session.messages.length && (
+                <div className="chat-start">
+                  <Sparkles size={25} />
+                  <h2>{sessionTitle(session, t)}</h2>
+                </div>
+              )}
+              {activity?.sessionId === session.id && (
+                <div className="activity">
+                  <span className="status-dot busy" />
+                  {transcriptionProgress ? (
+                    <TranscriptionStatus progress={transcriptionProgress} />
+                  ) : (
+                    <span>
+                      {t(activity.phase === 'committing' ? 'committing' : 'working')}{' '}
+                      <ChatElapsed
+                        key={
+                          session.messages
+                            .filter((message) => message.role === 'user' && message.pending !== 'queued')
+                            .at(-1)?.id ?? session.id
+                        }
+                      />
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
           {sessions
             .filter((entry) => entry.open)
             .map((entry) => (
-              <div key={entry.id} hidden={entry.id !== selected}>
+              <div
+                key={entry.id}
+                className="chat-composer-slot"
+                hidden={entry.id !== selected}
+                ref={entry.id === selected ? composerRef : undefined}
+              >
+                {entry.id === selected && away && (
+                  <IconButton
+                    label={t('scrollToBottom')}
+                    className="icon-button chat-scroll-end"
+                    onClick={toEnd}
+                  >
+                    <ArrowDown size={15} aria-hidden="true" />
+                  </IconButton>
+                )}
+                <ChatInputPanel sessionId={entry.id} />
                 <Composer
                   key={`${entry.id}:${String(resetVersion[entry.id] ?? 0)}`}
                   session={entry}
+                  visible={entry.id === selected}
+                  targeted={!entry.branch && entry.id === selected && !opening}
                   disabled={opening || closing.includes(entry.id)}
                 />
+                <ChatUsage sessionId={entry.id} active={entry.id === selected} hasThread={!!entry.threadId} />
               </div>
             ))}
         </>
@@ -238,6 +249,13 @@ function Conversation({ scope }: { scope: Scope }) {
             {opening || retrying ? <PendingLabel label={t('loading')} /> : t('retry')}
           </button>
         </div>
+      )}
+      {history.target && (
+        <HistoryEditDialog
+          onClose={history.close}
+          onConfirm={history.confirm}
+          refreshPending={history.refreshPending}
+        />
       )}
       <Modal
         title={t(confirm === 'undo' ? 'undoTurn' : 'resetConversation')}
