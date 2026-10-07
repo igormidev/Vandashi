@@ -92,6 +92,12 @@ Live Codex tests use a signed-in account; live media tests require rendering too
 See [Codex integration](docs/CODEX.md), [Hyperframes integration](docs/HYPERFRAMES.md),
 and [architecture](docs/ARCHITECTURE.md).
 
+On the maintainer's Mac, completed AI changes also update the single installed app
+at `/Applications/Vandashi.app`. Agents package the active checkout into a temporary
+directory, preserve the existing installation and user data, then restart and verify
+the installed version. See the [mandatory local update workflow](AGENTS.md#mandatory-local-macos-update).
+These local builds can precede the next published GitHub Release.
+
 The separate [landing page](landing/) uses the same strict source checks and a production build under `/Vandashi/`. See [site maintenance](docs/SITE.md) for language catalogs, screenshot provenance, responsive checks, and GitHub Pages deployment.
 
 ## Ask an agent to install it

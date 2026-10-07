@@ -43,6 +43,45 @@ Read `genesis_prompt.md` and `docs/REQUIREMENTS.md` before changing a feature. T
 - The pre-commit gate checks the staged snapshot. Stage complete changes and gate helpers; keep installed dependencies consistent with the staged lockfile. Never rely on unstaged fixes or untracked helpers to validate a commit.
 - Keep app-owned message descriptors separate from raw provider output and user content. Use `AppFault` with a typed ID from `src/domain/messages.ts` for app-owned errors and retain external diagnostics separately. IPC uses a validated failure envelope, then a versioned marker through Electron's copied Error.message; decode only at the renderer boundary. Never infer a translation key by matching English prose. Keep native dialog text in its typed source catalog and preserve raw user/provider content.
 
+## MANDATORY local macOS update
+
+On Igor's Mac, `/Applications/Vandashi.app` is the ONLY canonical installed copy.
+After EVERY completed repository change that increments the version, update and
+relaunch that app before reporting the local update complete. This also applies
+when working in a Codex worktree: package the checkout containing the completed
+changes and install it at the same canonical path. Questions and read-only reviews
+do not require a rebuild.
+
+- Updating and gracefully restarting this installed app is already authorized.
+  Do not repeatedly ask for installation or restart permission. Check for active
+  operations and unsaved work first; wait for operations to settle, and NEVER
+  force-quit, discard or silently commit the user's manual drafts to make an update
+  possible. Prepare the update while waiting. If a draft still blocks restart,
+  report that specific blocker and retain the prepared app.
+- Follow the AI test-scope policy and run the required static/build gate. Package
+  the host architecture with `npm run package:dir` into a unique private temporary
+  directory, explicitly overriding `build.directories.output` and passing
+  `--publish never`. `npm run build` alone does NOT regenerate an installed `.app`.
+  Do not leave another launchable build in the repository's `release/` directory.
+- Validate the packaged bundle ID (`com.vandashi.studio`), app/package/release
+  versions and generated output before installation. Gracefully quit the current
+  app and verify its processes have exited. Preserve its exact bundle in an owned
+  backup outside Spotlight-indexed locations; stage and verify the replacement
+  on the same filesystem, then replace `/Applications/Vandashi.app` with guarded
+  renames. Preserve the previous bundle for rollback if replacement or startup
+  fails. Never overwrite a concurrent installation.
+- Preserve the established user-data directory, settings, credentials, brands,
+  assets and Git histories. Archive only verified, agent-owned duplicate build
+  bundles after the canonical replacement launches successfully; do not remove
+  user data or unrelated applications.
+- Launch the exact canonical path and verify BOTH the running executable path
+  and the About-screen version against the completed source version. A successful
+  build, staged bundle or source commit is NOT proof that the installed app was
+  updated. Report a failed or blocked installation honestly.
+- This local development update is separate from the public updater. Do not
+  publish or move release tags to satisfy it; public releases still require the
+  complete verified installer matrix and update metadata.
+
 ## Design contract
 
 Use Hyperframes' studio visual language: quiet dark surfaces, restrained borders, compact controls, sparse copy. Do not put everything in cards or add empty marketing subtitles. Explain with accessible tooltips. Use official platform marks. Horizontal scrollers carry padding INSIDE their content so scrolling reaches the component edge. Keep keyboard navigation, focus visibility, reduced motion, and error recovery usable.

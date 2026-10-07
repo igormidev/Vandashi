@@ -1,7 +1,7 @@
 {
-  "version": "0.1.16",
+  "version": "0.1.17",
   "notes": [
-    "Show real installed app icons and neutral platform text in the browser picker.",
-    "Clarify that AI installation uses static checks and builds without full test suites."
+    "Keep the local Vandashi installation current after completed AI changes.",
+    "Show real installed app icons and neutral platform text in the browser picker."
   ]
 }

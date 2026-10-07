@@ -495,6 +495,18 @@ local pending feedback, two separate confirmations and persistent diagnostics.
 macOS remains installer-only while signing is unavailable. The source version record
 and verified release workflow are described in [UPDATES.md](UPDATES.md).
 
+Local development installation is a separate, agent-owned workflow on the
+maintainer's Mac. The completed checkout, including a Codex worktree, is packaged
+for the host architecture into a private temporary directory. The sole installed
+target is `/Applications/Vandashi.app`; repository build outputs are not alternate
+installations. Agents wait for operations and unsaved drafts before a graceful
+restart, verify the bundle identity, version and output, and use guarded same-volume
+replacement with the previous bundle retained outside Spotlight-indexed locations.
+The established user-data directory and all project files remain intact. Completion
+requires verifying the running canonical executable and its About-screen version;
+staging alone is pending installation. This workflow does not grant public release
+publication or bypass release verification and test-scope rules.
+
 ## Full-file asset transcription
 
 `domain/transcription.ts` defines source-timed speech evidence, explicit music/effect
