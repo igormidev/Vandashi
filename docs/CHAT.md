@@ -110,16 +110,23 @@ keyboard focus visibility. Attachments sit beside Send, and the scroll extends b
 The Query pill separates queued text from the transcript. Cards show two lines and expand on
 hover/keyboard focus to five scrollable lines with Edit/Remove beneath. Edit owns removal through
 acknowledgement and exact text/mode/collaboration/attachment adoption. Already dispatched entries
-cannot become duplicate drafts. Sent messages fold long text and copy complete original content.
+cannot become duplicate drafts. Hover/focus arrows reorder a complete reviewed session snapshot;
+stale ordering is rejected and held failures cannot be bypassed by moving another entry ahead.
+Sent messages fold long text and copy complete original content.
 Arrow Up/Down recalls sent prompts from an empty draft; selected assistant text can be quoted.
 Quotes retain a source link that navigates only within the current conversation. Reading positions
 use stable row anchors, preserving the visible row through tab switches and font/content reflow.
 One timeline selection listener and memoized settled rows avoid reparsing the full history for
 each streamed delta; this is bounded rendering optimization, not transcript virtualization.
+Jump to message searches accepted user turns and their last answer within the selected conversation.
+Keyboard navigation and bounded result pages reuse the same exact-ID scroll anchors. It is local
+conversation navigation; upstream T3's cross-thread search and visual minimap remain separate.
 Only known timestamps are displayed; recovered provider history does not invent send times.
 
-The command menu provides Read/Edit/Plan and explicit compaction plus freshly discovered enabled
+The command menu provides Read/Edit/Plan, model selection and explicit compaction plus freshly discovered enabled
 Codex skills. Skill insertion passes a native `$name` mention without expanding writable roots.
+`/model` opens the normal model picker while preserving remaining text, attachments and mode;
+selection uses the existing settings-save/discovery ownership and failure recovery.
 Per-conversation prompt stashes retain exact text, mode, Plan selection and attachment selections;
 restoring over an occupied draft requires a reviewed swap that retains the previous draft. Stored
 paths remain selections and never grant filesystem access. Failed preference writes preserve a
@@ -142,6 +149,9 @@ Context/quota controls distinguish unknown from zero. Native usage provides cont
 account limits refresh from the provider. Explicit compaction waits for completion and preserves
 history. Markdown supports tables/task lists, literal-text syntax highlighting, code copying and
 sanitized local Mermaid diagrams with source switching.
+Tables copy native plaintext, Markdown or CSV and offer a wrap toggle. Expanded diagrams retain
+the reviewed sanitized SVG/source, support source copying, bounded zoom and pointer/keyboard
+panning, and return focus after dismissal. Copying locks both viewport interaction and dismissal.
 Mermaid's KaTeX dependency is pinned to the fixed `0.18.2` through a scoped override for
 [GHSA-238p-pmpm-9mq7](https://github.com/advisories/GHSA-238p-pmpm-9mq7); native diagram verification
 covers that installed dependency. Existing unrelated audit findings remain outside this change.

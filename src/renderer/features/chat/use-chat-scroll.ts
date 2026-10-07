@@ -66,6 +66,9 @@ export function useChatScroll(sessionId: string | undefined) {
     remember();
     setAway(false);
   }, [remember]);
+  const currentRow = useCallback((): string | null => {
+    return scroll.current ? (readingPosition(scroll.current).anchor?.id ?? null) : null;
+  }, []);
   const toMessage = useCallback((messageId: string): boolean => {
     const node = scroll.current;
     const target =
@@ -118,5 +121,15 @@ export function useChatScroll(sessionId: string | undefined) {
       observer.disconnect();
     };
   }, [sessionId, remember]);
-  return { paneRef, scrollRef, contentRef, composerRef, onScroll: remember, toEnd, toMessage, away };
+  return {
+    paneRef,
+    scrollRef,
+    contentRef,
+    composerRef,
+    onScroll: remember,
+    toEnd,
+    toMessage,
+    currentRow,
+    away,
+  };
 }

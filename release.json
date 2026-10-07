@@ -1,7 +1,7 @@
 {
-  "version": "0.1.18",
+  "version": "0.1.19",
   "notes": [
-    "Rebuild chat with expandable Codex thinking and tools, richer messages and attached controls.",
-    "Edit queued requests, answer Plan questions, and preserve drafts and reading positions."
+    "Refactor chat with expandable thinking, richer messages and attached controls.",
+    "Reorder and edit queued requests, navigate past turns, and copy tables or expand diagrams."
   ]
 }

@@ -59,9 +59,8 @@ function Conversation({ scope }: { scope: Scope }) {
   const [resetVersion, setResetVersion] = useState<Record<string, number>>({});
   const session = sessions.find((entry) => entry.id === selected && entry.open);
   const history = useHistoryActions(session, replace, setSelected);
-  const { paneRef, scrollRef, contentRef, composerRef, onScroll, toEnd, toMessage, away } = useChatScroll(
-    session?.id,
-  );
+  const { paneRef, scrollRef, contentRef, composerRef, onScroll, toEnd, toMessage, currentRow, away } =
+    useChatScroll(session?.id);
   return (
     <section
       className="chat-pane"
@@ -119,6 +118,8 @@ function Conversation({ scope }: { scope: Scope }) {
             session={session}
             fontSize={fontSize}
             opening={opening}
+            onJump={toMessage}
+            currentRow={currentRow}
             resizeText={resizeText}
             onUndo={() => {
               setConfirm('undo');

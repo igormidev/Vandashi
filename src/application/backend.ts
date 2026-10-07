@@ -254,6 +254,7 @@ export function createBackend(
     queueChat: (request) => queue.enqueue(request),
     queuedChats: (id) => Promise.resolve(queue.list(id)),
     removeQueuedChat: (input) => queue.remove(input),
+    reorderQueuedChat: (input) => queue.reorder(input),
     pendingChatInput: (id) => Promise.resolve(chats.pendingInput(id)),
     respondChatInput: (input) => chats.respondInput(input),
     chatUsage: (id) => usage.read(id),

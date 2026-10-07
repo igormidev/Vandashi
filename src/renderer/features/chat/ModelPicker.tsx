@@ -25,6 +25,7 @@ export function ModelPicker({
   disabled = false,
   pending = false,
   attached = false,
+  openRequest = 0,
   onRetry,
 }: {
   value: ModelSelection;
@@ -32,6 +33,7 @@ export function ModelPicker({
   disabled?: boolean;
   pending?: boolean;
   attached?: boolean;
+  openRequest?: number;
   onRetry?: () => void;
 }) {
   const { models, run, refresh } = useApp();
@@ -98,6 +100,7 @@ export function ModelPicker({
       {attached ? (
         <ChoiceMenu
           label={t('model')}
+          openRequest={openRequest}
           value={value.model}
           options={modelOptions}
           disabled={locked || !models.length}

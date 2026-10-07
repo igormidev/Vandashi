@@ -48,7 +48,18 @@ export function interactionValidators(
     sendChat: chatRequest,
     queueChat: chatRequest,
     queuedChats: z.tuple([id]),
-    removeQueuedChat: z.tuple([z.object({ sessionId: id, id: z.uuid() }).strict()]),
+    removeQueuedChat: z.tuple([
+      z.object({ sessionId: id, id: z.uuid(), resume: z.boolean().optional() }).strict(),
+    ]),
+    reorderQueuedChat: z.tuple([
+      z
+        .object({
+          sessionId: id,
+          reviewedIds: z.array(z.uuid()).min(1).max(20),
+          ids: z.array(z.uuid()).min(1).max(20),
+        })
+        .strict(),
+    ]),
     pendingChatInput: z.tuple([id]),
     chatUsage: z.tuple([id]),
     chatSkills: z.tuple([id]),

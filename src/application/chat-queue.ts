@@ -1,5 +1,5 @@
 import type { AppEvent, ChatRequest } from '../domain/models';
-import type { QueuedChat } from '../domain/chat-queue';
+import type { QueuedChat, QueuedChatOrder, QueuedChatRemoval } from '../domain/chat-queue';
 import { AppFault, diagnosticFromError } from '../domain/diagnostics';
 import type { StoragePort } from '../domain/storage';
 import type { OperationGate } from './operation-gate';
@@ -55,7 +55,7 @@ export class ChatQueue {
     });
     this.changed(session.id);
   }
-  remove({ sessionId, id }: { sessionId: string; id: string }): Promise<void> {
+  remove({ sessionId, id, resume = false }: QueuedChatRemoval): Promise<void> {
     const entry = this.entries.find((entry) => entry.id === id && entry.request.sessionId === sessionId);
     // Editing adopts the draft only after this acknowledgement. A stale entry must
     // fail, otherwise an already dispatched/sent request could be restored and sent twice.
@@ -64,6 +64,27 @@ export class ChatQueue {
       return Promise.reject(new AppFault({ id: 'appOperationBusy' }));
     this.entries = this.entries.filter((candidate) => candidate !== entry);
     this.emit({ type: 'chat-pending', sessionId, id, message: null });
+    this.changed(sessionId);
+    if (resume) this.settle();
+    return Promise.resolve();
+  }
+  reorder({ sessionId, reviewedIds, ids }: QueuedChatOrder): Promise<void> {
+    if (this.starting) return Promise.reject(new AppFault({ id: 'appOperationBusy' }));
+    const current = this.entries.filter((entry) => entry.request.sessionId === sessionId);
+    if (
+      !current.length ||
+      reviewedIds.length !== current.length ||
+      ids.length !== current.length ||
+      reviewedIds.some((id, index) => current[index]?.id !== id) ||
+      new Set(ids).size !== current.length ||
+      ids.some((id) => !current.some((entry) => entry.id === id))
+    )
+      return Promise.reject(new AppFault({ id: 'untrustedRequest' }));
+    const ordered = ids.map((id) => current.find((entry) => entry.id === id));
+    let index = 0;
+    this.entries = this.entries.map((entry) =>
+      entry.request.sessionId === sessionId ? (ordered[index++] ?? entry) : entry,
+    );
     this.changed(sessionId);
     return Promise.resolve();
   }
@@ -77,7 +98,8 @@ export class ChatQueue {
   settle(): void {
     if (this.starting || this.gate.busy) return;
     const entry = this.entries[0];
-    if (!entry || entry.failed) return;
+    // Reordering must never move a later intent past a failure that still needs review.
+    if (!entry || this.entries.some((candidate) => candidate.failed)) return;
     this.starting = true;
     // send reserves the next lease synchronously; its preflight revalidates attachments.
     void this.send(entry.request)

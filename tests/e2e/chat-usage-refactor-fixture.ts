@@ -1,10 +1,14 @@
 import type { ElectronApplication } from '@playwright/test';
-import type { AppEvent, Settings } from '../../src/domain/models';
+import type { AppEvent, ModelInfo, Settings } from '../../src/domain/models';
 import type { ChatUsage } from '../../src/domain/chat-usage';
 import type { ChatSkill } from '../../src/domain/chat-skills';
 import { chatFixtureData } from './chat-fixture-data';
 
-export async function installChatUsageFixture(app: ElectronApplication, usage: ChatUsage) {
+export async function installChatUsageFixture(
+  app: ElectronApplication,
+  usage: ChatUsage,
+  models?: ModelInfo[],
+) {
   await app.evaluate(
     ({ ipcMain, BrowserWindow }, fixture) => {
       let state = fixture.state;
@@ -127,7 +131,7 @@ export async function installChatUsageFixture(app: ElectronApplication, usage: C
         throw new Error(`Unexpected usage fixture method ${method}`);
       });
     },
-    { ...chatFixtureData(false, {}), usage },
+    { ...chatFixtureData(false, models ? { models } : {}), usage },
   );
 }
 

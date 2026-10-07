@@ -6,6 +6,7 @@ import { useApp } from '../../app/store';
 import { messageText } from '../../app/diagnostics';
 import { IconButton, Tip } from '../../shared/ui';
 import { sessionTitle } from './session-title';
+import { TurnNavigator } from './TurnNavigator';
 
 export function ChatToolbar({
   session,
@@ -14,6 +15,8 @@ export function ChatToolbar({
   resizeText,
   onUndo,
   onReset,
+  onJump,
+  currentRow,
 }: {
   session: ChatSession;
   fontSize: number;
@@ -21,6 +24,8 @@ export function ChatToolbar({
   resizeText: (delta: number) => void;
   onUndo: () => void;
   onReset: () => void;
+  onJump: (messageId: string) => boolean;
+  currentRow: () => string | null;
 }) {
   const { t } = useTranslation();
   const { busy, dirty } = useApp();
@@ -32,6 +37,13 @@ export function ChatToolbar({
         {sessionTitle(session, t)}
         {session.branch && <span className="chat-branch-label">{t('chatBranch')}</span>}
       </span>
+      <TurnNavigator
+        key={session.id}
+        messages={session.messages}
+        disabled={opening}
+        currentRow={currentRow}
+        onJump={onJump}
+      />
       <IconButton
         label={t('smallerText')}
         disabled={fontSize <= 10}

@@ -26,7 +26,7 @@ import type {
 import type { UpdateState } from './updates';
 import type { InstalledBrowser } from './browsers';
 import type { FilePreview } from './file-preview';
-import type { QueuedChat } from './chat-queue';
+import type { QueuedChat, QueuedChatOrder, QueuedChatRemoval } from './chat-queue';
 import type { ChatInputRequest, ChatInputResponse } from './chat-input';
 import type { ChatUsage } from './chat-usage';
 import type { ChatSkill } from './chat-skills';
@@ -85,7 +85,8 @@ export interface DesktopApi {
   sendChat(request: ChatRequest): Promise<void>;
   queueChat(request: ChatRequest): Promise<void>;
   queuedChats(sessionId: string): Promise<QueuedChat[]>;
-  removeQueuedChat(input: { sessionId: string; id: string }): Promise<void>;
+  removeQueuedChat(input: QueuedChatRemoval): Promise<void>;
+  reorderQueuedChat(input: QueuedChatOrder): Promise<void>;
   cancelChat(): Promise<void>;
   pendingChatInput(sessionId: string): Promise<ChatInputRequest | null>;
   respondChatInput(response: ChatInputResponse): Promise<void>;

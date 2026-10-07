@@ -30,6 +30,7 @@ interface Options {
   collaboration: 'default' | 'plan';
   attachments: string[];
   locked: boolean;
+  modelLocked: boolean;
   owner: RefObject<boolean>;
   setDraft: Dispatch<SetStateAction<Draft>>;
   setMode: (mode: 'read' | 'edit') => void;
@@ -54,6 +55,7 @@ export function useComposerTools(options: Options) {
   const [stashFailure, setStashFailure] = useState(false);
   const [compacting, setCompacting] = useState(false);
   const [queued, setQueued] = useState(true);
+  const [modelRequest, setModelRequest] = useState(0);
   const query = commandQuery(options.draft.text);
   const project = !/^(?:setup:|publish:)/u.test(options.session.topic);
   const canPlan = project && !(options.draft.handoff && options.draft.text === options.draft.seed);
@@ -137,7 +139,10 @@ export function useComposerTools(options: Options) {
     focus();
   };
   const disabled = (item: CommandItem) =>
-    !options.visible || options.locked || (item.command === 'compact' && !canCompact);
+    !options.visible ||
+    options.locked ||
+    (item.command === 'compact' && !canCompact) ||
+    (item.command === 'model' && options.modelLocked);
   const choose = (item: CommandItem) => {
     if (options.owner.current || disabled(item)) return;
     if (item.command === 'compact') {
@@ -161,7 +166,10 @@ export function useComposerTools(options: Options) {
     options.owner.current = true;
     try {
       let nextText = options.draft.text;
-      if (item.skill)
+      if (item.command === 'model') {
+        if (query) nextText = query.remainder;
+        setModelRequest((value) => value + 1);
+      } else if (item.skill)
         nextText = query
           ? `$${item.skill.name} ${query.remainder}`
           : `${nextText}${nextText && !/\s$/u.test(nextText) ? ' ' : ''}$${item.skill.name} `;
@@ -173,7 +181,7 @@ export function useComposerTools(options: Options) {
       options.setDraft((value) => ({ ...value, text: nextText }));
       setDismissed(nextText);
       setMenu(null);
-      focus();
+      if (item.command !== 'model') focus();
     } finally {
       options.owner.current = false;
     }
@@ -281,6 +289,7 @@ export function useComposerTools(options: Options) {
   };
   return {
     id,
+    modelRequest,
     commandMenu:
       options.visible && menu === 'commands'
         ? {

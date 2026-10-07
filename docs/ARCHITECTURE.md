@@ -51,6 +51,11 @@ the current creative session; it excludes setup/publishing. Settlement releases 
 lease only after persistence/recovery, then starts the next preflight. Failure/cancellation
 holds remaining entries for review. Restore locks text, mode, attachment picking and
 sending through queue removal and exact draft adoption. Queues do not survive process exit.
+Reordering validates the exact reviewed session IDs and a complete permutation before replacing
+only that session's global slots. Starting dispatch rejects reordering; any failed entry keeps
+automatic settlement held until review, even when another entry moves ahead.
+Explicit Remove may resume fresh remaining intents after the final held entry is removed;
+Edit omits that flag so removal never dispatches ahead of exact draft adoption.
 
 The timeline groups consecutive reasoning/tool items without hiding assistant commentary.
 Typed activity retains commands, output, diffs, status, timing, plans and observed child state.
@@ -62,11 +67,16 @@ Stable row IDs and viewport offsets preserve reading positions across short/long
 and reflow. A single visible-timeline selection listener and memoized rows avoid repeated
 historical Markdown parsing. Source quotation links resolve exact message IDs locally
 inside the selected timeline; they never grant native file access.
+Turn navigation derives accepted user turns and last-answer text only when its dialog opens,
+filters within that session and mounts at most 80 result options per page. Jumps reuse exact row
+IDs; switching conversations destroys the dialog rather than carrying a stale selection.
 
-Slash commands and enabled skill names come from fresh project-scoped provider discovery
-without workspace hydration or feature/configuration changes. Hidden mounted composers
-cannot open portals. Per-session prompt stashes persist complete draft/mode/collaboration
-and attachment-selection snapshots before a reviewed replacement. A synchronous composer
+Built-in slash commands use existing mode, model and compaction controls. Enabled skill names
+come from fresh project-scoped provider discovery without workspace hydration or feature/configuration changes. Hidden mounted composers
+cannot open portals. Model commands consume only their leading token and open the existing
+attached picker without changing permission/collaboration mode or granting new provider capabilities.
+Per-session prompt stashes persist complete draft/mode/collaboration and attachment-selection
+snapshots before a reviewed replacement. A synchronous composer
 owner blocks picker/send changes through review; cached paths remain selections only.
 Plan Markdown export is a browser-owned Blob download with a sanitized filename and
 URL cleanup. Live elapsed indicators measure observed monotonic intervals only.
@@ -93,6 +103,12 @@ native completion while preserving history, receipts and checkpoints. Markdown s
 local Shiki WASM tokens render as React text. The CSP allows WASM compilation while denying
 JavaScript eval. Mermaid renders bounded settled source with strict configuration and sanitized
 local SVG; resource-bearing source is rejected before layout. Provider HTML remains inert.
+Table exports serialize the safe Markdown tree to native clipboard text. Expanded diagrams keep
+an immutable sanitized SVG/source snapshot, remove the duplicate inline SVG while open, and lock
+modal dismissal through clipboard completion. Neither feature adds native filesystem authority.
+Expanded viewport zoom is bounded to 50–400%; owned keyboard panning and one captured primary
+pointer pan only that viewport. Source toggles preserve its position, while copying ends capture
+and locks controls, scrolling and dismissal through settlement.
 
 Native browser discovery inspects app registrations and returns display names and native
 icons only. On macOS it reads the declared `CFBundleIconFile` inside the canonical app

@@ -39,6 +39,7 @@ function withManyForms(translation: Translation) {
     assetFolderCount_many: translation.assetFolderCount_other,
     assetImportRemaining_many: translation.assetImportRemaining_other,
     clipListCount_many: translation.clipListCount_other,
+    chatJumpCount_many: translation.chatJumpCount_other,
   };
 }
 
@@ -58,6 +59,7 @@ export const resources = {
       assetFolderCount_zero: ptBR.assetFolderCount_other,
       assetImportRemaining_zero: ptBR.assetImportRemaining_other,
       clipListCount_zero: ptBR.clipListCount_other,
+      chatJumpCount_zero: ptBR.chatJumpCount_other,
     },
     messages: appMessageCatalogs['pt-BR'],
   },

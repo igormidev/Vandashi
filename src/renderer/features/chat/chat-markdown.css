@@ -18,6 +18,164 @@
   max-width: 100%;
   height: auto;
 }
+.chat-diagram-preview {
+  position: relative;
+}
+.chat-diagram-expand {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  opacity: 0;
+  transition: opacity 140ms;
+}
+.chat-diagram-preview:hover .chat-diagram-expand,
+.chat-diagram-expand:focus-within {
+  opacity: 1;
+}
+.chat-diagram-expand .icon-button {
+  background: var(--panel);
+}
+.modal:has(.chat-diagram-expanded) {
+  width: calc(100vw - 32px);
+  max-width: 1600px;
+  height: calc(100dvh - 32px);
+  max-height: none;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.chat-diagram-expanded {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.chat-diagram-expanded-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 3px;
+}
+.chat-diagram-zoom {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-right: auto;
+}
+.chat-diagram-zoom > span {
+  min-width: 36px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.chat-diagram-expanded-toolbar .message-copy {
+  opacity: 1;
+}
+.chat-diagram-full-view,
+.chat-diagram-source {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.chat-diagram-canvas > svg {
+  width: 100% !important;
+  max-width: none !important;
+  height: auto !important;
+}
+.chat-diagram-canvas {
+  margin-inline: auto;
+}
+.chat-diagram-full-view {
+  cursor: grab;
+  touch-action: pan-x pan-y;
+}
+.chat-diagram-full-view:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}
+.chat-diagram-full-view.is-dragging {
+  cursor: grabbing;
+  user-select: none;
+}
+.chat-diagram-full-view.is-locked {
+  overflow: hidden;
+  cursor: default;
+  touch-action: none;
+}
+.chat-diagram-source {
+  width: 100%;
+  padding: 12px;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  resize: none;
+  white-space: pre;
+  font-size: 12px;
+  font-family: monospace;
+  line-height: 1.7;
+}
+.chat-markdown-table {
+  max-width: 100%;
+  margin-block: 10px;
+}
+.chat-table-scroll {
+  overflow-x: auto;
+  padding-bottom: 3px;
+  overscroll-behavior-x: contain;
+}
+.chat-markdown-table table {
+  display: table;
+  width: max-content;
+  min-width: 100%;
+  max-width: none;
+  margin: 0;
+  overflow: visible;
+}
+.chat-markdown-table th,
+.chat-markdown-table td {
+  white-space: nowrap;
+}
+.chat-markdown-table.is-wrapped table {
+  width: 100%;
+  table-layout: fixed;
+}
+.chat-markdown-table.is-wrapped th,
+.chat-markdown-table.is-wrapped td {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.chat-table-controls,
+.chat-table-copy {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.chat-table-controls {
+  justify-content: space-between;
+  padding-top: 2px;
+}
+.chat-table-copy .message-copy {
+  opacity: 1;
+}
+.chat-table-format.choice-trigger {
+  color: var(--muted);
+  font-size: 10px;
+  padding: 3px 5px;
+}
+@media (hover: none) {
+  .chat-diagram-expand {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chat-diagram-expand {
+    transition: none;
+  }
+}
 .chat-diagram-pending,
 .chat-diagram-failure {
   padding: 12px;

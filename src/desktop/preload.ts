@@ -56,6 +56,7 @@ const api: DesktopApi = {
   queueChat: (input) => invoke('queueChat', input),
   queuedChats: (id) => invoke('queuedChats', id),
   removeQueuedChat: (input) => invoke('removeQueuedChat', input),
+  reorderQueuedChat: (input) => invoke('reorderQueuedChat', input),
   cancelChat: () => invoke('cancelChat'),
   pendingChatInput: (id) => invoke('pendingChatInput', id),
   respondChatInput: (input) => invoke('respondChatInput', input),

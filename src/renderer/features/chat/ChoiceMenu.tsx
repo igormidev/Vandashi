@@ -16,6 +16,7 @@ export function ChoiceMenu({
   options,
   disabled = false,
   className = '',
+  openRequest = 0,
   onChange,
 }: {
   label: string;
@@ -23,6 +24,7 @@ export function ChoiceMenu({
   options: ChoiceOption[];
   disabled?: boolean;
   className?: string;
+  openRequest?: number;
   onChange: (value: string) => void;
 }) {
   const id = useId();
@@ -31,8 +33,13 @@ export function ChoiceMenu({
   const initialFocus = useRef<number | null>(null);
   const search = useRef({ text: '', time: 0 });
   const [open, setOpen] = useState(false);
+  const [consumedRequest, setConsumedRequest] = useState(openRequest);
   const selected = options.find((option) => option.value === value);
   if (disabled && open) setOpen(false);
+  if (consumedRequest !== openRequest) {
+    setConsumedRequest(openRequest);
+    if (!disabled && openRequest > 0) setOpen(true);
+  }
   const close = (returnFocus: boolean) => {
     setOpen(false);
     if (returnFocus) trigger.current?.focus();
@@ -53,7 +60,8 @@ export function ChoiceMenu({
     position();
     const buttons = menu.querySelectorAll<HTMLButtonElement>('[role="option"]');
     const selectedIndex = options.findIndex((option) => option.value === value);
-    buttons.item(initialFocus.current ?? Math.max(0, selectedIndex)).focus();
+    if (buttons.length)
+      buttons.item(Math.min(buttons.length - 1, initialFocus.current ?? Math.max(0, selectedIndex))).focus();
     initialFocus.current = null;
     search.current = { text: '', time: 0 };
     const outside = (event: Event) => {

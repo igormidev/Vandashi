@@ -1,6 +1,6 @@
 import type { ChatSkill } from '../../../domain/chat-skills';
 
-export type ComposerCommand = 'plan' | 'read' | 'edit' | 'compact';
+export type ComposerCommand = 'plan' | 'read' | 'edit' | 'compact' | 'model';
 export interface CommandItem {
   id: string;
   command?: ComposerCommand;
@@ -21,7 +21,9 @@ export function commandItems(
   canPlan: boolean,
 ): CommandItem[] {
   const needle = query.toLocaleLowerCase().replace(/^skill:/u, '');
-  const commands: ComposerCommand[] = canPlan ? ['plan', 'read', 'edit', 'compact'] : ['read', 'edit'];
+  const commands: ComposerCommand[] = canPlan
+    ? ['plan', 'read', 'edit', 'compact', 'model']
+    : ['read', 'edit', 'model'];
   return [
     ...(skillsOnly ? [] : commands.map((command) => ({ id: '/' + command, command }))),
     ...skills.map((skill) => ({ id: '$' + skill.name, skill })),

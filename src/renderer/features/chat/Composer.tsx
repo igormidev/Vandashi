@@ -150,6 +150,7 @@ export function Composer({
     collaboration,
     attachments: attachmentState.paths,
     locked,
+    modelLocked: appBusy || disabled || savingModel || sending || picking || !models.length,
     owner: submissionOwner,
     setDraft,
     setMode,
@@ -271,7 +272,7 @@ export function Composer({
             plan={plan}
             installation={installation}
             canPlan={!installation && !(draft.handoff && text === draft.seed)}
-            disabled={busy || sending || picking}
+            disabled={!visible || busy || sending || picking}
             onChange={(value) => {
               if (submissionOwner.current) return;
               setCollaboration(value === 'plan' ? 'plan' : 'default');
@@ -330,9 +331,10 @@ export function Composer({
       </div>
       <ModelPicker
         attached
+        openRequest={tools.modelRequest}
         value={selection}
         onChange={changeModel}
-        disabled={appBusy || disabled || savingModel || sending || picking}
+        disabled={!visible || appBusy || disabled || savingModel || sending || picking}
         pending={savingModel}
         {...(modelFailure
           ? {

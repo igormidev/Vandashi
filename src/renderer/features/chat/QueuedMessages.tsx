@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ListOrdered, Pencil, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, ListOrdered, Pencil, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { QueuedChat } from '../../../domain/models';
 import { useApp } from '../../app/store';
@@ -57,7 +57,7 @@ export function QueuedMessages({
   }, [api, sessionId, attempt]);
   if (!entries.length && !failure && !loading) return null;
   return (
-    <section className="queued-messages" aria-label={t('queueTitle')} aria-busy={loading}>
+    <section className="queued-messages" aria-label={t('queueTitle')} aria-busy={loading || pending !== null}>
       <div className="queue-heading">
         <ListOrdered size={14} aria-hidden="true" />
         <span>{t('queueTitle')}</span>
@@ -81,12 +81,45 @@ export function QueuedMessages({
         </div>
       )}
       <div className="queue-list">
-        {entries.map((entry) => (
+        {entries.map((entry, index) => (
           <article className="queued-message" key={entry.id} aria-busy={pending === entry.id}>
             {entry.failed && <span className="queue-held">{t('queueHeld')}</span>}
             <div className="queued-text">{entry.request.text}</div>
             <div className="queue-actions">
               {pending === entry.id && <PendingLabel label={t('loading')} />}
+              {([-1, 1] as const).map((direction) => (
+                <IconButton
+                  key={direction}
+                  label={t(direction === -1 ? 'queueMoveUp' : 'queueMoveDown')}
+                  disabled={
+                    pending !== null || (direction === -1 ? index === 0 : index === entries.length - 1)
+                  }
+                  aria-busy={pending === entry.id}
+                  onClick={() => {
+                    if (actionOwner.current) return;
+                    const target = index + direction;
+                    if (target < 0 || target >= entries.length) return;
+                    const reviewedIds = entries.map((candidate) => candidate.id);
+                    const ids = reviewedIds.slice();
+                    const adjacent = ids[target];
+                    if (!adjacent) return;
+                    ids[target] = entry.id;
+                    ids[index] = adjacent;
+                    actionOwner.current = true;
+                    setPending(entry.id);
+                    void run(() => api.reorderQueuedChat({ sessionId, reviewedIds, ids })).finally(() => {
+                      actionOwner.current = false;
+                      setPending(null);
+                    });
+                  }}
+                >
+                  {direction === -1 ? (
+                    <ArrowUp size={13} aria-hidden="true" />
+                  ) : (
+                    <ArrowDown size={13} aria-hidden="true" />
+                  )}
+                </IconButton>
+              ))}
               <Tip label={canRestore ? t('queueEdit') : t('queueEditHelp')}>
                 <button
                   type="button"
@@ -114,10 +147,12 @@ export function QueuedMessages({
                   if (actionOwner.current) return;
                   actionOwner.current = true;
                   setPending(entry.id);
-                  void run(() => api.removeQueuedChat({ sessionId, id: entry.id })).finally(() => {
-                    actionOwner.current = false;
-                    setPending(null);
-                  });
+                  void run(() => api.removeQueuedChat({ sessionId, id: entry.id, resume: true })).finally(
+                    () => {
+                      actionOwner.current = false;
+                      setPending(null);
+                    },
+                  );
                 }}
               >
                 <Trash2 size={13} aria-hidden="true" />

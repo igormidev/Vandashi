@@ -1,6 +1,7 @@
 import {
   Archive,
   BookmarkPlus,
+  Cpu,
   Eye,
   ListChecks,
   LoaderCircle,
@@ -68,6 +69,8 @@ export function ComposerTools({ controls }: { controls: ComposerToolControls }) 
       <Eye size={15} />
     ) : item.command === 'edit' ? (
       <PencilLine size={15} />
+    ) : item.command === 'model' ? (
+      <Cpu size={15} />
     ) : (
       <Minimize2 size={15} />
     );
@@ -80,7 +83,9 @@ export function ComposerTools({ controls }: { controls: ComposerToolControls }) 
           ? 'commandReadHelp'
           : item.command === 'edit'
             ? 'commandEditHelp'
-            : 'commandCompactHelp',
+            : item.command === 'model'
+              ? 'commandModelHelp'
+              : 'commandCompactHelp',
     );
   const keyboard = (event: KeyboardEvent<HTMLDivElement>) => {
     const buttons = popup.current?.querySelectorAll<HTMLButtonElement>(

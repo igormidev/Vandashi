@@ -126,6 +126,7 @@ Implementation and evidence boundaries are recorded in [CHAT.md](CHAT.md).
 - [x] CHAT-32 — Render native structured questions and proposed plans. Answers retain exact request ownership; Plan mode is enforced by Codex and read-only roots. Implement submits through the composer owner; Revise prepares editable guidance.
 - [x] CHAT-33 — Edit verified historical requests through guarded Git/Codex rewind; branch through a selected response without inheriting historical Undo rights. A failed refresh retains the restored draft and retries only refresh.
 - [x] CHAT-34 — Distinguish current-thread context usage from account allowance, preserve unavailable states, and compact only an idle conversation without queued work or conflicting manual edits.
+- [x] CHAT-35 — Reorder complete reviewed queue snapshots without bypassing held failures, navigate accepted turns within the selected conversation, open model choices through slash commands, and copy tables or expand sanitized diagrams through existing renderer controls.
 
 These items do not establish every upstream T3 feature. Turn steering, unrestricted
 approval prompts, live child-agent execution, project/worktree management and embedded

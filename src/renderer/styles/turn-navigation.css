@@ -1,0 +1,113 @@
+.modal.turn-navigator {
+  width: 620px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.turn-navigator .modal-title {
+  margin-bottom: 14px;
+}
+.turn-navigator-search {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-shrink: 0;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding-left: 11px;
+}
+.turn-navigator-search:focus-within {
+  border-color: var(--accent);
+}
+.turn-navigator-search input {
+  border: 0;
+  background: transparent;
+  min-width: 0;
+}
+.turn-navigator-list {
+  margin-top: 12px;
+  overflow: auto;
+  min-height: 0;
+  max-height: min(480px, 55vh);
+  padding: 3px;
+  overscroll-behavior: contain;
+}
+.turn-navigator-option {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 6px;
+  text-align: left;
+}
+.turn-navigator-option:hover,
+.turn-navigator-option[aria-selected='true'] {
+  background: var(--hover);
+}
+.turn-navigator-number {
+  width: 25px;
+  flex-shrink: 0;
+  color: var(--faint);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  padding-top: 1px;
+}
+.turn-navigator-preview {
+  min-width: 0;
+  flex: 1;
+  display: grid;
+  gap: 4px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.turn-navigator-user,
+.turn-navigator-answer {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.turn-navigator-user {
+  color: var(--text);
+  font-size: 12px;
+}
+.turn-navigator-answer {
+  color: var(--muted);
+  font-size: 11px;
+}
+.turn-navigator-current {
+  color: var(--accent);
+  font-size: 10px;
+  max-width: 100px;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+.turn-navigator-empty {
+  color: var(--muted);
+  text-align: center;
+  padding: 20px 0;
+}
+.turn-navigator-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 11px;
+  flex-shrink: 0;
+}
+.turn-navigator-pages {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 600px) {
+  .turn-navigator-current {
+    max-width: 65px;
+  }
+}

@@ -324,3 +324,11 @@ diagram resources, execute provider HTML or enable JavaScript eval. The CSP perm
 narrower WASM compilation required by the highlighter; retain the OS sandbox. Context/quota
 values require native observations and fresh provider reads; unknown remains unavailable.
 Manual compaction owns its lease through actual settlement and preserves history/receipts.
+
+Queue ordering compares the complete reviewed session snapshot, preserves other session slots,
+and never bypasses held failures or dispatch ownership. Turn navigation indexes accepted user
+boundaries within the selected conversation and jumps by exact IDs. Only explicit Remove may
+resume fresh work after the final held entry; Edit removal must not race draft adoption. Model
+commands preserve draft/mode ownership; hidden composers cannot retain selector portals.
+Expanded diagrams retain their sanitized source snapshot and lock dismissal through native
+clipboard settlement.

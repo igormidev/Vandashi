@@ -8,7 +8,25 @@ AI agents follow [AGENTS.md](../AGENTS.md): run only tests created during the cu
 task unless the user explicitly requests broader testing. The historical results
 below are evidence, not instructions to repeat whole suites.
 
-## October 7, 2026 — chat refactor, version 0.1.18
+## October 7, 2026 — chat refactor, versions 0.1.18–0.1.19
+
+The follow-up **0.1.19** increment adds reviewed queue ordering/removal settlement, local
+turn search/jump, `/model`, table formats/wrapping and expanded diagram snapshots. **15 new
+unit cases and 12 new native UI cases** passed using exact task-created files/case selectors.
+Diagram checks cover actual SVG scaling, bounded pointer/keyboard panning and native Tab focus.
+Native checks cover delayed acknowledgement, held work, exact draft retention, bounded long
+history navigation, clipboard formats and focus recovery after valid or rejected source updates.
+Independent section-specific reviews cleared these changes and reconfirmed the historical
+landing screenshots. Combined evidence across both increments is **76 unit, 44 native UI and
+four real Codex integration cases**; it is not one full-suite run or a platform release matrix.
+The ARM64 **0.1.19** bundle was installed at `/Applications/Vandashi.app` after a fresh idle/clean
+Brand inspection and graceful quit. All **488 generated output files** matched the packaged
+copies by SHA-256. Bundle identity and source/package/release versions agreed. The actual running
+executable used the canonical path, and its renderer retained `--enable-sandbox`. The native
+About screen displayed **0.1.19 (0.1.19)**. Existing unsent text and its pasted-image attachment
+survived reopening; both Brand editors remained clean. Native inspection also confirmed all
+seven discovered models and six reasoning choices fit above their triggers with their icons.
+The previous exact bundle remains in an owned rollback directory outside Spotlight indexing.
 
 - The static source gate passed formatting, strict types, zero-warning lint, architecture,
   version/catalog consistency and desktop/landing production builds. All eight desktop
@@ -32,9 +50,8 @@ below are evidence, not instructions to repeat whole suites.
   landing accuracy. Authentic September screenshots remain visibly historical; no fixture
   capture replaces them. Full upstream T3 parity is not claimed; see [CHAT.md](CHAT.md).
 
-The local installer is prepared separately from public update publication. macOS was locked
-at the pre-install inspection, so the canonical app could not yet be safely restarted or its
-About screen verified. Preserve the prepared bundle and existing user drafts until that check.
+This local update is separate from public update publication. The initial locked-desktop
+blocker was resolved before replacement; no public release or tag was created for this update.
 
 ## October 6, 2026 — source 00e3d07, version 0.1.12
 

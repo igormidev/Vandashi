@@ -56,6 +56,7 @@ it('recognizes exact leading slash and skill queries without interpreting quoted
   expect(commandItems(skills, '', false, false).map((item) => item.id)).toEqual([
     '/read',
     '/edit',
+    '/model',
     '$hyperframes',
   ]);
 });
