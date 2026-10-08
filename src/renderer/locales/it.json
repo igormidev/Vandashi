@@ -556,7 +556,7 @@
   "chatTimeAgo": "{{time}} fa",
   "chatTimeJustNow": "Adesso",
   "chatTimeFuture": "Tra {{time}}",
-  "usageContextTrigger": "Finestra di contesto: {{percent}} utilizzato",
+  "usageContextTrigger": "Finestra di contesto: {{percent}} disponibile",
   "usageContextUnknown": "Finestra di contesto non disponibile",
   "usageResetsIn": "Si reimposta tra {{duration}}",
   "usageResetDue": "È arrivata l’ora di reimpostazione. Aggiorna l’utilizzo."

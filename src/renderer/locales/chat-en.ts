@@ -111,7 +111,7 @@ export const chatEn = {
   usageContext: 'Context window',
   usageUnavailable: 'Unavailable',
   usageContextPercent: '{{percent}} used',
-  usageContextTrigger: 'Context window: {{percent}} used',
+  usageContextTrigger: 'Context window: {{percent}} available',
   usageContextUnknown: 'Context window unavailable',
   usageTokens: '{{used}} / {{max}} tokens',
   usageTokensOnly: '{{used}} tokens',

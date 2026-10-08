@@ -556,7 +556,7 @@
   "chatTimeAgo": "Vor {{time}}",
   "chatTimeJustNow": "Gerade eben",
   "chatTimeFuture": "In {{time}}",
-  "usageContextTrigger": "Kontextfenster: {{percent}} belegt",
+  "usageContextTrigger": "Kontextfenster: {{percent}} verfügbar",
   "usageContextUnknown": "Kontextfenster nicht verfügbar",
   "usageResetsIn": "Wird in {{duration}} zurückgesetzt",
   "usageResetDue": "Der Rücksetzzeitpunkt ist erreicht. Aktualisiere die Nutzung."

@@ -556,7 +556,7 @@
   "chatTimeAgo": "{{time}} atrás",
   "chatTimeJustNow": "Agora mesmo",
   "chatTimeFuture": "Daqui a {{time}}",
-  "usageContextTrigger": "Janela de contexto: {{percent}} usados",
+  "usageContextTrigger": "Janela de contexto: {{percent}} disponíveis",
   "usageContextUnknown": "Janela de contexto indisponível",
   "usageResetsIn": "Renova em {{duration}}",
   "usageResetDue": "O horário de renovação chegou. Atualize o uso."

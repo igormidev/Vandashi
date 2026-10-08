@@ -136,8 +136,8 @@ usage and compaction are verified separately with task-created integration tests
 
 ### October 8 chat follow-up
 
-- [x] CHAT-36 — Distinguish thinking effort with increasing bars and distinct high-level icons, including a generic unknown-level fallback. Remove the visible Commands/Stash/Compact composer tools and discover built-in choices and enabled skills through `$` suggestions, replacing only the selected caret token.
-- [x] CHAT-37 — Place an icon-only native context occupancy ring inside the composer before the access selector. Preserve the existing usage dialog and explicit Compact action; show live days/hours/minutes until observed account resets without inferring renewed allowance.
+- [x] CHAT-36 — Distinguish thinking effort with increasing bars and distinct high-level icons, including a generic unknown-level fallback. Remove the visible Commands/Stash/Compact composer tools and discover built-in choices and enabled skills through `$` suggestions, replacing only the selected caret token. Arrow navigation scrolls the selected option into view without moving the conversation or editor focus.
+- [x] CHAT-37 — Place a continuous, icon-only native remaining-context ring inside the composer immediately before Attach. Preserve the existing usage dialog and explicit Compact action; show live days/hours/minutes until observed account resets without inferring renewed allowance. Separate the attached model/effort/speed pill with a darker surface and a visible divider.
 - [x] CHAT-38 — Place user and assistant action rows outside message content, with timestamps always visible when known. Mirror footer order; show actions on hover/focus or touch and through pending work. Timestamp tooltips show elapsed days/hours/minutes without seconds.
 - [x] CHAT-39 — Show the completed answer/plan's work duration when its exact native Codex turn reports it. Preserve valid timing through storage and same-turn history/forks, without fabricating historical duration from timestamps or the mounted live timer.
 

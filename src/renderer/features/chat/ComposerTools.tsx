@@ -12,6 +12,7 @@ export function ComposerTools({ controls }: { controls: ComposerToolControls }) 
   const id = controls.id;
   const anchor = useRef<HTMLSpanElement>(null);
   const popup = useRef<HTMLDivElement>(null);
+  const selectedOption = useRef<HTMLButtonElement>(null);
   const search = useRef({ query: '', time: 0 });
   useLayoutEffect(() => {
     if (!controls.menu) return;
@@ -47,6 +48,17 @@ export function ComposerTools({ controls }: { controls: ComposerToolControls }) 
       window.removeEventListener('resize', position);
       document.removeEventListener('scroll', position, true);
     };
+  }, [controls]);
+  useLayoutEffect(() => {
+    if (controls.menu !== 'commands') return;
+    const panel = popup.current;
+    const selected = selectedOption.current;
+    if (!panel || !selected) return;
+    const option = selected.getBoundingClientRect();
+    const top = panel.getBoundingClientRect().top + panel.clientTop;
+    const bottom = top + panel.clientHeight;
+    if (option.top < top) panel.scrollTop += option.top - top;
+    else if (option.bottom > bottom) panel.scrollTop += option.bottom - bottom;
   }, [controls]);
   const icon = (item: CommandItem) =>
     item.skill ? (
@@ -148,6 +160,11 @@ export function ComposerTools({ controls }: { controls: ComposerToolControls }) 
                 {controls.items.map((item, index) => (
                   <button
                     key={item.key}
+                    ref={
+                      index === Math.min(controls.selected, controls.items.length - 1)
+                        ? selectedOption
+                        : undefined
+                    }
                     type="button"
                     role="option"
                     aria-selected={index === Math.min(controls.selected, controls.items.length - 1)}

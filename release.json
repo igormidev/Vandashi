@@ -1,4 +1,4 @@
 {
-  "version": "0.1.20",
-  "notes": ["Polish chat commands, context usage, thinking icons, and message timing."]
+  "version": "0.1.21",
+  "notes": ["Keep chat command navigation visible and refine the context indicator and settings pill."]
 }

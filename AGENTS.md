@@ -334,8 +334,10 @@ Expanded diagrams retain their sanitized source snapshot and lock dismissal thro
 clipboard settlement.
 
 Inline `$` commands replace only their freshly validated caret token and retain surrounding
-draft text, attachments and mode ownership. Skill identities are separate from display
-aliases. Context occupancy comes from native used/max observations; countdown expiry never
+draft text, attachments and mode ownership. Arrow selection scrolls only its popup, keeping
+the editor caret and conversation position. Skill identities are separate from display
+aliases. Remaining context comes from native used/max observations; unknown capacity stays
+unavailable with a continuous subdued track, never invented progress. Countdown expiry never
 renews account allowance. Compact requires an explicit usage-dialog click. Settled message
 work duration uses only the exact completed provider turn's safe integer `durationMs`,
 never timestamp arithmetic, tool duration or a mounted live timer. Preserve verified timing

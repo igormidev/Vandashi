@@ -269,7 +269,6 @@ export function Composer({
           }}
         />
         <div className="composer-actions">
-          <ChatUsage sessionId={session.id} active={visible} hasThread={!!session.threadId} />
           <ComposerMode
             mode={mode}
             plan={plan}
@@ -306,6 +305,7 @@ export function Composer({
               </button>
             </Tip>
           )}
+          <ChatUsage sessionId={session.id} active={visible} hasThread={!!session.threadId} />
           <IconButton
             label={t('attach')}
             disabled={locked}

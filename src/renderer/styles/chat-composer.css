@@ -47,18 +47,8 @@
   margin: -1px auto 0;
   padding: 6px 10px 7px;
   border: 1px solid #2a2a2f;
-  border-top: 0;
   border-radius: 0 0 15px 15px;
-  background: #171719;
-}
-.composer-wrap > .model-controls.model-controls-attached::before {
-  content: '';
-  position: absolute;
-  top: -1px;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: #171719;
+  background: #121214;
 }
 .model-controls-attached .choice-trigger {
   min-width: 0;

@@ -556,7 +556,7 @@
   "chatTimeAgo": "{{time}}前",
   "chatTimeJustNow": "たった今",
   "chatTimeFuture": "{{time}}後",
-  "usageContextTrigger": "コンテキストウィンドウ：{{percent}}使用済み",
+  "usageContextTrigger": "コンテキストウィンドウ：{{percent}}利用可能",
   "usageContextUnknown": "コンテキストウィンドウを取得できません",
   "usageResetsIn": "{{duration}}後にリセット",
   "usageResetDue": "リセット予定時刻になりました。使用量を更新してください。"

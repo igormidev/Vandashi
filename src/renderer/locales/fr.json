@@ -556,7 +556,7 @@
   "chatTimeAgo": "Il y a {{time}}",
   "chatTimeJustNow": "À l’instant",
   "chatTimeFuture": "Dans {{time}}",
-  "usageContextTrigger": "Fenêtre de contexte : {{percent}} utilisés",
+  "usageContextTrigger": "Fenêtre de contexte : {{percent}} disponibles",
   "usageContextUnknown": "Fenêtre de contexte indisponible",
   "usageResetsIn": "Se réinitialise dans {{duration}}",
   "usageResetDue": "L’heure de réinitialisation est atteinte. Actualisez l’utilisation."

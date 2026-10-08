@@ -26,7 +26,7 @@ const usage: ChatUsage = {
   },
 };
 
-test('composer context icon shows native occupancy beside the access selector and independent countdowns update without renewing allowances', async ({
+test('composer context icon shows native remaining capacity beside Attach and independent countdowns update without renewing allowances', async ({
   desktopApp,
   page,
 }) => {
@@ -38,12 +38,12 @@ test('composer context icon shows native occupancy beside the access selector an
   const actions = page.locator('.chat-composer-slot:not([hidden]) .composer-actions');
   const trigger = actions.locator('.chat-usage-trigger');
   await expect(trigger).toHaveAttribute('aria-busy', 'false');
-  await expect(trigger).toHaveAccessibleName('Context window: 41% used');
+  await expect(trigger).toHaveAccessibleName('Context window: 59% available');
   await expect(trigger).toHaveText('');
-  const mode = actions.locator('.mode-choice');
+  const attach = actions.getByRole('button', { name: 'Attach files', exact: true });
   const contextBounds = await trigger.boundingBox();
-  const modeBounds = await mode.boundingBox();
-  expect(contextBounds && modeBounds && contextBounds.x + contextBounds.width <= modeBounds.x).toBe(true);
+  const attachBounds = await attach.boundingBox();
+  expect(contextBounds && attachBounds && contextBounds.x + contextBounds.width <= attachBounds.x).toBe(true);
   await expect(page.locator('.chat-usage')).toHaveCount(2);
   await expect(page.getByRole('button', { name: 'Compact context', exact: true })).toHaveCount(0);
   await trigger.click();
@@ -100,7 +100,7 @@ test('context refresh stays busy through native reads, recovers unavailable valu
   };
   await usageControl(desktopApp, { event: { type: 'chat-usage', sessionId: 'chat-one', context } });
   await usageControl(desktopApp, { usageComplete: true });
-  await expect(trigger).toHaveAccessibleName('Context window: 25% used');
+  await expect(trigger).toHaveAccessibleName('Context window: 75% available');
   await expect(dialog).toContainText('25,000 / 100,000 tokens');
   await expect(dialog).toContainText('28% remaining');
   await usageControl(desktopApp, { usageHold: true });
@@ -122,8 +122,8 @@ test('context refresh stays busy through native reads, recovers unavailable valu
   await usageControl(desktopApp, {
     event: { type: 'chat-usage', sessionId: 'chat-one', context: { ...context, usedTokens: 0 } },
   });
-  await expect(trigger).toHaveAccessibleName('Context window: 0% used');
+  await expect(trigger).toHaveAccessibleName('Context window: 100% available');
   await expect(trigger.locator('.context-ring.unknown')).toHaveCount(0);
-  await expect(trigger.locator('.context-ring-fill')).toHaveAttribute('stroke-dashoffset', '100');
+  await expect(trigger.locator('.context-ring-fill')).toHaveAttribute('stroke-dashoffset', '0');
   expect(await compactCalls(desktopApp)).toBe(0);
 });

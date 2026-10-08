@@ -77,7 +77,8 @@ caret range and replaces only that token; surrounding text, atomic file nodes, a
 and access/collaboration ownership are retained. Reserved skill names use a display alias,
 with stable identities separate from that alias. Leading-token slash mode/model aliases remain available.
 Hidden mounted composers cannot open portals. Model selection uses the existing attached
-picker without granting provider capabilities. Compact is available only through an explicit
+picker. Arrow-selected commands scroll only their popup without moving editor focus or the timeline.
+Picker selection never grants provider capabilities. Compact is available only through an explicit
 click in the usage dialog, never through a composer command or keyboard shortcut.
 Per-session prompt stashes persist complete draft/mode/collaboration and attachment-selection
 snapshots before a reviewed replacement. A synchronous composer
@@ -110,8 +111,8 @@ topic plus parent/message metadata, hydrate by exact session ID, and start witho
 Undo rights. App-prepared prompts cannot seed hidden branches sharing the topic.
 
 `ChatUsage` separates native context occupancy from total processed tokens and fresh account
-quotas. An icon-only context ring inside the composer uses native used/max observations;
-unknown capacity remains visibly distinct from zero. Fresh live observations take precedence
+quotas. An icon-only continuous ring beside Attach shows remaining capacity from native
+used/max observations; unknown capacity has only a subdued solid track. Fresh live observations take precedence
 over delayed reads. Account reset countdowns refresh while the dialog is mounted without
 inferring renewed quota when the reported timestamp expires. Unknown observations remain
 unavailable. Explicit compact discovers paths read-only,

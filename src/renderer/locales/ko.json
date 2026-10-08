@@ -556,7 +556,7 @@
   "chatTimeAgo": "{{time}} 전",
   "chatTimeJustNow": "방금",
   "chatTimeFuture": "{{time}} 후",
-  "usageContextTrigger": "컨텍스트 창: {{percent}} 사용",
+  "usageContextTrigger": "컨텍스트 창: {{percent}} 사용 가능",
   "usageContextUnknown": "컨텍스트 창 정보를 사용할 수 없음",
   "usageResetsIn": "{{duration}} 후 초기화",
   "usageResetDue": "초기화 예정 시간이 되었습니다. 사용량을 새로 고침하세요."

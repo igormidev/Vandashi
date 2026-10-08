@@ -8,6 +8,38 @@ AI agents follow [AGENTS.md](../AGENTS.md): run only tests created during the cu
 task unless the user explicitly requests broader testing. The historical results
 below are evidence, not instructions to repeat whole suites.
 
+## October 8, 2026 — chat navigation and surfaces, version 0.1.21
+
+- **Three task-created native UI cases** passed using real development React StrictMode
+  and Chromium's OS sandbox. A 36-option `$` list keeps every arrow-selected item visible
+  in both directions and across wrapping without moving the draft, caret focus or timeline.
+- Native context observations render a continuous remaining-capacity arc, including empty
+  and full endpoints. Unknown capacity remains unavailable with a subdued solid track.
+  The control is immediately before Attach; its usage dialog retains explicit Compact.
+- At the native minimum window and 25% chat width, the darker attached settings pill keeps
+  its visible divider, centered placement, contained controls and keyboard menu access.
+  Controlled captures were inspected directly; no fixture screenshot replaces site media.
+- The static gate passed formatting, version/catalog consistency, strict types,
+  zero-warning lint, architecture and both production builds. Existing assertions were
+  aligned with the new placement and available-capacity label without executing old cases.
+  Independent read-only audits found the shared consumers and historical landing claims
+  accurate. No existing or complete test suite was run.
+
+The ARM64 **0.1.21** package was installed at `/Applications/Vandashi.app` after preparation
+settled and both Brand Save/Discard controls were confirmed disabled. The app quit gracefully
+and its processes exited before guarded replacement; the exact previous **0.1.20** bundle
+remains in an owned rollback directory. All **488 generated output files**, bundle identity
+and app/package/release versions matched. The running executable uses the canonical path,
+the renderer retains its OS sandbox, and native About displayed **0.1.21 (0.1.21)**.
+
+Direct inspection of the installed `file:` renderer confirmed the continuous context ring
+beside Attach, darker settings pill, and unchanged usage dialog with the live weekly reset
+countdown. Fresh native enabled-skill discovery populated the actual `$` menu; twenty Down
+presses revealed the selected later skill, and twenty Up presses returned to the first
+command. No command or AI request was submitted. The exact empty draft was restored after
+the owned `$` check; Brand data, guides and GPT-6-Astra/Medium settings remained intact.
+This local update does not publish a public release or change release tags.
+
 ## October 8, 2026 — chat composer and metadata follow-up, version 0.1.20
 
 - **32 task-created unit cases** passed through exact file/case selections: inline caret

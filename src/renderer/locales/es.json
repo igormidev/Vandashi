@@ -556,7 +556,7 @@
   "chatTimeAgo": "Hace {{time}}",
   "chatTimeJustNow": "Ahora mismo",
   "chatTimeFuture": "Dentro de {{time}}",
-  "usageContextTrigger": "Ventana de contexto: {{percent}} usado",
+  "usageContextTrigger": "Ventana de contexto: {{percent}} disponible",
   "usageContextUnknown": "Ventana de contexto no disponible",
   "usageResetsIn": "Se restablece en {{duration}}",
   "usageResetDue": "Llegó la hora de restablecimiento. Actualiza el uso."

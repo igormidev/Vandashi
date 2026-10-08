@@ -142,14 +142,18 @@ historical duration. Proposed plans download their exact Markdown through a brow
 
 The October 8 follow-up moves command discovery into the `$` caret suggestion, alongside the
 existing `@` file suggestions. Choosing an item in the middle of a draft replaces only that
-token. Native enabled skills remain project scoped; reserved names have distinct identities
+token. Arrow navigation keeps the selected option visible by scrolling only the suggestion
+popup, retaining editor focus and the conversation's reading position. Native enabled skills
+remain project scoped; reserved names have distinct identities
 even when their display aliases overlap. The visible Commands/Stash/Compact buttons are gone;
 stash commands and their existing keyboard access remain available. Low-to-medium thinking
 levels use increasing bars; the higher levels use distinct brain/circuit/processor/orbit icons,
 with an unknown-level fallback.
 
-An icon-only circular context indicator sits before the access selector inside the composer.
-Its fill uses native current-thread occupancy, with a separate unknown appearance. The same
+An icon-only continuous context ring sits immediately before Attach inside the composer.
+Its arc shows available capacity from native current-thread used/max observations; unknown
+capacity has a subdued solid track without an invented progress arc. The attached model,
+effort and speed pill has a slightly darker surface and a visible dividing border. The same
 dialog retains explicit compaction and account allowance; each observed reset includes a
 live days/hours/minutes countdown. Reaching that time requests a refresh and never fabricates
 fresh allowance. All eight catalogs include these controls and explanations.

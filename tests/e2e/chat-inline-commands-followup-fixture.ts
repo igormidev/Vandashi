@@ -3,7 +3,11 @@ import type { AppEvent, ChatRequest, ModelInfo, Settings } from '../../src/domai
 import type { ChatSkill } from '../../src/domain/chat-skills';
 import { chatFixtureData } from './chat-fixture-data';
 
-export async function installInlineCommandFixture(app: ElectronApplication, models?: ModelInfo[]) {
+export async function installInlineCommandFixture(
+  app: ElectronApplication,
+  models?: ModelInfo[],
+  skills?: ChatSkill[],
+) {
   await app.evaluate(
     ({ ipcMain, BrowserWindow }, fixture) => {
       let state = fixture.state;
@@ -11,10 +15,7 @@ export async function installInlineCommandFixture(app: ElectronApplication, mode
       let pickerHold = false;
       let pickerCalls = 0;
       let skillReads = 0;
-      const skills: ChatSkill[] = [
-        { name: 'hyperframes', description: 'Enabled studio skill' },
-        { name: 'model', description: 'A provider skill sharing a local command name' },
-      ];
+      const skills = fixture.skills;
       const pendingSkills = new Set<(value: ChatSkill[]) => void>();
       const pendingPickers = new Set<(value: string[]) => void>();
       const requests: ChatRequest[] = [];
@@ -97,7 +98,13 @@ export async function installInlineCommandFixture(app: ElectronApplication, mode
         throw new Error(`Unexpected inline command fixture method ${method}`);
       });
     },
-    chatFixtureData(false, models ? { models } : {}),
+    {
+      ...chatFixtureData(false, models ? { models } : {}),
+      skills: skills ?? [
+        { name: 'hyperframes', description: 'Enabled studio skill' },
+        { name: 'model', description: 'A provider skill sharing a local command name' },
+      ],
+    },
   );
 }
 export function inlineControl(

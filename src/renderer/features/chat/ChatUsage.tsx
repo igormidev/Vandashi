@@ -169,7 +169,9 @@ export function ChatUsage({
   const formatted =
     percent === null
       ? null
-      : new Intl.NumberFormat(language, { style: 'percent', maximumFractionDigits: 1 }).format(percent);
+      : new Intl.NumberFormat(language, { style: 'percent', maximumFractionDigits: 1 }).format(
+          1 - Math.max(0, Math.min(1, percent)),
+        );
   const canCompact = hasThread && !busy && !dirty && !queued && !compacting && !loading;
   const contextLabel = formatted
     ? t('usageContextTrigger', { percent: formatted })
@@ -227,7 +229,7 @@ export function ChatUsage({
                   className="context-ring-fill"
                   pathLength="100"
                   strokeDasharray="100"
-                  strokeDashoffset={100 * (1 - Math.max(0, Math.min(1, percent)))}
+                  strokeDashoffset={100 * Math.max(0, Math.min(1, percent))}
                 />
               )}
             </svg>
