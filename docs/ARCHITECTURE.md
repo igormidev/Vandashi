@@ -36,7 +36,36 @@ Preset guides use the existing revision-guarded manual save transaction. Every c
 AI scope, reconciliation, Undo and full-file transcription scope includes this repository.
 
 System guidance and managed skill sources live in `src/domain/system-prompts`.
-Single-pass named templates keep user content literal. The isolated Codex home contains
+Single-pass named templates keep user content literal. Accepted local user messages retain
+an optional `appPrompt` record containing the exact app guidance and mode/collaboration,
+separate from user content. Thread developer instructions are captured only when starting
+a new thread. History merging/forks retain the original local message metadata; reset/rewind
+remove records with their messages. Legacy messages have no fabricated prompt record.
+
+The toolbar prompt inspector uses `ChatPrompts` and a dedicated `PromptFilesPort`.
+Preview construction uses native-owned adopted workspace snapshots and fresh skill discovery,
+never workspace hydration, YAML repair, staging or synchronization. Provider discovery
+failure still permits saved guidance and registered project reads; the preview explicitly
+omits unavailable skill instructions and grants no stale external skill access. Sending still rebuilds
+its guidance after preflight; generation-stage paths are placeholders only in the labeled
+preview. Historical guidance loads lazily by exact session/message identity. Thread templates
+are labeled as current templates, distinct from captured instructions and private provider
+instructions that are unavailable to the app. Native inspection IDs bind session, scope,
+topic and thread; resets/recovery reject obsolete reads. Eight bounded inspection caches
+prune inactive entries on new inspections and renew owned active reads.
+
+File references retain source offsets, including quoted paths, inline filenames and relative
+Markdown links with decoded spaces/fragments. External URLs never become local references.
+Every file click rechecks registered repositories and enabled skills, resolves references
+relative to their source file, and rejects canonical escapes/symlinks, binary content and
+text over two MB. External skill recursion is limited to the freshly enabled skill's own
+named folder; other external app files require an exact native transcription-guide path.
+This authority never grants media or attachment access. Complete literal document source is
+rendered as text with colored references, without executing HTML or loading resources.
+The modal locks selectors and dismissal during reads, preserves the previous file on failure,
+and retries the exact selected reference. Eight interface catalogs cover the shared toolbar.
+
+The isolated Codex home contains
 three hash-owned managed skills. Startup updates only known installed/pending hashes;
 unknown folders, symlinks and local edits are preserved and reported. Creative generation
 receives one exact private `.vandashi-recovery/generation-*` writable root outside media

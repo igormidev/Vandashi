@@ -63,6 +63,16 @@ export function interactionValidators(
     pendingChatInput: z.tuple([id]),
     chatUsage: z.tuple([id]),
     chatSkills: z.tuple([id]),
+    chatPrompt: z.tuple([
+      z
+        .object({ sessionId: id, mode: z.enum(['read', 'edit']), collaboration: z.enum(['default', 'plan']) })
+        .strict()
+        .refine((value) => value.collaboration !== 'plan' || value.mode === 'read'),
+    ]),
+    chatPromptSource: z.tuple([
+      z.object({ inspectionId: z.uuid(), messageId: id, developer: z.boolean() }).strict(),
+    ]),
+    chatPromptDocument: z.tuple([z.object({ inspectionId: z.uuid(), referenceId: z.uuid() }).strict()]),
     compactChat: z.tuple([id]),
     rewindChat: z.tuple([z.object({ sessionId: id, messageId: id }).strict()]),
     forkChat: z.tuple([z.object({ sessionId: id, messageId: id }).strict()]),

@@ -3,6 +3,8 @@ import type { AgentPort } from '../domain/agent';
 import type { StoragePort } from '../domain/storage';
 import type { AppEvent, ChatRequest, ChatSession, ChatMessage } from '../domain/models';
 import { setupPrompt, setupTarget } from '../domain/setup';
+import { setupGuidance } from '../domain/system-prompts/setup';
+import { setupDeveloperInstructions } from '../domain/system-prompts/provider';
 import { agentReadinessFault } from './agent-readiness';
 import type { Prepared } from './chat-types';
 import type { MediaPort } from '../domain/media';
@@ -20,8 +22,16 @@ export async function prepareSetupChat(
   if (fault) throw fault;
   const cwd = await store.setupWorkspace();
   const original = structuredClone(session);
+  const context = media?.setupContext?.() ?? '';
+  const prompt = setupPrompt(session.topic, request.text, request.mode) + context;
   const message: ChatMessage = {
     id: crypto.randomUUID(),
+    appPrompt: {
+      guidance: setupGuidance(session.topic, request.mode) + context,
+      mode: request.mode,
+      collaboration: request.collaboration ?? 'default',
+      ...(!session.threadId ? { developerInstructions: setupDeveloperInstructions } : {}),
+    },
     role: 'user',
     text: request.text,
     turnId: null,
@@ -49,7 +59,7 @@ export async function prepareSetupChat(
       purpose: 'host-setup',
       writableRoots: [],
       selection: request.selection,
-      prompt: setupPrompt(session.topic, request.text, request.mode) + (media?.setupContext?.() ?? ''),
+      prompt,
       attachments: request.attachments,
     },
   };

@@ -21,6 +21,8 @@ import { assetKind } from '../domain/asset-kind';
 import { ChatQueue } from './chat-queue';
 import { rewindMessage, forkMessage } from './chat-history-actions';
 import { ChatUsageService } from './chat-usage';
+import type { PromptFilesPort } from '../domain/chat-prompt';
+import { ChatPrompts } from './chat-prompt';
 import { ChatSkills } from './chat-skills';
 
 export type HostMethods = Pick<
@@ -30,6 +32,7 @@ export type HostMethods = Pick<
   installedBrowsers?: DesktopApi['installedBrowsers'];
   storePastedImage?: DesktopApi['storePastedImage'];
   filePreview?: DesktopApi['filePreview'];
+  promptFiles?: PromptFilesPort;
   validateAttachments?: (paths: string[]) => Promise<string[]>;
   prepareStudio?: (url: string) => Promise<void>;
   flushStudio?: (url: string) => Promise<void>;
@@ -132,6 +135,17 @@ export function createBackend(
   const queue = new ChatQueue(store, gate, (request) => chats.start(request), notify);
   const usage = new ChatUsageService(store, git, agent, gate, () => queue.hasPending, notify);
   const skills = new ChatSkills(store, agent);
+  const prompts = new ChatPrompts(
+    store,
+    agent,
+    host.promptFiles,
+    (scope) => {
+      const snapshot = snapshots.get(scopeKey(scope));
+      return snapshot ? structuredClone(snapshot) : undefined;
+    },
+    media,
+    transcriptions?.guidePath,
+  );
   const clips = new ClipCreation(store, media, chats, gate, remember, dispatch);
   const studio = new Studio(
     store,
@@ -259,6 +273,9 @@ export function createBackend(
     respondChatInput: (input) => chats.respondInput(input),
     chatUsage: (id) => usage.read(id),
     chatSkills: (id) => skills.read(id),
+    chatPrompt: (input) => prompts.inspect(input),
+    chatPromptSource: (input) => prompts.source(input),
+    chatPromptDocument: (input) => prompts.read(input),
     compactChat: async (id) => {
       try {
         await usage.compact(id);

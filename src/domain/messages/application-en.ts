@@ -1,5 +1,6 @@
 /** Application guardrails and recovery messages. External provider text stays verbatim. */
 export const applicationMessagesEn = {
+  appPromptWorkspaceUnavailable: 'Open this workspace before inspecting its prompt.',
   appInstallDependency:
     'Install {{name}} for Vandashi on this computer. Inspect the current setup, follow official instructions, and verify that Vandashi can use it. Preserve my projects and existing settings.',
   appSetupUndoUnavailable:

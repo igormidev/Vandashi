@@ -1,3 +1,4 @@
+import type { ChatPromptInspection, ChatPromptRequest, PromptDocument } from './chat-prompt';
 import type { PresetSave } from './presets';
 import type {
   AppEvent,
@@ -92,6 +93,13 @@ export interface DesktopApi {
   respondChatInput(response: ChatInputResponse): Promise<void>;
   chatUsage(sessionId: string): Promise<ChatUsage>;
   chatSkills(sessionId: string): Promise<ChatSkill[]>;
+  chatPrompt(input: ChatPromptRequest): Promise<ChatPromptInspection>;
+  chatPromptSource(input: {
+    inspectionId: string;
+    messageId: string;
+    developer: boolean;
+  }): Promise<PromptDocument>;
+  chatPromptDocument(input: { inspectionId: string; referenceId: string }): Promise<PromptDocument>;
   compactChat(sessionId: string): Promise<void>;
   undoChat(id: string): Promise<ChatSession>;
   rewindChat(target: ChatMessageTarget): Promise<RewoundChat>;

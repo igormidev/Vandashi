@@ -140,6 +140,7 @@ usage and compaction are verified separately with task-created integration tests
 - [x] CHAT-37 — Place a continuous, icon-only native remaining-context ring inside the composer immediately before Attach. Preserve the existing usage dialog and explicit Compact action; show live days/hours/minutes until observed account resets without inferring renewed allowance. Separate the attached model/effort/speed pill with a darker surface and a visible divider.
 - [x] CHAT-38 — Place user and assistant action rows outside message content, with timestamps always visible when known. Mirror footer order; show actions on hover/focus or touch and through pending work. Timestamp tooltips show elapsed days/hours/minutes without seconds.
 - [x] CHAT-39 — Show the completed answer/plan's work duration when its exact native Codex turn reports it. Preserve valid timing through storage and same-turn history/forks, without fabricating historical duration from timestamps or the mounted live timer.
+- [x] CHAT-40 — The information control beside chat text sizing opens a read-only prompt inspector. Show the complete current app guidance preview, exact saved guidance for new requests and truthfully labeled thread instructions. Highlight file references; read complete bounded native text files in the right panel and follow contained recursive references with Back navigation. Older requests have no invented historical snapshot.
 
 ## 5. Video validation, onboarding, and workspace shell
 

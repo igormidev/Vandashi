@@ -1,3 +1,4 @@
+import type { ChatPromptSnapshot } from './chat-prompt-snapshot';
 import type { UpdateState } from './updates';
 import type { AssetInspectionNote, AssetInspectionProgress } from './asset-inspection';
 import type { AppMessage } from './messages';
@@ -167,6 +168,7 @@ export interface DependencyCheck {
   helpUrl: string | null;
 }
 export interface ChatMessage {
+  appPrompt?: ChatPromptSnapshot;
   /** Renderer-only optimistic state. Never persisted or treated as provider evidence. */
   pending?: 'sending' | 'queued';
   /** Live provider lifecycle, stripped from stored sessions. */

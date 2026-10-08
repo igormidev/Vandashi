@@ -4,6 +4,8 @@ import type { MediaPort } from '../domain/media';
 import type { AppEvent, ChatMessage, ChatRequest, ChatSession } from '../domain/models';
 import type { GitPort, StoragePort } from '../domain/storage';
 import { buildWorkspacePrompt } from '../domain/prompts';
+import { buildWorkspaceGuidance, type WorkspacePromptInput } from '../domain/system-prompts/workspace';
+import { workspaceDeveloperInstructions } from '../domain/system-prompts/provider';
 import { clipHandoffText } from '../domain/clip-handoff';
 import type { Commits } from './commits';
 import type { Prepared, ScriptInput } from './chat-types';
@@ -92,27 +94,34 @@ export class ChatPreparation {
       const workspace = publication?.workspace ?? (await this.store.openWorkspace(session.scope));
       const stage =
         request.mode === 'edit' && !publication ? await this.store.assetGenerationStage?.(scope) : undefined;
-      const prompt =
-        (publication ? publishScopeGuidance(publication, repositories) : '') +
-        buildWorkspacePrompt({
-          workspace,
-          topic: session.topic,
-          mode: request.mode,
-          text: request.text,
-          scriptStaged: !!script,
-          ...(stage ? { generationStage: stage.path } : {}),
-          assetSkills: capabilities.skills.filter(
-            (entry) =>
-              entry.name === 'vandashi-create-assets' ||
-              entry.name === 'vandashi-use-assets' ||
-              entry.name === 'vandashi-create-presets',
-          ),
-          ...(skill ? { hyperframesSkill: skill } : {}),
-          ...(transcriptions?.guidePath ? { transcriptionGuidePath: transcriptions.guidePath } : {}),
-        });
+      const promptInput: WorkspacePromptInput = {
+        workspace,
+        topic: session.topic,
+        mode: request.mode,
+        text: request.text,
+        scriptStaged: !!script,
+        ...(stage ? { generationStage: stage.path } : {}),
+        assetSkills: capabilities.skills.filter(
+          (entry) =>
+            entry.name === 'vandashi-create-assets' ||
+            entry.name === 'vandashi-use-assets' ||
+            entry.name === 'vandashi-create-presets',
+        ),
+        ...(skill ? { hyperframesSkill: skill } : {}),
+        ...(transcriptions?.guidePath ? { transcriptionGuidePath: transcriptions.guidePath } : {}),
+      };
+      const prefix = publication ? publishScopeGuidance(publication, repositories) : '';
+      const guidance = prefix + buildWorkspaceGuidance(promptInput);
+      const prompt = prefix + buildWorkspacePrompt(promptInput);
       const message: ChatMessage = {
         id: request.clientMessageId ?? crypto.randomUUID(),
         attachments: request.attachments,
+        appPrompt: {
+          guidance,
+          mode: request.mode,
+          collaboration: request.collaboration ?? 'default',
+          ...(!session.threadId ? { developerInstructions: workspaceDeveloperInstructions } : {}),
+        },
         role: 'user',
         text: request.text,
         ...(script && !script.guidance.trim() ? { appMessage: { id: 'scriptHandoff' as const } } : {}),

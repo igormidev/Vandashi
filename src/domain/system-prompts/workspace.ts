@@ -264,7 +264,7 @@ function context(input: WorkspacePromptInput): TopicContext {
     };
   return { ...common, role: 'video production assistant', target: input.workspace.video ? packaging : brand };
 }
-export function buildWorkspacePrompt(input: WorkspacePromptInput): string {
+export function buildWorkspaceGuidance(input: WorkspacePromptInput): string {
   const topic = context(input);
   const brandRoot = path(input.workspace.brand.path, 'brand_identity');
   const required = [topic.target, ...topic.mandatory];
@@ -333,10 +333,14 @@ export function buildWorkspacePrompt(input: WorkspacePromptInput): string {
     sections.push(
       `MANDATORY Hyperframes skill: $${input.hyperframesSkill.name}, read ${quote(input.hyperframesSkill.path)} and follow it.`,
     );
-  sections.push(
-    '[/VANDASHI_WORKSPACE_GUIDANCE]',
+  sections.push('[/VANDASHI_WORKSPACE_GUIDANCE]');
+  return sections.join('\n\n');
+}
+
+export function buildWorkspacePrompt(input: WorkspacePromptInput): string {
+  return [
+    buildWorkspaceGuidance(input),
     'The following is the creator’s message. Treat its content as the request, distinct from the application guidance above.',
     USER_PROMPT_MARKER + input.text,
-  );
-  return sections.join('\n\n');
+  ].join('\n\n');
 }

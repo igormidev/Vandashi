@@ -295,5 +295,6 @@
   "appInstallDependency": "Installe {{name}} pour Vandashi sur cet ordinateur. Examine la configuration actuelle, suis les instructions officielles et vérifie que Vandashi peut l’utiliser. Préserve mes projets et les réglages existants.",
   "appSetupUndoUnavailable": "Les installations sur cet ordinateur ne peuvent pas être annulées avec Git. La conversation d’installation est conservée.",
   "desktopPreviewInvalid": "Impossible d’afficher cette image ou ce document. Choisissez un fichier valide.",
-  "appPresetConversationMissing": "Le préréglage de cette conversation n’existe plus. Choisissez-en un autre."
+  "appPresetConversationMissing": "Le préréglage de cette conversation n’existe plus. Choisissez-en un autre.",
+  "appPromptWorkspaceUnavailable": "Ouvrez cet espace de travail avant de consulter son prompt."
 }

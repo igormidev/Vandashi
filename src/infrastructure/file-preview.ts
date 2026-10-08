@@ -13,6 +13,8 @@ export async function readFilePreview(path: string, mediaUrl: string): Promise<F
   const pdf = extension === '.pdf';
   const text = [
     '.md',
+    '.markdown',
+    '.jsx',
     '.txt',
     '.json',
     '.yaml',

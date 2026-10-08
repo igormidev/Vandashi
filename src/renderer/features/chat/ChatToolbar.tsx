@@ -6,6 +6,7 @@ import { useApp } from '../../app/store';
 import { messageText } from '../../app/diagnostics';
 import { IconButton, Tip } from '../../shared/ui';
 import { sessionTitle } from './session-title';
+import { PromptInspector } from './PromptInspector';
 import { TurnNavigator } from './TurnNavigator';
 
 export function ChatToolbar({
@@ -62,6 +63,7 @@ export function ChatToolbar({
       >
         <Plus size={13} />
       </IconButton>
+      <PromptInspector key={session.id} sessionId={session.id} disabled={opening} />
       {session.messages.filter((message) => message.role === 'user').length > 1 &&
         (issue ? (
           <Tip label={messageText(issue)}>

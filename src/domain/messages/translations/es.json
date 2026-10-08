@@ -295,5 +295,6 @@
   "appInstallDependency": "Instala {{name}} para Vandashi en este equipo. Revisa la configuración actual, sigue las instrucciones oficiales y comprueba que Vandashi pueda usarlo. Conserva mis proyectos y la configuración existente.",
   "appSetupUndoUnavailable": "Las instalaciones en el equipo no se pueden revertir con Deshacer de Git. La conversación de instalación se conserva.",
   "desktopPreviewInvalid": "No se puede mostrar esta imagen o documento. Elige un archivo válido.",
-  "appPresetConversationMissing": "El ajuste preestablecido de esta conversación ya no existe. Elige otro."
+  "appPresetConversationMissing": "El ajuste preestablecido de esta conversación ya no existe. Elige otro.",
+  "appPromptWorkspaceUnavailable": "Abre este espacio de trabajo antes de consultar su prompt."
 }

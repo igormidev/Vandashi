@@ -174,6 +174,18 @@ const messageSchema = z
         }),
       )
       .optional(),
+    appPrompt: z
+      .object({
+        guidance: z.string().max(2_000_000),
+        mode: z.enum(['read', 'edit']),
+        collaboration: z.enum(['default', 'plan']),
+        developerInstructions: z.string().max(64_000).optional(),
+      })
+      .transform(({ developerInstructions, ...snapshot }) => ({
+        ...snapshot,
+        ...(developerInstructions === undefined ? {} : { developerInstructions }),
+      }))
+      .optional(),
     attachments: z.array(z.string()).max(50).optional(),
     id: z.string(),
     role: z.enum(['user', 'assistant', 'reasoning', 'tool', 'error']),
@@ -188,6 +200,7 @@ const messageSchema = z
   })
   .transform(
     ({
+      appPrompt,
       appMessage,
       userText,
       diagnostic,
@@ -201,6 +214,7 @@ const messageSchema = z
       ...message
     }) => ({
       ...message,
+      ...(appPrompt === undefined ? {} : { appPrompt }),
       ...(appMessage === undefined ? {} : { appMessage }),
       ...(userText === undefined ? {} : { userText }),
       ...(diagnostic === undefined ? {} : { diagnostic }),

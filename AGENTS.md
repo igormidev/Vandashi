@@ -342,3 +342,11 @@ renews account allowance. Compact requires an explicit usage-dialog click. Settl
 work duration uses only the exact completed provider turn's safe integer `durationMs`,
 never timestamp arithmetic, tool duration or a mounted live timer. Preserve verified timing
 only across the same turn; unknown send timestamps remain hidden.
+
+Prompt inspection never hydrates or repairs a workspace. Keep exact app guidance snapshots
+separate from raw user content, label current previews/templates honestly, and retain only
+snapshots belonging to retained messages. Historical sources load lazily. Native file reads
+bind inspection/session/thread identity, renew registered and enabled-skill authority on each
+click, and allow only bounded canonical regular text files. Nested skill references stay
+inside that freshly verified named skill folder; never grant the provider home. Literal
+prompt/README rendering must not execute HTML, load resources or grant media access.

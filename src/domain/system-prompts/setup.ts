@@ -15,7 +15,7 @@ export function setupTarget(topic: string) {
   return Object.hasOwn(targets, id) ? targets[id as keyof typeof targets] : null;
 }
 
-export function setupPrompt(topic: string, text: string, mode: 'read' | 'edit'): string {
+export function setupGuidance(topic: string, mode: 'read' | 'edit'): string {
   const target = setupTarget(topic);
   return [
     'You are the installation assistant inside Vandashi. This is HOST SETUP, separate from creative project editing.',
@@ -26,6 +26,12 @@ export function setupPrompt(topic: string, text: string, mode: 'read' | 'edit'):
     'Preserve existing installations and user configuration. Do not edit brand/video repositories, application bundles, unrelated settings or project assets. Do not commit or claim that Git Undo can reverse a host installation. Do not spawn other agents.',
     'For FFmpeg/FFprobe, install the official platform distribution that supplies both commands, then verify both executable versions and discovery from a desktop app environment. For Chrome, use the bundled Hyperframes version and its browser ensure command; do not create a different global Hyperframes installation. For the skill, install/enable the exact hyperframes core skill for Codex using the official guide; auxiliary skills or a filesystem copy alone do not establish enabled discovery. Preserve other skills/plugins.',
     'Verify the actual installed capability before reporting success. Vandashi will run fresh prerequisite checks after this turn finishes, including live enabled core-skill discovery. Report any remaining step truthfully.',
+  ].join('\n\n');
+}
+
+export function setupPrompt(topic: string, text: string, mode: 'read' | 'edit'): string {
+  return [
+    setupGuidance(topic, mode),
     '\nUSER REQUEST (keep separate from the installation guidance above):',
     text,
   ].join('\n\n');

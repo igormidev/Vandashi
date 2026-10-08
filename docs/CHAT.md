@@ -192,3 +192,29 @@ repository-scoped creative access and `approvalPolicy: never`. External approval
 arbitrary terminal management, queued turn steering and new child-agent execution remain outside
 this contract. Child history display does not enable concurrent child writes. Cross-platform
 release acceptance and external publishing require their separate verification.
+
+## Prompt inspection
+
+The information control beside chat font sizing opens the shared read-only inspector.
+The complete next-message preview uses the latest loaded native workspace and freshly
+verified skills. Sending rebuilds it after preflight and assigns temporary paths then. Unavailable skill discovery is shown explicitly; saved
+guidance and registered project documents remain readable offline.
+New requests save the exact app guidance separately from creator text; saved sources load
+on selection so a long history does not block opening. Older requests are explicitly
+unrecorded. Current thread templates and instructions captured at new-thread creation are
+separate choices; private provider instructions are unavailable. Linked files always show
+current bytes, not a claim about what the model actually read historically.
+
+Quoted absolute paths, inline filenames and relative Markdown references are highlighted.
+Clicking readable references opens the whole bounded native text in the right pane; nested
+references and Back keep the prompt visible. No source editing, active HTML, resource loading,
+workspace repair or new AI operation occurs. Native reads reject forged/stale ownership,
+canonical escapes, symlinks, binary files and oversized text. External skill references can
+only traverse a freshly enabled named skill folder; the transcription guide uses an exact
+app-owned path. Prompt viewing never establishes attachment/media capabilities.
+
+Task-created verification covers prompt/user separation, setup context, recursive/encoded
+links, dirty-file preservation, revoked skills, stale identities, long history, provider unavailability and read limits.
+Three sandboxed native development-React cases cover complete source display, nested navigation,
+historical/template selection, read-only controls, asynchronous locking/retry, Plan-mode preview
+and all eight catalogs at the native minimum window size. Existing test suites were not run.

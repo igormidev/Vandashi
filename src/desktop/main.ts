@@ -1,5 +1,6 @@
 import { Updates } from '../application/updates';
 import { discoverBrowsers } from '../infrastructure/browsers';
+import { NativePromptFiles } from '../infrastructure/prompt-files';
 import { readFilePreview } from '../infrastructure/file-preview';
 import { storePastedImage } from './attachments';
 import { DesktopUpdates } from './updates';
@@ -154,6 +155,7 @@ async function createWindow(): Promise<void> {
     agent,
     media,
     {
+      promptFiles: new NativePromptFiles(),
       validateAttachments: (paths) => Promise.all(paths.map((path) => permissions.file(path))),
       storePastedImage: (base64) => storePastedImage(base64, join(userData, 'attachments')),
       filePreview: async (path) => {

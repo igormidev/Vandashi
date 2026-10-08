@@ -75,6 +75,9 @@ them, and the site makes no new claim of complete T3 feature parity.
 The October 8 composer/context/message-metadata follow-up received a separate read-only
 landing audit. The historical labels remain accurate; no unfinished timing or parity claims
 were added and no screenshots were replaced.
+The October 8 prompt-inspector structural change received an independent read-only audit.
+The landing page has no prompt-inspector claim; existing captures remain explicitly historical
+and were not replaced with fixture images.
 
 ## Verification and deployment
 
