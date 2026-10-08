@@ -17,7 +17,6 @@ import { useChatScroll } from './use-chat-scroll';
 import { ChatInputPanel } from './ChatInputPanel';
 import { insertComposerText, quotedText } from './composer-actions';
 import { HistoryEditDialog } from './HistoryEditDialog';
-import { ChatUsage } from './ChatUsage';
 import { ChatToolbar } from './ChatToolbar';
 import { useHistoryActions } from './use-history-actions';
 import { ChatElapsed } from './ChatElapsed';
@@ -221,7 +220,6 @@ function Conversation({ scope }: { scope: Scope }) {
                   targeted={!entry.branch && entry.id === selected && !opening}
                   disabled={opening || closing.includes(entry.id)}
                 />
-                <ChatUsage sessionId={entry.id} active={entry.id === selected} hasThread={!!entry.threadId} />
               </div>
             ))}
         </>

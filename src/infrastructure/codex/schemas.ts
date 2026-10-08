@@ -7,6 +7,8 @@ export const itemSchema = z.object({ id: z.string(), type: z.string() }).catchal
 export const turnSchema = z.object({
   id: z.string(),
   status: z.string().optional(),
+  // Optional timing must not prevent settlement when an older or malformed provider omits it.
+  durationMs: z.number().int().nonnegative().nullish().catch(undefined),
   items: z.array(itemSchema).default([]),
   error: z.object({ message: z.string() }).nullish(),
 });

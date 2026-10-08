@@ -186,8 +186,7 @@
   overflow: auto;
   max-height: 420px;
 }
-.chat-proposed-plan.message {
-  margin: 16px 0;
+.chat-proposed-plan {
   padding: 14px;
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -206,9 +205,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-.chat-plan-heading .message-copy {
-  opacity: 1;
 }
 .chat-plan-body {
   margin-top: 9px;

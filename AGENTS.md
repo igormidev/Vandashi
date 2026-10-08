@@ -332,3 +332,11 @@ resume fresh work after the final held entry; Edit removal must not race draft a
 commands preserve draft/mode ownership; hidden composers cannot retain selector portals.
 Expanded diagrams retain their sanitized source snapshot and lock dismissal through native
 clipboard settlement.
+
+Inline `$` commands replace only their freshly validated caret token and retain surrounding
+draft text, attachments and mode ownership. Skill identities are separate from display
+aliases. Context occupancy comes from native used/max observations; countdown expiry never
+renews account allowance. Compact requires an explicit usage-dialog click. Settled message
+work duration uses only the exact completed provider turn's safe integer `durationMs`,
+never timestamp arithmetic, tool duration or a mounted live timer. Preserve verified timing
+only across the same turn; unknown send timestamps remain hidden.

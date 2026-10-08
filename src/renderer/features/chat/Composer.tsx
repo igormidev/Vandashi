@@ -24,6 +24,7 @@ import { useComposerHistory } from './composer-history';
 import { useComposerSubmit } from './use-composer-submit';
 import { useComposerTools } from './use-composer-tools';
 import { ComposerTools } from './ComposerTools';
+import { ChatUsage } from './ChatUsage';
 import '../../styles/chat-composer.css';
 
 export function Composer({
@@ -250,6 +251,7 @@ export function Composer({
             attachmentState.remove(path);
           }}
         />
+        <ComposerTools controls={tools} />
         <RichComposer
           focusKey={focusKey}
           value={text}
@@ -259,6 +261,7 @@ export function Composer({
           onPasteFiles={attachmentState.paste}
           onHistory={(direction) => !locked && !draft.pending && !attachments.length && recall(direction)}
           onCommandKeyDown={tools.keyDown}
+          onCommandSuggestion={tools.onSuggestion}
           commandMenu={tools.commandMenu}
           placeholder={t(dirty ? 'dirtyHelp' : 'chatPlaceholder')}
           onSend={() => {
@@ -266,7 +269,7 @@ export function Composer({
           }}
         />
         <div className="composer-actions">
-          <ComposerTools controls={tools} />
+          <ChatUsage sessionId={session.id} active={visible} hasThread={!!session.threadId} />
           <ComposerMode
             mode={mode}
             plan={plan}

@@ -20,7 +20,8 @@ import {
   type ComposerSnapshot,
   type StashedPrompt,
 } from './composer-stash';
-import { commandItems, commandQuery, type CommandItem } from './composer-command';
+import { acceptsCommandKey, commandItems, type CommandItem } from './composer-command';
+import type { CommandSuggestion } from './command-suggestion';
 
 interface Options {
   visible: boolean;
@@ -42,9 +43,9 @@ interface Options {
 }
 export function useComposerTools(options: Options) {
   const id = useId();
-  const { api, run, busy, dirty } = useApp();
+  const { api, dirty } = useApp();
   const [menu, setMenu] = useState<'commands' | 'stash' | null>(null);
-  const [dismissed, setDismissed] = useState<string | null>(null);
+  const [suggestion, setSuggestion] = useState<CommandSuggestion | null>(null);
   const [skills, setSkills] = useState<ChatSkill[]>([]);
   const [loading, setLoading] = useState(false);
   const [skillFailure, setSkillFailure] = useState(false);
@@ -53,14 +54,10 @@ export function useComposerTools(options: Options) {
   const [entries, setEntries] = useState(() => readStash(options.session.id));
   const [review, setReview] = useState<StashedPrompt | null>(null);
   const [stashFailure, setStashFailure] = useState(false);
-  const [compacting, setCompacting] = useState(false);
-  const [queued, setQueued] = useState(true);
   const [modelRequest, setModelRequest] = useState(0);
-  const query = commandQuery(options.draft.text);
   const project = !/^(?:setup:|publish:)/u.test(options.session.topic);
   const canPlan = project && !(options.draft.handoff && options.draft.text === options.draft.seed);
-  const canCompact = project && !!options.session.threadId && !busy && !dirty && !queued && !options.locked;
-  const items = commandItems(skills, query?.query ?? '', query?.kind === 'skill', canPlan);
+  const items = commandItems(skills, suggestion?.query ?? '', false, canPlan);
   const snapshot: ComposerSnapshot = {
     draft: options.draft,
     mode: options.mode,
@@ -79,10 +76,13 @@ export function useComposerTools(options: Options) {
     }
   }, [options.visible, options.owner, options.setSending]);
   useEffect(() => {
-    if (options.visible && query && dismissed !== options.draft.text && !options.locked) setMenu('commands');
-    else if (!query && menu === 'commands' && dismissed !== options.draft.text) setMenu(null);
+    if (!options.visible || options.locked) {
+      setMenu(null);
+      suggestion?.close();
+    } else if (suggestion) setMenu('commands');
+    else setMenu((current) => (current === 'commands' ? null : current));
     setSelected(0);
-  }, [options.draft.text, options.locked, options.visible, dismissed]);
+  }, [suggestion, options.locked, options.visible]);
   useEffect(() => {
     if (!options.visible || menu !== 'commands') return;
     let current = true;
@@ -108,91 +108,31 @@ export function useComposerTools(options: Options) {
       current = false;
     };
   }, [api, options.session.id, options.visible, menu, attempt]);
-  useEffect(() => {
-    let current = true;
-    let observed = false;
-    const unsubscribe = api.onEvent((event) => {
-      if (event.type === 'chat-queue' && event.sessionId === options.session.id) {
-        observed = true;
-        setQueued(event.entries.length > 0);
-      }
-    });
-    void api.queuedChats(options.session.id).then(
-      (value) => {
-        if (current && !observed) setQueued(value.length > 0);
-      },
-      () => {
-        if (current) setQueued(true);
-      },
-    );
-    return () => {
-      current = false;
-      unsubscribe();
-    };
-  }, [api, options.session.id]);
   const focus = () => {
     options.setFocusKey((value) => value + 1);
   };
-  const close = () => {
+  const close = (refocus = true) => {
     setMenu(null);
-    setDismissed(options.draft.text);
-    focus();
+    suggestion?.close();
+    if (refocus) {
+      if (suggestion) suggestion.focus();
+      else focus();
+    }
   };
   const disabled = (item: CommandItem) =>
     !options.visible ||
     options.locked ||
-    (item.command === 'compact' && !canCompact) ||
-    (item.command === 'model' && options.modelLocked);
-  const choose = (item: CommandItem) => {
-    if (options.owner.current || disabled(item)) return;
-    if (item.command === 'compact') {
-      options.owner.current = true;
-      options.setSending(true);
-      setCompacting(true);
-      setMenu(null);
-      setDismissed(options.draft.text);
-      void run(async () => {
-        await api.compactChat(options.session.id);
-        // Consume the command only after success; failures retain the exact original draft.
-        if (query) options.setDraft((value) => ({ ...value, text: query.remainder }));
-      }).finally(() => {
-        options.owner.current = false;
-        options.setSending(false);
-        setCompacting(false);
-        focus();
-      });
-      return;
-    }
-    options.owner.current = true;
-    try {
-      let nextText = options.draft.text;
-      if (item.command === 'model') {
-        if (query) nextText = query.remainder;
-        setModelRequest((value) => value + 1);
-      } else if (item.skill)
-        nextText = query
-          ? `$${item.skill.name} ${query.remainder}`
-          : `${nextText}${nextText && !/\s$/u.test(nextText) ? ' ' : ''}$${item.skill.name} `;
-      else if (item.command) {
-        options.setMode(item.command === 'edit' ? 'edit' : 'read');
-        options.setCollaboration(item.command === 'plan' ? 'plan' : 'default');
-        if (query) nextText = query.remainder;
-      }
-      options.setDraft((value) => ({ ...value, text: nextText }));
-      setDismissed(nextText);
-      setMenu(null);
-      if (item.command !== 'model') focus();
-    } finally {
-      options.owner.current = false;
-    }
-  };
-  const stash = () => {
-    if (options.locked || options.owner.current || options.draft.pending || !snapshotOccupied(snapshot))
-      return;
+    (item.command === 'model' && options.modelLocked) ||
+    (item.command === 'stash' &&
+      ((!suggestion?.preview('')?.trim() && !options.attachments.length) ||
+        !!options.draft.pending ||
+        entries.length >= 20));
+  const stash = (source = snapshot) => {
+    if (options.locked || options.owner.current || options.draft.pending || !snapshotOccupied(source)) return;
     options.owner.current = true;
     setStashFailure(false);
     try {
-      addStash(options.session.id, snapshot);
+      addStash(options.session.id, source);
       options.setDraft((value) => ({ ...value, text: '', pending: null }));
       options.clearAttachments();
       setMenu('stash');
@@ -202,6 +142,30 @@ export function useComposerTools(options: Options) {
       setMenu('stash');
     } finally {
       setEntries(readStash(options.session.id));
+      options.owner.current = false;
+    }
+  };
+  const choose = (item: CommandItem) => {
+    if (options.owner.current || disabled(item) || !suggestion) return;
+    if (item.command === 'stash') {
+      const text = suggestion.preview('');
+      if (text === null) return;
+      stash({ ...snapshot, draft: { ...options.draft, text } });
+      suggestion.close();
+      return;
+    }
+    options.owner.current = true;
+    try {
+      const text = suggestion.apply(item.skill ? '$' + item.skill.name + ' ' : '');
+      if (text === null) return;
+      options.setDraft((current) => ({ ...current, text }));
+      setMenu(item.command === 'restore' ? 'stash' : null);
+      if (item.command === 'model') setModelRequest((value) => value + 1);
+      else if (item.command === 'plan' || item.command === 'read' || item.command === 'edit') {
+        options.setMode(item.command === 'edit' ? 'edit' : 'read');
+        options.setCollaboration(item.command === 'plan' ? 'plan' : 'default');
+      }
+    } finally {
       options.owner.current = false;
     }
   };
@@ -264,7 +228,6 @@ export function useComposerTools(options: Options) {
       if (snapshotOccupied(snapshot)) stash();
       else {
         setMenu('stash');
-        setDismissed(options.draft.text);
       }
       return true;
     }
@@ -279,7 +242,7 @@ export function useComposerTools(options: Options) {
       setSelected((value) => (value + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length);
       return true;
     }
-    if (event.key === 'Enter' && !event.shiftKey && items.length) {
+    if (acceptsCommandKey(event) && items.length) {
       event.preventDefault();
       const item = items[Math.min(selected, items.length - 1)];
       if (item) choose(item);
@@ -289,6 +252,7 @@ export function useComposerTools(options: Options) {
   };
   return {
     id,
+    onSuggestion: setSuggestion,
     modelRequest,
     commandMenu:
       options.visible && menu === 'commands'
@@ -309,22 +273,8 @@ export function useComposerTools(options: Options) {
     entries,
     review: options.visible ? review : null,
     stashFailure,
-    compacting,
     locked: options.locked,
-    canCompact,
     canStash: !options.locked && !options.draft.pending && snapshotOccupied(snapshot) && entries.length < 20,
-    openCommands: () => {
-      if (!options.locked) {
-        setMenu('commands');
-        setDismissed(options.draft.text);
-      }
-    },
-    openStash: () => {
-      if (!options.locked) {
-        setMenu('stash');
-        setDismissed(options.draft.text);
-      }
-    },
     close,
     choose,
     disabled,
@@ -343,9 +293,6 @@ export function useComposerTools(options: Options) {
         options.setSending(false);
       }
       focus();
-    },
-    compact: () => {
-      choose({ id: '/compact', command: 'compact' });
     },
   };
 }

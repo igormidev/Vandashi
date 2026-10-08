@@ -1,7 +1,9 @@
 import { RefreshCw } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ChatUsage } from '../../../domain/chat-usage';
 import { IconButton, PendingLabel } from '../../shared/ui';
+import { quotaResetCountdown } from './quota-reset';
 
 export function ChatUsageDetails({
   usage,
@@ -15,6 +17,20 @@ export function ChatUsageDetails({
   onRefresh: () => void;
 }) {
   const { t, i18n } = useTranslation();
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    const update = () => {
+      setNow(Date.now());
+    };
+    const timer = window.setInterval(update, 30_000);
+    window.addEventListener('focus', update);
+    document.addEventListener('visibilitychange', update);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener('focus', update);
+      document.removeEventListener('visibilitychange', update);
+    };
+  }, []);
   const language = i18n.resolvedLanguage ?? i18n.language;
   const numbers = new Intl.NumberFormat(language);
   const percentage = new Intl.NumberFormat(language, { style: 'percent', maximumFractionDigits: 1 });
@@ -68,6 +84,7 @@ export function ChatUsageDetails({
         <PendingLabel label={t('loading')} />
       ) : usage?.account.available ? (
         usage.account.windows.map((window) => {
+          const reset = quotaResetCountdown(window.resetsAt, now, language);
           const duration = window.durationMinutes;
           const unit =
             duration !== null && duration >= 1440
@@ -96,7 +113,16 @@ export function ChatUsageDetails({
                 </strong>
               </div>
               <progress max={100} value={100 - window.usedPercent} aria-label={label} />
-              {window.resetsAt && <small>{t('usageResets', { time: time(window.resetsAt) })}</small>}
+              {reset && (
+                <>
+                  <small>
+                    {reset.minutesRemaining > 0
+                      ? t('usageResetsIn', { duration: reset.duration })
+                      : t('usageResetDue')}
+                  </small>
+                  <small>{t('usageResets', { time: time(window.resetsAt ?? '') })}</small>
+                </>
+              )}
             </div>
           );
         })

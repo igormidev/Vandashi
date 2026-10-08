@@ -6,6 +6,8 @@ import { array, itemSchema, object, string, strings } from './schemas';
 import type { CodexItem } from './schemas';
 import { AppFault } from '../../domain/diagnostics';
 import { itemActivity, planSteps } from './activity';
+import { lastTurnAnswer, verifiedTurnDuration } from './turn-timing';
+import { normalizeTurnDurations } from '../../domain/chat-turn-timing';
 
 const MAX_TOOL_TEXT = 64 * 1024;
 function visibleUserText(item: CodexItem): string {
@@ -131,6 +133,8 @@ export class EventReducer {
       const started = event.method === 'item/started';
       message.streaming = started;
       if (!message.phase && previous?.phase) message.phase = previous.phase;
+      if (previous?.turnId === turnId && previous.turnDurationMs !== undefined)
+        message.turnDurationMs = previous.turnDurationMs;
       if (!started && !message.text && previous?.text) message.text = previous.text;
       if (message.activity)
         message.activity = {
@@ -216,13 +220,36 @@ export class EventReducer {
       .map((message) => message.text)
       .join('\n\n');
   }
-  settle(turnId: string, status: 'completed' | 'failed' | 'interrupted'): AgentEvent[] {
+  settle(
+    turnId: string,
+    status: 'completed' | 'failed' | 'interrupted',
+    durationMs?: number | null,
+  ): AgentEvent[] {
     const events: AgentEvent[] = [];
-    for (const previous of this.messages.values()) {
-      if (previous.turnId !== turnId || (!previous.streaming && previous.activity?.status !== 'inProgress'))
+    const duration = verifiedTurnDuration(status, durationMs);
+    const settledMessages = [...this.messages.values()].map((message) => {
+      if (message.turnId !== turnId) return message;
+      const settled = { ...message, streaming: false };
+      if (status !== 'completed') delete settled.turnDurationMs;
+      return settled;
+    });
+    const answer = duration === undefined ? undefined : lastTurnAnswer(settledMessages, turnId);
+    const normalized = normalizeTurnDurations(
+      settledMessages,
+      answer && duration !== undefined ? [{ ...answer, turnDurationMs: duration }] : [],
+    );
+    for (const settled of normalized) {
+      const previous = this.messages.get(settled.id);
+      if (!previous) continue;
+      const timed = previous.id === answer?.id;
+      const timingChanged = previous.turnDurationMs !== settled.turnDurationMs;
+      if (
+        previous.turnId !== turnId ||
+        (!previous.streaming && previous.activity?.status !== 'inProgress' && !timed && !timingChanged)
+      )
         continue;
       const message: ChatMessage = {
-        ...previous,
+        ...settled,
         streaming: false,
         ...(previous.activity?.status === 'inProgress'
           ? { activity: { ...previous.activity, status, completedAt: new Date().toISOString() } }
@@ -240,7 +267,8 @@ export class EventReducer {
     text: string,
     append: boolean,
   ): AgentEvent {
-    const previous = this.messages.get(id);
+    const stored = this.messages.get(id);
+    const previous = stored?.turnId === turnId ? stored : undefined;
     let combined = append ? (previous?.text ?? '') + text : text;
     if (role === 'tool') combined = combined.slice(-MAX_TOOL_TEXT);
     const message: ChatMessage = {

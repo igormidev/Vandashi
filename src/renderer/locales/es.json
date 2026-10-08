@@ -551,5 +551,13 @@
   "chatJumpCount": "{{count}} turnos",
   "chatJumpCount_one": "{{count}} turno",
   "chatJumpCount_other": "{{count}} turnos",
-  "chatJumpUnavailable": "Este turno ya no está en esta conversación."
+  "chatJumpUnavailable": "Este turno ya no está en esta conversación.",
+  "chatWorkedFor": "Trabajó durante {{time}}",
+  "chatTimeAgo": "Hace {{time}}",
+  "chatTimeJustNow": "Ahora mismo",
+  "chatTimeFuture": "Dentro de {{time}}",
+  "usageContextTrigger": "Ventana de contexto: {{percent}} usado",
+  "usageContextUnknown": "Ventana de contexto no disponible",
+  "usageResetsIn": "Se restablece en {{duration}}",
+  "usageResetDue": "Llegó la hora de restablecimiento. Actualiza el uso."
 }

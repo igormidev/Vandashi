@@ -1,16 +1,4 @@
-import {
-  Archive,
-  BookmarkPlus,
-  Cpu,
-  Eye,
-  ListChecks,
-  LoaderCircle,
-  Minimize2,
-  PencilLine,
-  Slash,
-  Sparkles,
-  X,
-} from 'lucide-react';
+import { Archive, BookmarkPlus, Cpu, Eye, ListChecks, PencilLine, Sparkles, X } from 'lucide-react';
 import { useLayoutEffect, useRef, type KeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
@@ -40,7 +28,7 @@ export function ComposerTools({ controls }: { controls: ComposerToolControls }) 
       panel.style.maxHeight = String(Math.max(90, Math.min(composer.top - 20, 340))) + 'px';
     };
     position();
-    if (trigger.contains(document.activeElement))
+    if (controls.menu === 'stash')
       (panel.querySelector<HTMLButtonElement>('[data-composer-option]:not(:disabled)') ?? panel).focus();
     const outside = (event: Event) => {
       if (
@@ -49,7 +37,7 @@ export function ComposerTools({ controls }: { controls: ComposerToolControls }) 
         !trigger.contains(event.target) &&
         !trigger.closest('.composer')?.contains(event.target)
       )
-        controls.close();
+        controls.close(false);
     };
     document.addEventListener('pointerdown', outside);
     window.addEventListener('resize', position);
@@ -72,7 +60,7 @@ export function ComposerTools({ controls }: { controls: ComposerToolControls }) 
     ) : item.command === 'model' ? (
       <Cpu size={15} />
     ) : (
-      <Minimize2 size={15} />
+      <Archive size={15} />
     );
   const description = (item: CommandItem) =>
     item.skill?.description ??
@@ -85,7 +73,9 @@ export function ComposerTools({ controls }: { controls: ComposerToolControls }) 
             ? 'commandEditHelp'
             : item.command === 'model'
               ? 'commandModelHelp'
-              : 'commandCompactHelp',
+              : item.command === 'stash'
+                ? 'composerStashSave'
+                : 'composerStashRestore',
     );
   const keyboard = (event: KeyboardEvent<HTMLDivElement>) => {
     const buttons = popup.current?.querySelectorAll<HTMLButtonElement>(
@@ -130,39 +120,7 @@ export function ComposerTools({ controls }: { controls: ComposerToolControls }) 
   };
   return (
     <>
-      <span className="composer-tools" ref={anchor}>
-        <IconButton
-          label={t('composerCommands')}
-          disabled={controls.locked}
-          aria-haspopup="listbox"
-          aria-expanded={controls.menu === 'commands'}
-          aria-controls={controls.menu === 'commands' ? id : undefined}
-          onClick={controls.menu === 'commands' ? controls.close : controls.openCommands}
-        >
-          <Slash size={15} />
-        </IconButton>
-        <IconButton
-          label={t('composerStashTitle')}
-          disabled={controls.locked}
-          aria-haspopup="dialog"
-          aria-expanded={controls.menu === 'stash'}
-          aria-controls={controls.menu === 'stash' ? id : undefined}
-          onClick={controls.menu === 'stash' ? controls.close : controls.openStash}
-        >
-          <Archive size={15} />
-          {controls.entries.length > 0 && (
-            <span className="composer-stash-count">{controls.entries.length}</span>
-          )}
-        </IconButton>
-        <IconButton
-          label={t('usageCompact')}
-          disabled={!controls.canCompact || controls.compacting}
-          aria-busy={controls.compacting}
-          onClick={controls.compact}
-        >
-          {controls.compacting ? <LoaderCircle className="spin" size={15} /> : <Minimize2 size={15} />}
-        </IconButton>
-      </span>
+      <span hidden ref={anchor} />
       {controls.menu &&
         createPortal(
           <div
@@ -176,7 +134,12 @@ export function ComposerTools({ controls }: { controls: ComposerToolControls }) 
           >
             <div className="composer-tool-heading">
               <strong>{t(controls.menu === 'commands' ? 'composerCommands' : 'composerStashTitle')}</strong>
-              <IconButton label={t('close')} onClick={controls.close}>
+              <IconButton
+                label={t('close')}
+                onClick={() => {
+                  controls.close();
+                }}
+              >
                 <X size={13} />
               </IconButton>
             </div>
@@ -184,7 +147,7 @@ export function ComposerTools({ controls }: { controls: ComposerToolControls }) 
               <>
                 {controls.items.map((item, index) => (
                   <button
-                    key={item.id}
+                    key={item.key}
                     type="button"
                     role="option"
                     aria-selected={index === Math.min(controls.selected, controls.items.length - 1)}
@@ -234,7 +197,9 @@ export function ComposerTools({ controls }: { controls: ComposerToolControls }) 
                   type="button"
                   data-composer-option="true"
                   disabled={!controls.canStash}
-                  onClick={controls.stash}
+                  onClick={() => {
+                    controls.stash();
+                  }}
                 >
                   <BookmarkPlus size={14} />
                   <span>

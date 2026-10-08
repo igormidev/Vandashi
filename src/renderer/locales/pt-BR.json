@@ -551,5 +551,13 @@
   "chatJumpCount": "{{count}} mensagens",
   "chatJumpCount_one": "{{count}} mensagem",
   "chatJumpCount_other": "{{count}} mensagens",
-  "chatJumpUnavailable": "Esta mensagem não está mais nesta conversa."
+  "chatJumpUnavailable": "Esta mensagem não está mais nesta conversa.",
+  "chatWorkedFor": "Trabalhou por {{time}}",
+  "chatTimeAgo": "{{time}} atrás",
+  "chatTimeJustNow": "Agora mesmo",
+  "chatTimeFuture": "Daqui a {{time}}",
+  "usageContextTrigger": "Janela de contexto: {{percent}} usados",
+  "usageContextUnknown": "Janela de contexto indisponível",
+  "usageResetsIn": "Renova em {{duration}}",
+  "usageResetDue": "O horário de renovação chegou. Atualize o uso."
 }

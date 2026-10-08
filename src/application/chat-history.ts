@@ -2,6 +2,7 @@ import { AppFault } from '../domain/diagnostics';
 import { AgentError, type AgentPort, type AgentThread } from '../domain/agent';
 import type { AppEvent, ChatMessage, ChatSession, Scope } from '../domain/models';
 import type { StoragePort } from '../domain/storage';
+import { normalizeTurnDurations } from '../domain/chat-turn-timing';
 
 /** Recover provider snapshots without dropping application receipts, errors, or stable user IDs. */
 export function mergeThreadHistory(session: ChatSession, thread: AgentThread): ChatSession {
@@ -42,6 +43,12 @@ export function mergeThreadHistory(session: ChatSession, thread: AgentThread): C
               files: remote.files.length ? remote.files : local.files,
               createdAt: local.createdAt,
               timestampKnown: local.timestampKnown !== false,
+              ...(remote.turnDurationMs === undefined &&
+              remote.turnId !== null &&
+              local.turnId === remote.turnId &&
+              local.turnDurationMs !== undefined
+                ? { turnDurationMs: local.turnDurationMs }
+                : {}),
             };
       previous = { id: local.id, turnId: remote.turnId };
       continue;
@@ -57,7 +64,11 @@ export function mergeThreadHistory(session: ChatSession, thread: AgentThread): C
     const count = anchor ? messages.findIndex((message) => message.id === anchor.id) : -1;
     return count < 0 ? checkpoint : { ...checkpoint, messageCount: count };
   });
-  return { ...session, messages, ...(checkpoints ? { checkpoints } : {}) };
+  return {
+    ...session,
+    messages: normalizeTurnDurations(messages, thread.messages),
+    ...(checkpoints ? { checkpoints } : {}),
+  };
 }
 
 export async function openChatSession(

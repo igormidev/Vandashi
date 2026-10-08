@@ -3,7 +3,8 @@ import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ChatMessage } from '../../../domain/models';
 import { ChatMarkdown } from './ChatMarkdown';
-import { MessageCopyButton } from './MessageCopyButton';
+import { MessageActions } from './MessageActions';
+import { MessageWorked } from './MessageWorked';
 import { PendingLabel } from '../../shared/ui';
 import { PlanDownload } from './PlanDownload';
 import './chat-markdown.css';
@@ -33,67 +34,71 @@ export function ProposedPlanCard({
   const displayed = message.text.replace(/^#\s+[^\n]+\n+/, '');
   const ready = message.streaming === false && !disabled;
   return (
-    <article className="chat-proposed-plan message" data-message-id={message.id}>
-      <div className="chat-plan-heading">
-        <ListChecks size={15} />
-        <span>{title || t('planProposed')}</span>
+    <article className="message message-with-meta assistant" data-message-id={message.id}>
+      <MessageWorked message={message} />
+      <div className="chat-proposed-plan">
+        <div className="chat-plan-heading">
+          <ListChecks size={15} />
+          <span>{title || t('planProposed')}</span>
+        </div>
+        <div className={`chat-plan-body ${long && !expanded ? 'chat-plan-clamped' : ''}`} id={id}>
+          <ChatMarkdown
+            text={displayed}
+            root={root}
+            mediaGeneration={mediaGeneration}
+            streaming={message.streaming === true}
+          />
+        </div>
+        <div className="chat-plan-actions">
+          {long && (
+            <button
+              type="button"
+              className="button ghost small"
+              aria-expanded={expanded}
+              aria-controls={id}
+              onClick={() => {
+                setExpanded(!expanded);
+              }}
+            >
+              {t(expanded ? 'less' : 'more')}
+            </button>
+          )}
+          {!ready && message.streaming === true && <PendingLabel label={t('working')} />}
+          {onPlanAction && (
+            <>
+              <button
+                type="button"
+                className="button ghost small"
+                disabled={!ready || !message.text.trim()}
+                onClick={() => {
+                  onPlanAction('revise', message);
+                }}
+              >
+                <Pencil size={12} />
+                {t('planRevise')}
+              </button>
+              <button
+                type="button"
+                className="button small"
+                disabled={!ready || !message.text.trim()}
+                onClick={() => {
+                  onPlanAction('implement', message);
+                }}
+              >
+                <Play size={12} />
+                {t('planImplement')}
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+      <MessageActions message={message} text={message.text}>
         <PlanDownload
           text={message.text}
           title={title || t('planProposed')}
           disabled={message.streaming !== false}
         />
-        <MessageCopyButton text={message.text} />
-      </div>
-      <div className={`chat-plan-body ${long && !expanded ? 'chat-plan-clamped' : ''}`} id={id}>
-        <ChatMarkdown
-          text={displayed}
-          root={root}
-          mediaGeneration={mediaGeneration}
-          streaming={message.streaming === true}
-        />
-      </div>
-      <div className="chat-plan-actions">
-        {long && (
-          <button
-            type="button"
-            className="button ghost small"
-            aria-expanded={expanded}
-            aria-controls={id}
-            onClick={() => {
-              setExpanded(!expanded);
-            }}
-          >
-            {t(expanded ? 'less' : 'more')}
-          </button>
-        )}
-        {!ready && message.streaming === true && <PendingLabel label={t('working')} />}
-        {onPlanAction && (
-          <>
-            <button
-              type="button"
-              className="button ghost small"
-              disabled={!ready || !message.text.trim()}
-              onClick={() => {
-                onPlanAction('revise', message);
-              }}
-            >
-              <Pencil size={12} />
-              {t('planRevise')}
-            </button>
-            <button
-              type="button"
-              className="button small"
-              disabled={!ready || !message.text.trim()}
-              onClick={() => {
-                onPlanAction('implement', message);
-              }}
-            >
-              <Play size={12} />
-              {t('planImplement')}
-            </button>
-          </>
-        )}
-      </div>
+      </MessageActions>
     </article>
   );
 }

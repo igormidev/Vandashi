@@ -1,10 +1,19 @@
 import type { ChatSkill } from '../../../domain/chat-skills';
 
-export type ComposerCommand = 'plan' | 'read' | 'edit' | 'compact' | 'model';
+export type ComposerCommand = 'plan' | 'read' | 'edit' | 'model' | 'stash' | 'restore';
 export interface CommandItem {
+  key: string;
   id: string;
   command?: ComposerCommand;
   skill?: ChatSkill;
+}
+export function acceptsCommandKey(
+  event: Pick<KeyboardEvent, 'key' | 'shiftKey' | 'altKey' | 'ctrlKey' | 'metaKey'>,
+): boolean {
+  return (
+    (event.key === 'Enter' && !event.shiftKey) ||
+    (event.key === 'Tab' && !event.shiftKey && !event.altKey && !event.ctrlKey && !event.metaKey)
+  );
 }
 export function commandQuery(
   text: string,
@@ -22,10 +31,22 @@ export function commandItems(
 ): CommandItem[] {
   const needle = query.toLocaleLowerCase().replace(/^skill:/u, '');
   const commands: ComposerCommand[] = canPlan
-    ? ['plan', 'read', 'edit', 'compact', 'model']
-    : ['read', 'edit', 'model'];
-  return [
-    ...(skillsOnly ? [] : commands.map((command) => ({ id: '/' + command, command }))),
-    ...skills.map((skill) => ({ id: '$' + skill.name, skill })),
-  ].filter((item) => item.id.slice(1).toLocaleLowerCase().includes(needle));
+    ? ['plan', 'read', 'edit', 'model', 'stash', 'restore']
+    : ['read', 'edit', 'model', 'stash', 'restore'];
+  const items: CommandItem[] = [
+    ...(skillsOnly || /^skill:/iu.test(query)
+      ? []
+      : commands.map((command) => ({ key: command, id: '$' + command, command }))),
+    ...skills.map((skill) => ({
+      key: '$' + skill.name,
+      id:
+        '$' +
+        (commands.some((command) => command === skill.name.toLocaleLowerCase()) ? 'skill:' : '') +
+        skill.name,
+      skill,
+    })),
+  ];
+  return items.filter((item) =>
+    (item.skill?.name ?? item.command ?? '').toLocaleLowerCase().includes(needle),
+  );
 }

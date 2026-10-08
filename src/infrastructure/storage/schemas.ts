@@ -102,6 +102,7 @@ const messageSchema = z
     phase: z.enum(['commentary', 'final_answer']).optional(),
     proposedPlan: z.boolean().optional(),
     timestampKnown: z.boolean().optional(),
+    turnDurationMs: z.number().int().nonnegative().optional(),
     activity: z
       .object({
         kind: z.enum([
@@ -196,6 +197,7 @@ const messageSchema = z
       phase,
       proposedPlan,
       timestampKnown,
+      turnDurationMs,
       ...message
     }) => ({
       ...message,
@@ -208,6 +210,7 @@ const messageSchema = z
       ...(phase === undefined ? {} : { phase }),
       ...(proposedPlan === undefined ? {} : { proposedPlan }),
       ...(timestampKnown === undefined ? {} : { timestampKnown }),
+      ...(turnDurationMs === undefined ? {} : { turnDurationMs }),
     }),
   );
 const checkpointSchema = z

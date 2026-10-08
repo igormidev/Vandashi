@@ -72,6 +72,9 @@ The October 7 chat refactor was independently checked against the landing copy a
 all eight catalogs. The existing screenshots remain authentic earlier-interface
 captures with their visible date/revision labeling. No fixture chat screenshots replace
 them, and the site makes no new claim of complete T3 feature parity.
+The October 8 composer/context/message-metadata follow-up received a separate read-only
+landing audit. The historical labels remain accurate; no unfinished timing or parity claims
+were added and no screenshots were replaced.
 
 ## Verification and deployment
 

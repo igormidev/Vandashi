@@ -184,6 +184,8 @@ export interface ChatMessage {
   createdAt: string;
   /** Recovered provider history can omit original timestamps. */
   timestampKnown?: boolean;
+  /** Verified native turn duration, attached only to its settled answer or proposed plan. */
+  turnDurationMs?: number;
   appMessage?: AppMessage;
   userText?: string;
   diagnostic?: Diagnostic;

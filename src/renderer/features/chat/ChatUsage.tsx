@@ -1,10 +1,10 @@
-import { Gauge, Minimize2, X } from 'lucide-react';
+import { LoaderCircle, Minimize2, X } from 'lucide-react';
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import type { ChatUsage as Usage } from '../../../domain/chat-usage';
 import { useApp } from '../../app/store';
-import { IconButton, PendingLabel } from '../../shared/ui';
+import { IconButton, PendingLabel, Tip } from '../../shared/ui';
 import '../../styles/chat-usage.css';
 import { ChatUsageDetails } from './ChatUsageDetails';
 
@@ -23,6 +23,7 @@ export function ChatUsage({
   const trigger = useRef<HTMLButtonElement>(null);
   const popup = useRef<HTMLDivElement>(null);
   const owner = useRef(false);
+  const readOwner = useRef(false);
   const cancelOwner = useRef(false);
   const [usage, setUsage] = useState<Usage | null>(null);
   const [open, setOpen] = useState(false);
@@ -38,6 +39,8 @@ export function ChatUsage({
     let version = 0;
     let revision = 0;
     const refresh = () => {
+      readOwner.current = true;
+      setLoading(true);
       const ticket = ++version;
       const observed = revision;
       void api.chatUsage(sessionId).then(
@@ -45,9 +48,11 @@ export function ChatUsage({
           if (current && ticket === version) {
             setUsage((previous) => ({
               ...snapshot,
-              context: revision === observed ? snapshot.context : (previous?.context ?? snapshot.context),
+              context:
+                revision === observed ? snapshot.context : previous ? previous.context : snapshot.context,
             }));
             setLoading(false);
+            readOwner.current = false;
           }
         },
         () => {
@@ -57,6 +62,7 @@ export function ChatUsage({
               account: { available: false, windows: [], checkedAt: new Date().toISOString() },
             }));
             setLoading(false);
+            readOwner.current = false;
           }
         },
       );
@@ -97,6 +103,7 @@ export function ChatUsage({
     if (active) refresh();
     return () => {
       current = false;
+      readOwner.current = false;
       unsubscribe();
     };
   }, [api, sessionId, active, attempt]);
@@ -164,7 +171,12 @@ export function ChatUsage({
       ? null
       : new Intl.NumberFormat(language, { style: 'percent', maximumFractionDigits: 1 }).format(percent);
   const canCompact = hasThread && !busy && !dirty && !queued && !compacting && !loading;
+  const contextLabel = formatted
+    ? t('usageContextTrigger', { percent: formatted })
+    : t('usageContextUnknown');
   const refresh = () => {
+    if (!active || readOwner.current) return;
+    readOwner.current = true;
     setLoading(true);
     setAttempt((current) => current + 1);
   };
@@ -176,41 +188,52 @@ export function ChatUsage({
   };
   return (
     <div className="chat-usage">
-      <button
-        ref={trigger}
-        type="button"
-        className="chat-usage-trigger"
-        aria-label={t('usageTitle')}
-        aria-expanded={open}
-        aria-haspopup="dialog"
-        aria-controls={open ? id : undefined}
-        disabled={compacting}
-        onClick={() => {
-          if (!open) refresh();
-          setOpen((current) => !current);
-        }}
-      >
-        <svg
-          className={percent !== null && percent > 0.9 ? 'context-ring warning' : 'context-ring'}
-          viewBox="0 0 24 24"
-          aria-hidden="true"
+      <Tip label={compacting ? t('usageCompacting') : loading ? t('loading') : contextLabel}>
+        <button
+          ref={trigger}
+          type="button"
+          className="chat-usage-trigger"
+          aria-label={contextLabel}
+          aria-busy={loading || compacting}
+          aria-expanded={open}
+          aria-haspopup="dialog"
+          aria-controls={open ? id : undefined}
+          disabled={!active || compacting}
+          onClick={() => {
+            if (!open) refresh();
+            setOpen((current) => !current);
+          }}
         >
-          <circle cx="12" cy="12" r="9" className="context-ring-track" />
-          {percent !== null && (
-            <circle
-              cx="12"
-              cy="12"
-              r="9"
-              className="context-ring-fill"
-              pathLength="100"
-              strokeDasharray="100"
-              strokeDashoffset={100 * (1 - Math.max(0, Math.min(1, percent)))}
-            />
+          {loading || compacting ? (
+            <LoaderCircle size={18} className="spin" aria-hidden="true" />
+          ) : (
+            <svg
+              className={
+                percent === null
+                  ? 'context-ring unknown'
+                  : percent > 0.9
+                    ? 'context-ring warning'
+                    : 'context-ring'
+              }
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="9" className="context-ring-track" />
+              {percent !== null && (
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="9"
+                  className="context-ring-fill"
+                  pathLength="100"
+                  strokeDasharray="100"
+                  strokeDashoffset={100 * (1 - Math.max(0, Math.min(1, percent)))}
+                />
+              )}
+            </svg>
           )}
-        </svg>
-        <span>{compacting ? t('usageCompacting') : (formatted ?? t('usageTitle'))}</span>
-        <Gauge size={13} aria-hidden="true" />
-      </button>
+        </button>
+      </Tip>
       {open &&
         createPortal(
           <div
@@ -235,7 +258,7 @@ export function ChatUsage({
               disabled={!canCompact}
               title={canCompact ? undefined : t('usageCompactBlocked')}
               onClick={() => {
-                if (owner.current || !canCompact) return;
+                if (owner.current || readOwner.current || !canCompact) return;
                 owner.current = true;
                 setCompacting(true);
                 void run(() => api.compactChat(sessionId)).finally(() => {

@@ -8,6 +8,45 @@ AI agents follow [AGENTS.md](../AGENTS.md): run only tests created during the cu
 task unless the user explicitly requests broader testing. The historical results
 below are evidence, not instructions to repeat whole suites.
 
+## October 8, 2026 — chat composer and metadata follow-up, version 0.1.20
+
+- **32 task-created unit cases** passed through exact file/case selections: inline caret
+  replacement and command ownership, leading slash aliases, quota deadlines, relative
+  timestamp boundaries, native timing schemas/history/persistence/forks, and one verified
+  duration owner per turn. Existing test assertions were adapted to the requested controls
+  without executing their cases. No existing or complete suite was run.
+- **10 task-created native UI cases** passed with Chromium's OS sandbox. They cover distinct
+  effort icons, inline skills and native attachment selections, middle-draft replacements,
+  IME/picker ownership, clicked Close/Shift+Tab, hidden model portals, leading slash aliases,
+  context placement/read races/countdowns, external mirrored footers, complete clipboard
+  copying with delayed settlement, known/unknown timestamps and live tooltip updates, and
+  settled Plan metadata. Production metadata checks use the actual `file:` renderer;
+  development command checks use real React StrictMode. Clipboard cases retain all previous
+  native clipboard flavors.
+- **One real Codex integration case** passed against **0.162.0-alpha.2** with GPT-6-Luna.
+  The final source verification observed **2,523 ms** from the completed native turn, final
+  live answer and freshly paginated history, exactly equal. The conversation used read-only
+  sandbox/approval-never, no tools or attachments, and an empty private scratch directory.
+  Only the owned verification thread was archived and its transport shut down afterward.
+- Static checks passed versions, formatting, strict types, zero-warning lint, catalog
+  consistency, dependency boundaries and desktop/landing production builds. All eight
+  catalogs include the new app-owned labels. Independent read-only section audits cleared
+  the composer, usage, message metadata and exact-turn duration ownership; the historical
+  landing screenshots remain accurate with their visible September labels.
+
+The ARM64 **0.1.20** bundle was installed at `/Applications/Vandashi.app` after audio/video
+preparation settled and both Brand editors were confirmed clean. The app quit gracefully;
+all canonical processes exited before guarded replacement. Identity, app/package/release
+versions and all **488 generated output files** matched the verified package. The native
+About panel showed **0.1.20 (0.1.20)**, and the running executable used the canonical path
+with the renderer's sandbox enabled. The selected Editing presets branch, its messages,
+empty composer, Brand data and Medium setting survived reopening. Real UI inspection
+confirmed a recovered answer's **Worked for 35s**, the distinct six available effort icons,
+the relocated context control and a live weekly quota reset countdown.
+
+The exact previous bundle remains in an owned rollback directory outside Spotlight.
+This is a local update; no public release or release tag was created.
+
 ## October 7, 2026 — chat refactor, versions 0.1.18–0.1.19
 
 The follow-up **0.1.19** increment adds reviewed queue ordering/removal settlement, local

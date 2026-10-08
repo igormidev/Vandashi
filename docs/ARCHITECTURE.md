@@ -71,15 +71,28 @@ Turn navigation derives accepted user turns and last-answer text only when its d
 filters within that session and mounts at most 80 result options per page. Jumps reuse exact row
 IDs; switching conversations destroys the dialog rather than carrying a stale selection.
 
-Built-in slash commands use existing mode, model and compaction controls. Enabled skill names
-come from fresh project-scoped provider discovery without workspace hydration or feature/configuration changes. Hidden mounted composers
-cannot open portals. Model commands consume only their leading token and open the existing
-attached picker without changing permission/collaboration mode or granting new provider capabilities.
+The composer uses an `@` Tiptap Suggestion plugin for file references, with separate `$` and
+leading `/` plugins for built-in commands and fresh project-scoped enabled skills. Selection revalidates the exact
+caret range and replaces only that token; surrounding text, atomic file nodes, attachments
+and access/collaboration ownership are retained. Reserved skill names use a display alias,
+with stable identities separate from that alias. Leading-token slash mode/model aliases remain available.
+Hidden mounted composers cannot open portals. Model selection uses the existing attached
+picker without granting provider capabilities. Compact is available only through an explicit
+click in the usage dialog, never through a composer command or keyboard shortcut.
 Per-session prompt stashes persist complete draft/mode/collaboration and attachment-selection
 snapshots before a reviewed replacement. A synchronous composer
 owner blocks picker/send changes through review; cached paths remain selections only.
 Plan Markdown export is a browser-owned Blob download with a sanitized filename and
-URL cleanup. Live elapsed indicators measure observed monotonic intervals only.
+URL cleanup. Live elapsed indicators measure observed monotonic intervals only. Settled
+answers and proposed plans optionally carry `turnDurationMs`: a nonnegative safe integer
+reported by Codex on the exact successfully completed turn. The last native answer owns it;
+tool timing, timestamps, partial caches and mounted UI intervals never establish it.
+History/storage/fork merges preserve an already verified duration only for the same turn and
+observed answer. Fresh completed timing replaces its previous owner; untimed partials never
+acquire cached duration. Each turn retains at most one work-duration label.
+Message metadata sits outside the content bubble; timestamps remain visible, with
+locale-aware day/hour/minute relative tooltips refreshed only while open. Action groups
+appear on hover, keyboard focus or touch; pending actions remain visible through settlement.
 
 Structured questions use `domain/chat-input.ts`, the narrow app-server response adapter and
 `application/chat-input.ts`. Session/request/thread/turn identities must match the existing
@@ -97,7 +110,11 @@ topic plus parent/message metadata, hydrate by exact session ID, and start witho
 Undo rights. App-prepared prompts cannot seed hidden branches sharing the topic.
 
 `ChatUsage` separates native context occupancy from total processed tokens and fresh account
-quotas. Unknown observations remain unavailable. Explicit compact discovers paths read-only,
+quotas. An icon-only context ring inside the composer uses native used/max observations;
+unknown capacity remains visibly distinct from zero. Fresh live observations take precedence
+over delayed reads. Account reset countdowns refresh while the dialog is mounted without
+inferring renewed quota when the reported timestamp expires. Unknown observations remain
+unavailable. Explicit compact discovers paths read-only,
 rejects queues/dirty repositories, resumes under read-only policy, and owns its lease through
 native completion while preserving history, receipts and checkpoints. Markdown supports GFM;
 local Shiki WASM tokens render as React text. The CSP allows WASM compilation while denying

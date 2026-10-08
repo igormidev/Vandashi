@@ -12,6 +12,13 @@ export const localizationRule = ['error', options];
 // These are exact protocol/DOM/path identifiers in their owning files, never a blanket
 // exemption for string literals, templates, labels, or an entire renderer module.
 const machineWords = [
+  ['src/renderer/features/chat/command-suggestion.ts', ['composerCommands', 'composerSlashCommands']],
+  ['src/renderer/features/chat/composer-command.ts', ['skill:']],
+  ['src/renderer/features/chat/quota-reset.ts', ['day', 'hour', 'minute']],
+  [
+    'src/renderer/features/chat/message-time.ts',
+    ['day', 'hour', 'minute', 'now', 'future', 'ago', 'conjunction'],
+  ],
   ['src/renderer/features/chat/TurnNavigator.tsx', ['[aria-selected="true"]']],
   ['src/renderer/features/chat/ChatTable.tsx', ['plain', 'markdown', 'csv']],
   ['src/renderer/features/chat/MermaidDiagram.tsx', ['.chat-code', 'button']],

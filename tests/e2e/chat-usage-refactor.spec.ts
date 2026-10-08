@@ -25,8 +25,8 @@ test('native usage popup distinguishes context, cumulative tokens, quotas and un
 }) => {
   await installChatUsageFixture(desktopApp, usage);
   await page.reload();
-  const trigger = page.getByRole('button', { name: 'Usage', exact: true }).first();
-  await expect(trigger).toContainText('41%');
+  const trigger = page.locator('.chat-usage-trigger').first();
+  await expect(trigger).toHaveAccessibleName('Context window: 41% used');
   await trigger.click();
   const popup = page.getByRole('dialog', { name: 'Usage', exact: true });
   await expect(popup).toBeVisible();
@@ -57,7 +57,7 @@ test('compact waits for actual settlement, blocks duplicate actions and queued w
   await page.reload();
   const editor = page.getByRole('textbox', { name: 'AI chat', exact: true });
   await editor.fill('Keep this unsent draft');
-  await page.getByRole('button', { name: 'Usage', exact: true }).first().click();
+  await page.getByRole('button', { name: 'Context window: 41% used', exact: true }).first().click();
   const popup = page.getByRole('dialog', { name: 'Usage', exact: true });
   const compact = popup.getByRole('button', { name: 'Compact context', exact: true });
   await expect(compact).toBeEnabled();

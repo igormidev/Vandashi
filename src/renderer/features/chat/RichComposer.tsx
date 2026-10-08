@@ -7,6 +7,12 @@ import type { MentionReference } from './mention-references';
 import { createMentionController, fileMention, mentionKey, type MentionMenu } from './mention-extension';
 import { promptDocument, promptText, referenceText, referenceAttributes } from './mention-document';
 import { ReferenceIcon } from './ReferenceIcon';
+import {
+  commandSuggestionActive,
+  commandSuggestion,
+  createCommandSuggestionController,
+  type CommandSuggestion,
+} from './command-suggestion';
 
 interface Props {
   value: string;
@@ -20,6 +26,7 @@ interface Props {
   onHistory?: (direction: 'older' | 'newer') => boolean;
   onPasteFiles?: (files: File[]) => void;
   onCommandKeyDown?: (event: KeyboardEvent) => boolean;
+  onCommandSuggestion?: (suggestion: CommandSuggestion | null) => void;
   commandMenu?: { id: string; activeId: string | null } | null;
 }
 export function RichComposer({
@@ -34,6 +41,7 @@ export function RichComposer({
   onHistory,
   onPasteFiles,
   onCommandKeyDown,
+  onCommandSuggestion,
   commandMenu,
 }: Props) {
   const { t } = useTranslation();
@@ -41,9 +49,15 @@ export function RichComposer({
   const focused = useRef(0);
   const [menu, setMenu] = useState<MentionMenu | null>(null);
   const [controller] = useState(() => createMentionController(references, setMenu));
+  const [commands] = useState(() =>
+    createCommandSuggestionController(onCommandSuggestion ?? (() => undefined)),
+  );
   useEffect(() => {
     controller.update(references);
   }, [controller, references]);
+  useEffect(() => {
+    commands.update(onCommandSuggestion ?? (() => undefined));
+  }, [commands, onCommandSuggestion]);
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -64,6 +78,7 @@ export function RichComposer({
         trailingNode: false,
       }),
       fileMention(controller),
+      ...(onCommandSuggestion ? [commandSuggestion(commands)] : []),
     ],
     content: promptDocument(value, references),
     editable: !disabled,
@@ -95,6 +110,7 @@ export function RichComposer({
           !event.isComposing &&
           !view.composing &&
           !mentionKey.getState(view.state)?.active &&
+          !commandSuggestionActive(view.state) &&
           view.state.selection.empty &&
           ((event.key === 'ArrowUp' && view.state.selection.head === 1) ||
             (event.key === 'ArrowDown' && view.state.selection.head === view.state.doc.content.size - 1)) &&
@@ -105,7 +121,7 @@ export function RichComposer({
         }
         if (!onSend || event.key !== 'Enter' || event.shiftKey || event.isComposing || view.composing)
           return false;
-        if (mentionKey.getState(view.state)?.active) return false;
+        if (mentionKey.getState(view.state)?.active || commandSuggestionActive(view.state)) return false;
         event.preventDefault();
         onSend();
         return true;

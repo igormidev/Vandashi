@@ -551,5 +551,13 @@
   "chatJumpCount": "{{count}}件のやり取り",
   "chatJumpCount_one": "{{count}}件のやり取り",
   "chatJumpCount_other": "{{count}}件のやり取り",
-  "chatJumpUnavailable": "このやり取りはこの会話にありません。"
+  "chatJumpUnavailable": "このやり取りはこの会話にありません。",
+  "chatWorkedFor": "作業時間：{{time}}",
+  "chatTimeAgo": "{{time}}前",
+  "chatTimeJustNow": "たった今",
+  "chatTimeFuture": "{{time}}後",
+  "usageContextTrigger": "コンテキストウィンドウ：{{percent}}使用済み",
+  "usageContextUnknown": "コンテキストウィンドウを取得できません",
+  "usageResetsIn": "{{duration}}後にリセット",
+  "usageResetDue": "リセット予定時刻になりました。使用量を更新してください。"
 }

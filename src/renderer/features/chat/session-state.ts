@@ -6,16 +6,21 @@ import type {
   ModelInfo,
   ModelSelection,
 } from '../../../domain/models';
+import { normalizeTurnDurations } from '../../../domain/chat-turn-timing';
 
 type ChatEvent = Extract<AppEvent, { type: 'chat' }>;
 export function applyMessage(messages: ChatMessage[], event: ChatEvent): ChatMessage[] {
   const current = messages.find((message) => message.id === event.message.id);
   const next =
     current && event.delta ? { ...event.message, text: current.text + event.message.text } : event.message;
-  return current ? messages.map((message) => (message.id === next.id ? next : message)) : [...messages, next];
+  const updated = current
+    ? messages.map((message) => (message.id === next.id ? next : message))
+    : [...messages, next];
+  return normalizeTurnDurations(updated, [next]);
 }
 export function mergeSession(incoming: ChatSession, current?: ChatSession): ChatSession {
-  if (!current) return incoming;
+  if (!current)
+    return { ...incoming, messages: normalizeTurnDurations(incoming.messages, incoming.messages) };
   const messages = incoming.messages.slice();
   for (const message of current.messages) {
     const index = messages.findIndex((entry) => entry.id === message.id);
@@ -27,7 +32,7 @@ export function mergeSession(incoming: ChatSession, current?: ChatSession): Chat
         message.streaming === false || (message.activity && message.activity.status !== 'inProgress');
       const incomingActive =
         incomingMessage.streaming === true || incomingMessage.activity?.status === 'inProgress';
-      if (currentTerminal && incomingActive) {
+      if (currentTerminal && incomingActive && message.turnId === incomingMessage.turnId) {
         messages[index] = message;
         continue;
       }
@@ -36,9 +41,16 @@ export function mergeSession(incoming: ChatSession, current?: ChatSession): Chat
         (incomingMessage.activity && incomingMessage.activity.status !== 'inProgress');
       // Text length is not a lifecycle clock. Keep authoritative final metadata even
       // when completion replaces a longer partial output, while retaining live deltas.
+      const { turnDurationMs, ...previous } = message;
       messages[index] = {
-        ...message,
+        ...previous,
         ...incomingMessage,
+        ...(incomingMessage.turnDurationMs === undefined &&
+        incomingMessage.turnId !== null &&
+        message.turnId === incomingMessage.turnId &&
+        turnDurationMs !== undefined
+          ? { turnDurationMs }
+          : {}),
         text:
           terminal || incomingMessage.text.length >= message.text.length
             ? incomingMessage.text
@@ -47,7 +59,7 @@ export function mergeSession(incoming: ChatSession, current?: ChatSession): Chat
       };
     }
   }
-  return { ...incoming, messages };
+  return { ...incoming, messages: normalizeTurnDurations(messages, incoming.messages) };
 }
 export function selectedSession(sessions: ChatSession[], previous: string | null): string | null {
   return (

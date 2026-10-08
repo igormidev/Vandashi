@@ -123,7 +123,7 @@ Keyboard navigation and bounded result pages reuse the same exact-ID scroll anch
 conversation navigation; upstream T3's cross-thread search and visual minimap remain separate.
 Only known timestamps are displayed; recovered provider history does not invent send times.
 
-The command menu provides Read/Edit/Plan, model selection and explicit compaction plus freshly discovered enabled
+The command menu provides Read/Edit/Plan, model selection and draft stashes plus freshly discovered enabled
 Codex skills. Skill insertion passes a native `$name` mention without expanding writable roots.
 `/model` opens the normal model picker while preserving remaining text, attachments and mode;
 selection uses the existing settings-save/discovery ownership and failure recovery.
@@ -139,6 +139,27 @@ later observations update the current turn without rewriting raw snapshots. Only
 actually supplied by Codex is displayed.
 Elapsed Working indicators measure the interval observed by the mounted live UI, not a guessed
 historical duration. Proposed plans download their exact Markdown through a browser-owned Blob.
+
+The October 8 follow-up moves command discovery into the `$` caret suggestion, alongside the
+existing `@` file suggestions. Choosing an item in the middle of a draft replaces only that
+token. Native enabled skills remain project scoped; reserved names have distinct identities
+even when their display aliases overlap. The visible Commands/Stash/Compact buttons are gone;
+stash commands and their existing keyboard access remain available. Low-to-medium thinking
+levels use increasing bars; the higher levels use distinct brain/circuit/processor/orbit icons,
+with an unknown-level fallback.
+
+An icon-only circular context indicator sits before the access selector inside the composer.
+Its fill uses native current-thread occupancy, with a separate unknown appearance. The same
+dialog retains explicit compaction and account allowance; each observed reset includes a
+live days/hours/minutes countdown. Reaching that time requests a refresh and never fabricates
+fresh allowance. All eight catalogs include these controls and explanations.
+
+User and assistant metadata now sits below and outside message content, with mirrored footer
+order. Timestamps remain visible and their tooltip includes elapsed days/hours/minutes; action
+groups appear on hover/focus or touch and remain visible while pending. Completed answers and
+plans display “Worked for…” only when the exact native turn reports a valid `durationMs`.
+The adapter stores it on the last answer and preserves it through same-turn history/fork
+merges. Historical timestamp arithmetic and the live UI timer cannot supply that duration.
 
 Plan collaboration is read-only. Real GPT-6.1-Sol questions, exact replies and settlement were
 verified against Codex 0.160.1; older Luna reported the tool unavailable. Proposed plans differ

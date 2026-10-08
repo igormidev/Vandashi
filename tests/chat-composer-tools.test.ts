@@ -54,9 +54,11 @@ it('recognizes exact leading slash and skill queries without interpreting quoted
   const skills = [{ name: 'hyperframes', description: 'Verified enabled provider skill' }];
   expect(commandItems(skills, 'skill:hyper', false, true).map((item) => item.id)).toEqual(['$hyperframes']);
   expect(commandItems(skills, '', false, false).map((item) => item.id)).toEqual([
-    '/read',
-    '/edit',
-    '/model',
+    '$read',
+    '$edit',
+    '$model',
+    '$stash',
+    '$restore',
     '$hyperframes',
   ]);
 });

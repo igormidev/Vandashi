@@ -13,6 +13,23 @@
   border-radius: 15px;
   border-color: #ffffff09;
 }
+.message.user.message-with-meta {
+  background: transparent;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+}
+.message.user.message-with-meta > .message-content {
+  border: 1px solid #ffffff09;
+  border-radius: 15px;
+  padding: 12px 15px;
+  background: #19191c;
+}
+.message-worked {
+  color: var(--faint);
+  font-size: 10px;
+  margin-bottom: 5px;
+}
 .message-user-clamped {
   max-height: 9.25em;
   overflow: hidden;
@@ -20,10 +37,33 @@
 .message-actions {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: 5px;
   min-height: 25px;
-  margin-top: 3px;
+  margin-top: 5px;
+}
+.message-action-icons {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 140ms;
+}
+.message:hover .message-action-icons,
+.message:focus-within .message-action-icons,
+.message-action-icons:has([aria-busy='true']) {
+  opacity: 1;
+  pointer-events: auto;
+}
+.message-action-icons .message-copy {
+  opacity: 1;
+}
+.user-actions .message-time {
+  order: 1;
+}
+.assistant-actions .message-action-icons {
+  margin-inline-start: auto;
 }
 .message-copy {
   opacity: 0;
@@ -260,6 +300,10 @@
   text-underline-offset: 3px;
 }
 @media (hover: none) {
+  .message-action-icons {
+    opacity: 1;
+    pointer-events: auto;
+  }
   .message-copy {
     opacity: 1;
   }
@@ -269,13 +313,19 @@
     animation: none;
   }
   .message-copy,
+  .message-action-icons,
   .chat-work-heading > svg,
   .chat-work-row > svg {
     transition: none;
   }
 }
 .message-time {
-  margin-inline-start: auto;
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  flex-shrink: 0;
   font-size: 10px;
   color: var(--faint);
   font-variant-numeric: tabular-nums;

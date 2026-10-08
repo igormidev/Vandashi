@@ -2,6 +2,7 @@ import type { ModelInfo } from '../../src/domain/models';
 import { test, expect } from './development-fixtures';
 import { installChatUsageFixture, usageControl } from './chat-usage-refactor-fixture';
 import { installFeedbackHolds, feedbackControl, feedbackState } from './loading-feedback-fixture';
+import { cachedComposerText, leadingCommandCaret } from './chat-command-test-helpers';
 
 const usage = {
   context: null,
@@ -26,6 +27,9 @@ test('model command opens the real picker with keyboard focus and retains Plan, 
   await page.reload();
   const editor = page.getByRole('textbox', { name: 'AI chat', exact: true });
   await editor.fill('/plan');
+  await expect(page.getByRole('listbox', { name: 'Commands', exact: true }).getByRole('option')).toHaveCount(
+    1,
+  );
   await editor.press('Enter');
   await page.getByRole('button', { name: 'Attach files', exact: true }).click();
   await expect(page.locator('.attachment')).toContainText('stashed.txt');
@@ -35,6 +39,10 @@ test('model command opens the real picker with keyboard focus and retains Plan, 
   });
   const remainder = 'Keep these exact lines\n\n  and spaces' + attachmentMention;
   await editor.fill('/model ' + remainder);
+  await leadingCommandCaret(page, '/model');
+  await expect(page.getByRole('listbox', { name: 'Commands', exact: true }).getByRole('option')).toHaveCount(
+    1,
+  );
   await editor.press('Enter');
   const menu = page.getByRole('listbox', { name: 'Model', exact: true });
   await expect(menu).toBeVisible();
@@ -49,7 +57,7 @@ test('model command opens the real picker with keyboard focus and retains Plan, 
         return cached.text;
       }),
     )
-    .toBe(remainder);
+    .toBe(' ' + remainder);
   await expect(page.locator('.attachment')).toContainText('stashed.txt');
   await page.screenshot({ path: testInfo.outputPath('final-composer.png') });
   await expect(page.getByRole('combobox', { name: 'Plan', exact: true })).toBeVisible();
@@ -67,11 +75,16 @@ test('model command opens the real picker with keyboard focus and retains Plan, 
   await expect(page.getByRole('combobox', { name: 'Plan', exact: true })).toBeVisible();
   await expect(page.locator('.attachment')).toContainText('stashed.txt');
   await editor.fill('/model Another exact draft');
+  await leadingCommandCaret(page, '/model');
+  await expect(page.getByRole('listbox', { name: 'Commands', exact: true }).getByRole('option')).toHaveCount(
+    1,
+  );
   await editor.press('Enter');
   await page.keyboard.press('Escape');
   await expect(menu).toHaveCount(0);
   await expect(controls.getByRole('combobox', { name: 'Model', exact: true })).toBeFocused();
-  await expect(editor).toHaveText('Another exact draft');
+  await expect(editor).toHaveText(' Another exact draft');
+  await expect.poll(() => cachedComposerText(page)).toBe(' Another exact draft');
 });
 
 test('model commands cannot bypass an active operation or leave a popup owned by a hidden conversation', async ({
@@ -82,13 +95,18 @@ test('model commands cannot bypass an active operation or leave a popup owned by
   await page.reload();
   const editor = page.getByRole('textbox', { name: 'AI chat', exact: true });
   await editor.fill('/model Keep this command until selection is allowed');
+  await leadingCommandCaret(page, '/model');
+  const commands = page.getByRole('listbox', { name: 'Commands', exact: true });
+  await expect(commands.getByRole('option')).toHaveCount(1);
   await usageControl(desktopApp, {
     event: { type: 'activity', activity: { sessionId: 'chat-one', phase: 'working', detail: '' } },
   });
-  const commands = page.getByRole('listbox', { name: 'Commands', exact: true });
   await expect(commands.getByRole('option')).toBeDisabled();
   await editor.press('Enter');
   await expect(editor).toHaveText('/model Keep this command until selection is allowed');
+  await expect
+    .poll(() => cachedComposerText(page))
+    .toBe('/model Keep this command until selection is allowed');
   await expect(page.getByRole('listbox', { name: 'Model', exact: true })).toHaveCount(0);
   await usageControl(desktopApp, {
     event: { type: 'activity', activity: { sessionId: 'chat-one', phase: 'done', detail: '' } },
@@ -99,6 +117,7 @@ test('model commands cannot bypass an active operation or leave a popup owned by
   await expect(page.getByRole('listbox', { name: 'Model', exact: true })).toHaveCount(0);
   await expect(editor).toHaveText('');
   await page.locator('.chat-tabs').getByRole('button', { name: 'Brand attributes', exact: true }).click();
-  await expect(editor).toHaveText('Keep this command until selection is allowed');
+  await expect(editor).toHaveText(' Keep this command until selection is allowed');
+  await expect.poll(() => cachedComposerText(page)).toBe(' Keep this command until selection is allowed');
   await expect(page.getByRole('listbox', { name: 'Model', exact: true })).toHaveCount(0);
 });

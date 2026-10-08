@@ -96,7 +96,7 @@ export async function executeTurn(
           callbacks.onEvent(normalized);
       }
       const status = turn.status === 'completed' || turn.status === 'interrupted' ? turn.status : 'failed';
-      for (const settled of reducer.settle(turn.id, status)) callbacks.onEvent(settled);
+      for (const settled of reducer.settle(turn.id, status, turn.durationMs)) callbacks.onEvent(settled);
       const result: AgentRunResult = {
         threadId,
         turnId: turn.id,

@@ -8,11 +8,16 @@ export async function installChatUsageFixture(
   app: ElectronApplication,
   usage: ChatUsage,
   models?: ModelInfo[],
+  options: { usageHold?: boolean } = {},
 ) {
   await app.evaluate(
     ({ ipcMain, BrowserWindow }, fixture) => {
       let state = fixture.state;
       let usage = fixture.usage;
+      let usageHold = fixture.options.usageHold ?? false;
+      let usageFail = false;
+      let usageReads = 0;
+      const usagePending = new Set<{ resolve: (value: ChatUsage) => void; reject: (error: Error) => void }>();
       let compacting: (() => void) | undefined;
       let calls = 0;
       let cancels = 0;
@@ -39,6 +44,9 @@ export async function installChatUsageFixture(
             skillsHold?: boolean;
             skillsComplete?: boolean;
             skillsFail?: boolean;
+            usageHold?: boolean;
+            usageComplete?: boolean;
+            usageFail?: boolean;
           },
         ) => {
           if (action.skillsHold !== undefined) skillsHold = action.skillsHold;
@@ -50,6 +58,16 @@ export async function installChatUsageFixture(
           }
           if (action.complete) compacting?.();
           if (action.usage) usage = action.usage;
+          if (action.usageHold !== undefined) usageHold = action.usageHold;
+          if (action.usageFail !== undefined) usageFail = action.usageFail;
+          if (action.usageComplete) {
+            usageHold = false;
+            for (const pending of usagePending) {
+              if (usageFail) pending.reject(new Error('Native usage read unavailable'));
+              else pending.resolve(usage);
+            }
+            usagePending.clear();
+          }
           if (action.event) emit(action.event);
           if (action.queued !== undefined)
             emit({
@@ -75,6 +93,9 @@ export async function installChatUsageFixture(
       );
       ipcMain.on('vandashi:usage-calls', (_event, reply: (value: number) => void) => {
         reply(calls);
+      });
+      ipcMain.on('vandashi:usage-read-calls', (_event, reply: (value: number) => void) => {
+        reply(usageReads);
       });
       ipcMain.on('vandashi:usage-cancel-calls', (_event, reply: (value: number) => void) => {
         reply(cancels);
@@ -103,7 +124,15 @@ export async function installChatUsageFixture(
           const request = input as { topic: string };
           return fixture.sessions.find((entry) => entry.topic === request.topic);
         }
-        if (method === 'chatUsage') return usage;
+        if (method === 'chatUsage') {
+          usageReads++;
+          if (usageHold)
+            return new Promise<ChatUsage>((resolve, reject) => {
+              usagePending.add({ resolve, reject });
+            });
+          if (usageFail) throw new Error('Native usage read unavailable');
+          return usage;
+        }
         if (method === 'chatSkills') {
           skillCalls++;
           if (skillFailure) throw new Error('Native skill discovery unavailable');
@@ -131,7 +160,7 @@ export async function installChatUsageFixture(
         throw new Error(`Unexpected usage fixture method ${method}`);
       });
     },
-    { ...chatFixtureData(false, models ? { models } : {}), usage },
+    { ...chatFixtureData(false, models ? { models } : {}), usage, options },
   );
 }
 
@@ -145,11 +174,22 @@ export async function usageControl(
     skillsHold?: boolean;
     skillsComplete?: boolean;
     skillsFail?: boolean;
+    usageHold?: boolean;
+    usageComplete?: boolean;
+    usageFail?: boolean;
   },
 ) {
   await app.evaluate(({ ipcMain }, value) => {
     ipcMain.emit('vandashi:usage-test', {}, value);
   }, action);
+}
+export function usageReadCalls(app: ElectronApplication): Promise<number> {
+  return app.evaluate(
+    ({ ipcMain }) =>
+      new Promise<number>((resolve) => {
+        ipcMain.emit('vandashi:usage-read-calls', {}, resolve);
+      }),
+  );
 }
 export function skillCalls(app: ElectronApplication): Promise<number> {
   return app.evaluate(

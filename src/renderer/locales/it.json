@@ -551,5 +551,13 @@
   "chatJumpCount": "{{count}} scambi",
   "chatJumpCount_one": "{{count}} scambio",
   "chatJumpCount_other": "{{count}} scambi",
-  "chatJumpUnavailable": "Questo scambio non è più in questa conversazione."
+  "chatJumpUnavailable": "Questo scambio non è più in questa conversazione.",
+  "chatWorkedFor": "Ha lavorato per {{time}}",
+  "chatTimeAgo": "{{time}} fa",
+  "chatTimeJustNow": "Adesso",
+  "chatTimeFuture": "Tra {{time}}",
+  "usageContextTrigger": "Finestra di contesto: {{percent}} utilizzato",
+  "usageContextUnknown": "Finestra di contesto non disponibile",
+  "usageResetsIn": "Si reimposta tra {{duration}}",
+  "usageResetDue": "È arrivata l’ora di reimpostazione. Aggiorna l’utilizzo."
 }

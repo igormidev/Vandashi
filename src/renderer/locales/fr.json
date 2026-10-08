@@ -551,5 +551,13 @@
   "chatJumpCount": "{{count}} échanges",
   "chatJumpCount_one": "{{count}} échange",
   "chatJumpCount_other": "{{count}} échanges",
-  "chatJumpUnavailable": "Cet échange ne figure plus dans cette conversation."
+  "chatJumpUnavailable": "Cet échange ne figure plus dans cette conversation.",
+  "chatWorkedFor": "A travaillé pendant {{time}}",
+  "chatTimeAgo": "Il y a {{time}}",
+  "chatTimeJustNow": "À l’instant",
+  "chatTimeFuture": "Dans {{time}}",
+  "usageContextTrigger": "Fenêtre de contexte : {{percent}} utilisés",
+  "usageContextUnknown": "Fenêtre de contexte indisponible",
+  "usageResetsIn": "Se réinitialise dans {{duration}}",
+  "usageResetDue": "L’heure de réinitialisation est atteinte. Actualisez l’utilisation."
 }

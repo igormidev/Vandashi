@@ -1,8 +1,10 @@
 import { AppFault } from '../../domain/diagnostics';
 import type { AgentThread } from '../../domain/agent';
+import type { ChatMessage } from '../../domain/models';
 import type { RpcClient } from './transport';
 import { itemMessage } from './events';
 import { missingHistory, threadResponse, turnPage } from './schemas';
+import { lastTurnAnswer, verifiedTurnDuration } from './turn-timing';
 
 export async function readHistory(client: RpcClient, threadId: string): Promise<AgentThread> {
   try {
@@ -24,6 +26,7 @@ export async function readHistory(client: RpcClient, threadId: string): Promise<
       );
       for (const turn of page.data) {
         thread.turnIds.push(turn.id);
+        const turnMessages: ChatMessage[] = [];
         for (const item of turn.items) {
           const message = itemMessage(item, turn.id);
           if (message) {
@@ -34,8 +37,12 @@ export async function readHistory(client: RpcClient, threadId: string): Promise<
             else delete message.streaming;
             message.timestampKnown = false;
             thread.messages.push(message);
+            turnMessages.push(message);
           }
         }
+        const duration = verifiedTurnDuration(turn.status, turn.durationMs);
+        const answer = duration === undefined ? undefined : lastTurnAnswer(turnMessages, turn.id);
+        if (answer && duration !== undefined) answer.turnDurationMs = duration;
       }
       cursor = page.nextCursor;
       if (cursor) {
